@@ -6,8 +6,7 @@
   },
   "publisher": "basementuniverse",
   "activationEvents": [
-    "onStartupFinished",
-    "onCommand:kanbn.open"
+    "onStartupFinished"
   ],
   "main": "./build/ext-src/extension.js",
   "contributes": {
@@ -18,7 +17,7 @@
         "category": "Kanbn"
       },
       {
-        "command": "kanbn.open",
+        "command": "kanbn.board",
         "title": "Open board",
         "category": "Kanbn"
       }
