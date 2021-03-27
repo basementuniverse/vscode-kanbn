@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
-import ReactPanel from './ReactPanel';
+import KanbnStatusBarItem from './KanbnStatusBarItem';
+import KanbnBoardPanel from './KanbnBoardPanel';
 
-let statusBarItem: vscode.StatusBarItem;
+let kanbnStatusBarItem: KanbnStatusBarItem;
 
 export async function activate(context: vscode.ExtensionContext) {
 
@@ -40,7 +41,7 @@ export async function activate(context: vscode.ExtensionContext) {
         name: newProjectName
       });
       vscode.window.showInformationMessage(`Initialised kanbn project '${newProjectName}'.`);
-      updateStatusBarItem(kanbn);
+      kanbnStatusBarItem.update(kanbn);
     }
   }));
 
@@ -60,7 +61,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // If kanbn is initialised, view the kanbn board
     if (await kanbn.initialised()) {
-      ReactPanel.createOrShow(context.extensionPath);
+      KanbnBoardPanel.createOrShow(context.extensionPath, kanbn.getMainFolder());
     } else {
       vscode.window.showErrorMessage('You need to initialise kanbn before viewing the kanbn board.');
     }
@@ -74,36 +75,15 @@ export async function activate(context: vscode.ExtensionContext) {
     const kanbn = await import('@basementuniverse/kanbn/src/main');
 
     // Create status bar item
-    statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
-    context.subscriptions.push(statusBarItem);
-    updateStatusBarItem(kanbn);
+    kanbnStatusBarItem = new KanbnStatusBarItem(context);
+    kanbnStatusBarItem.update(kanbn);
 
     // Initialise file watcher
     const uri = vscode.workspace.workspaceFolders[0].uri.fsPath;
     const fileWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(uri, '.kanbn/*'));
     fileWatcher.onDidChange(() => {
-      updateStatusBarItem(kanbn);
-      // TODO update kanbn board
+      kanbnStatusBarItem.update(kanbn);
+      // TODO refresh kanbn board
     });
   }
-}
-
-export function deactivate(): void {
-  //
-}
-
-async function updateStatusBarItem(kanbn: typeof import('@basementuniverse/kanbn/src/main')): Promise<void> {
-  if (statusBarItem === undefined) {
-    return;
-  }
-  const initialised = await kanbn.initialised();
-  const text = initialised ? await getStatusBarText(kanbn) : 'Not initialised';
-  statusBarItem.text = `$(project) ${text}`;
-  statusBarItem.command = initialised ? 'kanbn.board' : 'kanbn.init';
-  statusBarItem.show();
-}
-
-async function getStatusBarText(kanbn: typeof import('@basementuniverse/kanbn/src/main')): Promise<string> {
-  const status = await kanbn.status(true);
-  return Object.values(status.columnTasks).join(' / ');
 }
