@@ -1,37 +1,30 @@
-// import * as vscode from 'vscode';
 import Board from './Board';
 import Header from './Header';
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
-function App(props) {
-  // const [cwd, setCwd] = useState('initialcwd');
-  // const [index, setIndex] = useState({});
-  // const [tasks, setTasks] = useState([]);
+const zip = (a: Array<any>, b: Array<any>): Array<[any, any]> => a.map((v: any, i: number): [any, any] => [v, b[i]]);
 
-  // useEffect(() => {
-  //   // process.chdir(vscode!.workspace.workspaceFolders[0].uri.fsPath);
-  //   import('@basementuniverse/kanbn/src/main').then(kanbn => {
-  //     vscode.postMessage({
-  //       command: 'error',
-  //       text: 'hello!'
-  //     });
-  //   });
-  // });
-  // console.log(vscode!.workspace.workspaceFolders[0].uri.fsPath);
+function App() {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [columns, setColumns] = useState({});
 
-  // window.addEventListener('message', event => {
-  //   const message = event.data; // The JSON data our extension sent
-  //   switch (message.command) {
-  //     case 'test':
-  //       setCwd(message.cwd);
-  //       break;
-  //   }
-  // });
+  window.addEventListener('message', event => {
+    const tasks = Object.fromEntries(event.data.tasks.map(task => [task.id, task]));
+    setName(event.data.index.name);
+    setDescription(event.data.index.description);
+    setColumns(Object.fromEntries(
+      zip(
+        Object.keys(event.data.index.columns),
+        Object.values(event.data.index.columns).map(column => (column as string[]).map(taskId => tasks[taskId]))
+      )
+    ));
+  });
 
   return (
     <div>
-      <Header />
-      <Board />
+      <Header name={name} description={description} />
+      <Board columns={columns} />
     </div>
   );
 }

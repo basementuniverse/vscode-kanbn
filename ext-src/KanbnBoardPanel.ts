@@ -8,10 +8,9 @@ export default class KanbnBoardPanel {
 
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionPath: string;
-  private readonly _workspacePath: string;
   private _disposables: vscode.Disposable[] = [];
 
-  public static createOrShow(extensionPath: string, workspacePath: string) {
+  public static createOrShow(extensionPath: string) {
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
     // If we already have a panel, show it.
@@ -21,20 +20,39 @@ export default class KanbnBoardPanel {
     } else {
       KanbnBoardPanel.currentPanel = new KanbnBoardPanel(
         extensionPath,
-        workspacePath,
         column || vscode.ViewColumn.One
       );
     }
   }
 
-  private constructor(extensionPath: string, workspacePath: string, column: vscode.ViewColumn) {
+  public static async updateBoard(kanbn: typeof import('@basementuniverse/kanbn/src/main')) {
+    if (KanbnBoardPanel.currentPanel) {
+      let index: any;
+      try {
+        index = await kanbn.getIndex();
+      } catch (error) {
+        vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
+        return;
+      }
+      KanbnBoardPanel.currentPanel._panel.webview.postMessage({
+        index,
+        tasks: (await kanbn.loadAllTrackedTasks(index)).map(
+          task => kanbn.hydrateTask(index, task)
+        )
+      });
+    }
+  }
+
+  private constructor(extensionPath: string, column: vscode.ViewColumn) {
     this._extensionPath = extensionPath;
-    this._workspacePath = workspacePath;
 
     // Create and show a new webview panel
     this._panel = vscode.window.createWebviewPanel(KanbnBoardPanel.viewType, "Kanbn Board", column, {
       // Enable javascript in the webview
       enableScripts: true,
+
+      // Retain state even when hidden
+      retainContextWhenHidden: true,
 
       // Restrict the webview to only loading content from our extension's `media` directory.
       localResourceRoots: [

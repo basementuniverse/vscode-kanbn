@@ -1,33 +1,10 @@
 import React, { useState } from "react";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
-import uuid from "uuid/v4";
 
-const itemsFromBackend = [
-  { id: uuid(), content: "First task" },
-  { id: uuid(), content: "Second task" },
-  { id: uuid(), content: "Third task" },
-  { id: uuid(), content: "Fourth task" },
-  { id: uuid(), content: "Fifth task" }
-];
-
-const columnsFromBackend = {
-  [uuid()]: {
-    name: "Requested",
-    items: itemsFromBackend
-  },
-  [uuid()]: {
-    name: "To do",
-    items: []
-  },
-  [uuid()]: {
-    name: "In Progress",
-    items: []
-  },
-  [uuid()]: {
-    name: "Done",
-    items: []
-  }
-};
+export type task = {
+  id: string,
+  name: string
+}
 
 const onDragEnd = (result, columns, setColumns) => {
   if (!result.destination) return;
@@ -66,14 +43,15 @@ const onDragEnd = (result, columns, setColumns) => {
   }
 };
 
-function Board() {
-  const [columns, setColumns] = useState(columnsFromBackend);
+const Board = ({ columns }) => {
+  // const [columns, setColumns] = useState(props.columns);
   return (
     <div style={{ display: "flex", justifyContent: "center", height: "100%" }}>
-      <DragDropContext
+      {/* <DragDropContext
         onDragEnd={result => onDragEnd(result, columns, setColumns)}
-      >
-        {Object.entries(columns).map(([columnId, column], index) => {
+      > */}
+      <DragDropContext>
+        {Object.entries(columns).map(([columnId, column]) => {
           return (
             <div
               style={{
@@ -83,7 +61,7 @@ function Board() {
               }}
               key={columnId}
             >
-              <h2>{column.name}</h2>
+              <h2>{columnId}</h2>
               <div style={{ margin: 8 }}>
                 <Droppable droppableId={columnId} key={columnId}>
                   {(provided, snapshot) => {
@@ -100,7 +78,7 @@ function Board() {
                           minHeight: 500
                         }}
                       >
-                        {column.items.map((item, index) => {
+                        {(column as task[]).map((item, index) => {
                           return (
                             <Draggable
                               key={item.id}
@@ -125,7 +103,7 @@ function Board() {
                                       ...provided.draggableProps.style
                                     }}
                                   >
-                                    {item.content}
+                                    {item.name}
                                   </div>
                                 );
                               }}

@@ -1,9 +1,13 @@
-import React, { useState } from "react";
+import React from "react";
 
-function Header() {
+const Header = ({ name, description }) => {
   return (
     <div>
-      Header
+      <h1>{name}</h1>
+      <p>
+        {description}
+      </p>
+      <hr />
     </div>
   );
 }

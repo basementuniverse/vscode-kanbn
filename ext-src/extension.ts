@@ -42,6 +42,7 @@ export async function activate(context: vscode.ExtensionContext) {
       });
       vscode.window.showInformationMessage(`Initialised kanbn project '${newProjectName}'.`);
       kanbnStatusBarItem.update(kanbn);
+      KanbnBoardPanel.updateBoard(kanbn);
     }
   }));
 
@@ -61,7 +62,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // If kanbn is initialised, view the kanbn board
     if (await kanbn.initialised()) {
-      KanbnBoardPanel.createOrShow(context.extensionPath, kanbn.getMainFolder());
+      KanbnBoardPanel.createOrShow(context.extensionPath);
+      KanbnBoardPanel.updateBoard(kanbn);
     } else {
       vscode.window.showErrorMessage('You need to initialise kanbn before viewing the kanbn board.');
     }
@@ -77,13 +79,14 @@ export async function activate(context: vscode.ExtensionContext) {
     // Create status bar item
     kanbnStatusBarItem = new KanbnStatusBarItem(context);
     kanbnStatusBarItem.update(kanbn);
+    KanbnBoardPanel.updateBoard(kanbn);
 
     // Initialise file watcher
     const uri = vscode.workspace.workspaceFolders[0].uri.fsPath;
     const fileWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(uri, '.kanbn/*'));
     fileWatcher.onDidChange(() => {
       kanbnStatusBarItem.update(kanbn);
-      // TODO refresh kanbn board
+      KanbnBoardPanel.updateBoard(kanbn);
     });
   }
 }
