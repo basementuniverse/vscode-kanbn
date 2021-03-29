@@ -8,43 +8,52 @@ export default class KanbnBoardPanel {
 
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionPath: string;
+  private readonly _kanbn: typeof import('@basementuniverse/kanbn/src/main');
   private _disposables: vscode.Disposable[] = [];
 
-  public static createOrShow(extensionPath: string) {
+  public static createOrShow(
+    extensionPath: string,
+    kanbn: typeof import('@basementuniverse/kanbn/src/main')
+  ) {
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
-    // If we already have a panel, show it.
-    // Otherwise, create a new panel.
+    // If we already have a panel, show it, otherwise create a new panel
     if (KanbnBoardPanel.currentPanel) {
       KanbnBoardPanel.currentPanel._panel.reveal(column);
     } else {
       KanbnBoardPanel.currentPanel = new KanbnBoardPanel(
         extensionPath,
-        column || vscode.ViewColumn.One
+        column || vscode.ViewColumn.One,
+        kanbn
       );
     }
   }
 
-  public static async updateBoard(kanbn: typeof import('@basementuniverse/kanbn/src/main')) {
+  public static async update() {
     if (KanbnBoardPanel.currentPanel) {
       let index: any;
       try {
-        index = await kanbn.getIndex();
+        index = await KanbnBoardPanel.currentPanel._kanbn.getIndex();
       } catch (error) {
         vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
         return;
       }
       KanbnBoardPanel.currentPanel._panel.webview.postMessage({
         index,
-        tasks: (await kanbn.loadAllTrackedTasks(index)).map(
-          task => kanbn.hydrateTask(index, task)
+        tasks: (await KanbnBoardPanel.currentPanel._kanbn.loadAllTrackedTasks(index)).map(
+          task => KanbnBoardPanel.currentPanel!._kanbn.hydrateTask(index, task)
         )
       });
     }
   }
 
-  private constructor(extensionPath: string, column: vscode.ViewColumn) {
+  private constructor(
+    extensionPath: string,
+    column: vscode.ViewColumn,
+    kanbn: typeof import('@basementuniverse/kanbn/src/main')
+  ) {
     this._extensionPath = extensionPath;
+    this._kanbn = kanbn;
 
     // Create and show a new webview panel
     this._panel = vscode.window.createWebviewPanel(KanbnBoardPanel.viewType, "Kanbn Board", column, {
@@ -68,10 +77,41 @@ export default class KanbnBoardPanel {
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
     // Handle messages from the webview
-    this._panel.webview.onDidReceiveMessage(message => {
+    this._panel.webview.onDidReceiveMessage(async message => {
       switch (message.command) {
+
+        // Display error message
         case 'error':
           vscode.window.showErrorMessage(message.text);
+          return;
+
+        // Move a task
+        case 'kanbn.move':
+          try {
+            await kanbn.moveTask(message.task, message.column, message.position);
+          } catch (e) {
+            vscode.window.showErrorMessage(e.message);
+          }
+          return;
+
+        // Create a task
+        case 'kanbn.create':
+          //
+          return;
+
+        // Update a task
+        case 'kanbn.update':
+          //
+          return;
+
+        // Rename a task
+        case 'kanbn.rename':
+          //
+          return;
+
+        // Delete a task
+        case 'kanbn.delete':
+          //
           return;
       }
     }, null, this._disposables);
@@ -82,7 +122,6 @@ export default class KanbnBoardPanel {
 
     // Clean up our resources
     this._panel.dispose();
-
     while (this._disposables.length) {
       const x = this._disposables.pop();
       if (x) {
@@ -95,11 +134,12 @@ export default class KanbnBoardPanel {
     const manifest = require(path.join(this._extensionPath, 'build', 'asset-manifest.json'));
     const mainScript = manifest['main.js'];
     const mainStyle = manifest['main.css'];
-
-    const scriptPathOnDisk = vscode.Uri.file(path.join(this._extensionPath, 'build', mainScript));
-    const scriptUri = scriptPathOnDisk.with({ scheme: 'vscode-resource' });
-    const stylePathOnDisk = vscode.Uri.file(path.join(this._extensionPath, 'build', mainStyle));
-    const styleUri = stylePathOnDisk.with({ scheme: 'vscode-resource' });
+    const scriptUri = vscode.Uri
+      .file(path.join(this._extensionPath, 'build', mainScript))
+      .with({ scheme: 'vscode-resource' });
+    const styleUri = vscode.Uri
+      .file(path.join(this._extensionPath, 'build', mainStyle))
+      .with({ scheme: 'vscode-resource' });
 
     // Use a nonce to whitelist which scripts can be run
     const nonce = getNonce();

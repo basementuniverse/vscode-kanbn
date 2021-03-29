@@ -1,19 +1,24 @@
 import * as vscode from 'vscode';
 
 export default class KanbnStatusBarItem {
-  statusBarItem: vscode.StatusBarItem;
+  private readonly _statusBarItem: vscode.StatusBarItem;
+  private readonly _kanbn: typeof import('@basementuniverse/kanbn/src/main');
 
-  constructor(context: vscode.ExtensionContext) {
-    this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
-    context.subscriptions.push(this.statusBarItem);
+  constructor(
+    context: vscode.ExtensionContext,
+    kanbn: typeof import('@basementuniverse/kanbn/src/main')
+  ) {
+    this._statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
+    context.subscriptions.push(this._statusBarItem);
+    this._kanbn = kanbn;
   }
 
-  async update(kanbn: typeof import('@basementuniverse/kanbn/src/main')): Promise<void> {
-    if (this.statusBarItem === undefined) {
+  async update(): Promise<void> {
+    if (this._statusBarItem === undefined) {
       return;
     }
-    if (await kanbn.initialised()) {
-      const status = await kanbn.status(true);
+    if (await this._kanbn.initialised()) {
+      const status = await this._kanbn.status(true);
       const text = [
         `$(project) ${status.tasks}`
       ];
@@ -28,14 +33,14 @@ export default class KanbnStatusBarItem {
         text.push(`$(check) ${status.completedTasks}`);
         tooltip.push(`${status.completedTasks} completed task${status.completedTasks === 1 ? '' : 's'}`);
       }
-      this.statusBarItem.text = text.join(' ');
-      this.statusBarItem.tooltip = tooltip.join('\n');
-      this.statusBarItem.command = 'kanbn.board';
+      this._statusBarItem.text = text.join(' ');
+      this._statusBarItem.tooltip = tooltip.join('\n');
+      this._statusBarItem.command = 'kanbn.board';
     } else {
-      this.statusBarItem.text = '$(project) Not initialised';
-      this.statusBarItem.tooltip = 'Click to initialise';
-      this.statusBarItem.command = 'kanbn.init';
+      this._statusBarItem.text = '$(project) Not initialised';
+      this._statusBarItem.tooltip = 'Click to initialise';
+      this._statusBarItem.command = 'kanbn.init';
     }
-    this.statusBarItem.show();
+    this._statusBarItem.show();
   }
 }

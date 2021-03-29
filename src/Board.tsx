@@ -3,54 +3,94 @@ import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 
 export type task = {
   id: string,
-  name: string
-}
+  name: string,
+  description: string,
+  column: string,
+  workload?: number,
+  remainingWorkload?: number,
+  progress?: number,
+  metadata: {
+    created: Date,
+    updated?: Date,
+    completed?: Date,
+    assigned?: string
+  },
+  relations: Array<{
+    type: string,
+    task: string
+  }>,
+  subTasks: Array<{
+    text: string,
+    completed: boolean
+  }>,
+  comments: Array<{
+    author: string,
+    date: Date,
+    text: string
+  }>
+};
+
+declare var acquireVsCodeApi: any;
+const vscode = acquireVsCodeApi();
 
 const onDragEnd = (result, columns, setColumns) => {
-  if (!result.destination) return;
+
+  // No destination means the item was dragged to an invalid location
+  if (!result.destination) {
+    return;
+  }
+
+  // Get the source and destination columns
   const { source, destination } = result;
 
+  // The item that was moved
+  let removed: task;
+
+  // The task was dragged from one column to another
   if (source.droppableId !== destination.droppableId) {
-    const sourceColumn = columns[source.droppableId];
-    const destColumn = columns[destination.droppableId];
-    const sourceItems = [...sourceColumn.items];
-    const destItems = [...destColumn.items];
-    const [removed] = sourceItems.splice(source.index, 1);
+    const sourceItems = columns[source.droppableId];
+    const destItems = columns[destination.droppableId];
+    [removed] = sourceItems.splice(source.index, 1);
     destItems.splice(destination.index, 0, removed);
     setColumns({
       ...columns,
-      [source.droppableId]: {
-        ...sourceColumn,
-        items: sourceItems
-      },
-      [destination.droppableId]: {
-        ...destColumn,
-        items: destItems
-      }
+      [source.droppableId]: sourceItems,
+      [destination.droppableId]: destItems
     });
+
+  // The task was dragged into the same column
   } else {
-    const column = columns[source.droppableId];
-    const copiedItems = [...column.items];
-    const [removed] = copiedItems.splice(source.index, 1);
+
+    // If the task was dragged to the same position that it currently occupies, don't move it (this will
+    // prevent unnecessarily setting the task's updated date)
+    if (source.index === destination.index) {
+      return;
+    }
+    const copiedItems = columns[source.droppableId];
+    [removed] = copiedItems.splice(source.index, 1);
     copiedItems.splice(destination.index, 0, removed);
     setColumns({
       ...columns,
-      [source.droppableId]: {
-        ...column,
-        items: copiedItems
-      }
+      [source.droppableId]: copiedItems
     });
   }
+
+  // Post a message back to the extension so we can move the task in the index
+  vscode.postMessage({
+    command: 'kanbn.move',
+    task: removed.id,
+    column: destination.droppableId,
+    position: destination.index
+  });
 };
 
 const Board = ({ columns }) => {
-  // const [columns, setColumns] = useState(props.columns);
+  const [, setColumns] = useState(columns);
   return (
     <div style={{ display: "flex", justifyContent: "center", height: "100%" }}>
-      {/* <DragDropContext
+      <DragDropContext
         onDragEnd={result => onDragEnd(result, columns, setColumns)}
-      > */}
-      <DragDropContext>
+      >
         {Object.entries(columns).map(([columnId, column]) => {
           return (
             <div
@@ -122,6 +162,6 @@ const Board = ({ columns }) => {
       </DragDropContext>
     </div>
   );
-}
+};
 
 export default Board;
