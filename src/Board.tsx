@@ -1,34 +1,6 @@
+import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import React, { useState } from "react";
-import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
-
-export type task = {
-  id: string,
-  name: string,
-  description: string,
-  column: string,
-  workload?: number,
-  remainingWorkload?: number,
-  progress?: number,
-  metadata: {
-    created: Date,
-    updated?: Date,
-    completed?: Date,
-    assigned?: string
-  },
-  relations: Array<{
-    type: string,
-    task: string
-  }>,
-  subTasks: Array<{
-    text: string,
-    completed: boolean
-  }>,
-  comments: Array<{
-    author: string,
-    date: Date,
-    text: string
-  }>
-};
+import Task from './Task';
 
 declare var acquireVsCodeApi: any;
 const vscode = acquireVsCodeApi();
@@ -44,7 +16,7 @@ const onDragEnd = (result, columns, setColumns) => {
   const { source, destination } = result;
 
   // The item that was moved
-  let removed: task;
+  let removed: KanbnTask;
 
   // The task was dragged from one column to another
   if (source.droppableId !== destination.droppableId) {
@@ -84,72 +56,53 @@ const onDragEnd = (result, columns, setColumns) => {
   });
 };
 
-const Board = ({ columns }) => {
+const Board = ({ columns, startedColumns, completedColumns }: {
+  columns: Record<string, KanbnTask[]>,
+  startedColumns: string[],
+  completedColumns: string[]
+}) => {
   const [, setColumns] = useState(columns);
   return (
-    <div style={{ display: "flex", justifyContent: "center", height: "100%" }}>
+    <div
+      className="kanbn-board"
+      style={{
+        display: "flex"
+      }}
+    >
       <DragDropContext
         onDragEnd={result => onDragEnd(result, columns, setColumns)}
       >
-        {Object.entries(columns).map(([columnId, column]) => {
+        {Object.entries(columns).map(([columnName, column]) => {
           return (
             <div
+              className="kanbn-column"
               style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center"
+                flex: 1
               }}
-              key={columnId}
+              key={columnName}
             >
-              <h2>{columnId}</h2>
-              <div style={{ margin: 8 }}>
-                <Droppable droppableId={columnId} key={columnId}>
+              <h2 className="kanbn-column-name">
+                {columnName}
+                <span className="kanbn-column-count">{column.length || ''}</span>
+              </h2>
+              {/*
+              // TODO codicons https://github.com/microsoft/vscode-extension-samples/tree/main/webview-codicons-sample
+              // TODO 'Add task' button next to each column header
+              // TODO show count next to header
+              */}
+              <div>
+                <Droppable droppableId={columnName} key={columnName}>
                   {(provided, snapshot) => {
                     return (
                       <div
                         {...provided.droppableProps}
                         ref={provided.innerRef}
-                        style={{
-                          background: snapshot.isDraggingOver
-                            ? "lightblue"
-                            : "lightgrey",
-                          padding: 4,
-                          width: 250,
-                          minHeight: 500
-                        }}
+                        className={[
+                          'kanbn-column-task-list',
+                          snapshot.isDraggingOver ? 'drag-over' : null
+                        ].filter(i => i).join(' ')}
                       >
-                        {(column as task[]).map((item, index) => {
-                          return (
-                            <Draggable
-                              key={item.id}
-                              draggableId={item.id}
-                              index={index}
-                            >
-                              {(provided, snapshot) => {
-                                return (
-                                  <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    {...provided.dragHandleProps}
-                                    style={{
-                                      userSelect: "none",
-                                      padding: 16,
-                                      margin: "0 0 8px 0",
-                                      minHeight: "50px",
-                                      backgroundColor: snapshot.isDragging
-                                        ? "#263B4A"
-                                        : "#456C86",
-                                      color: "white",
-                                      ...provided.draggableProps.style
-                                    }}
-                                  >
-                                    {item.name}
-                                  </div>
-                                );
-                              }}
-                            </Draggable>
-                          );
-                        })}
+                        {column.map((task, index) => <Task task={task} index={index} />)}
                         {provided.placeholder}
                       </div>
                     );
