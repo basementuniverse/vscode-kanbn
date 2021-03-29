@@ -62,7 +62,11 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // If kanbn is initialised, view the kanbn board
     if (await kanbn.initialised()) {
-      KanbnBoardPanel.createOrShow(context.extensionPath, kanbn);
+      KanbnBoardPanel.createOrShow(
+        context.extensionPath,
+        vscode.workspace.workspaceFolders[0].uri.fsPath,
+        kanbn
+      );
       KanbnBoardPanel.update();
     } else {
       vscode.window.showErrorMessage('You need to initialise kanbn before viewing the kanbn board.');

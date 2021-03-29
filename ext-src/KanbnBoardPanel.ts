@@ -8,11 +8,13 @@ export default class KanbnBoardPanel {
 
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionPath: string;
+  private readonly _workspacePath: string;
   private readonly _kanbn: typeof import('@basementuniverse/kanbn/src/main');
   private _disposables: vscode.Disposable[] = [];
 
   public static createOrShow(
     extensionPath: string,
+    workspacePath: string,
     kanbn: typeof import('@basementuniverse/kanbn/src/main')
   ) {
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
@@ -23,6 +25,7 @@ export default class KanbnBoardPanel {
     } else {
       KanbnBoardPanel.currentPanel = new KanbnBoardPanel(
         extensionPath,
+        workspacePath,
         column || vscode.ViewColumn.One,
         kanbn
       );
@@ -42,31 +45,41 @@ export default class KanbnBoardPanel {
         index,
         tasks: (await KanbnBoardPanel.currentPanel._kanbn.loadAllTrackedTasks(index)).map(
           task => KanbnBoardPanel.currentPanel!._kanbn.hydrateTask(index, task)
-        )
+        ),
+        startedColumns: index.options.startedColumns ?? [],
+        completedColumns: index.options.completedColumns ?? []
       });
     }
   }
 
   private constructor(
     extensionPath: string,
+    workspacePath: string,
     column: vscode.ViewColumn,
     kanbn: typeof import('@basementuniverse/kanbn/src/main')
   ) {
     this._extensionPath = extensionPath;
+    this._workspacePath = workspacePath;
     this._kanbn = kanbn;
 
     // Create and show a new webview panel
-    this._panel = vscode.window.createWebviewPanel(KanbnBoardPanel.viewType, "Kanbn Board", column, {
+    this._panel = vscode.window.createWebviewPanel(KanbnBoardPanel.viewType, 'Kanbn Board', column, {
       // Enable javascript in the webview
       enableScripts: true,
 
       // Retain state even when hidden
       retainContextWhenHidden: true,
 
-      // Restrict the webview to only loading content from our extension's `media` directory.
+      // Restrict the webview to only loading content from allowed paths
       localResourceRoots: [
-        vscode.Uri.file(path.join(this._extensionPath, 'build'))
+        vscode.Uri.file(path.join(this._extensionPath, 'build')),
+        vscode.Uri.file(path.join(this._workspacePath, '.kanbn'))
       ]
+    });
+
+    // Set the webview's title to the kanbn project name
+    this._kanbn.getIndex().then(index => {
+      this._panel.title = index.name;
     });
 
     // Set the webview's initial html content
@@ -104,11 +117,6 @@ export default class KanbnBoardPanel {
           //
           return;
 
-        // Rename a task
-        case 'kanbn.rename':
-          //
-          return;
-
         // Delete a task
         case 'kanbn.delete':
           //
@@ -140,6 +148,9 @@ export default class KanbnBoardPanel {
     const styleUri = vscode.Uri
       .file(path.join(this._extensionPath, 'build', mainStyle))
       .with({ scheme: 'vscode-resource' });
+    const customStyleUri = vscode.Uri
+      .file(path.join(this._workspacePath, '.kanbn', 'board.css'))
+      .with({ scheme: 'vscode-resource' });
 
     // Use a nonce to whitelist which scripts can be run
     const nonce = getNonce();
@@ -152,6 +163,7 @@ export default class KanbnBoardPanel {
 <meta name="theme-color" content="#000000">
 <title>Kanbn Board</title>
 <link rel="stylesheet" type="text/css" href="${styleUri}">
+<link rel="stylesheet" type="text/css" href="${customStyleUri}">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src vscode-resource: https:; script-src 'nonce-${nonce}';style-src vscode-resource: 'unsafe-inline' http: https: data:;">
 <base href="${vscode.Uri.file(path.join(this._extensionPath, 'build')).with({ scheme: 'vscode-resource' })}/">
 </head>
