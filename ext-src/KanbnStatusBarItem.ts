@@ -22,16 +22,21 @@ export default class KanbnStatusBarItem {
       const text = [
         `$(project) ${status.tasks}`
       ];
-      const tooltip = [
-        `${status.tasks} task${status.tasks === 1 ? '' : 's'}`
-      ];
-      if ('startedTasks' in status) {
-        text.push(`$(play) ${status.startedTasks}`);
-        tooltip.push(`${status.startedTasks} started task${status.startedTasks === 1 ? '' : 's'}`);
-      }
-      if ('completedTasks' in status) {
-        text.push(`$(check) ${status.completedTasks}`);
-        tooltip.push(`${status.completedTasks} completed task${status.completedTasks === 1 ? '' : 's'}`);
+      let tooltip = [];
+      if (status.tasks > 0) {
+        tooltip = [
+          `${status.tasks} task${status.tasks === 1 ? '' : 's'}`
+        ];
+        if ('startedTasks' in status && status.startedTasks! > 0) {
+          text.push(`$(play) ${status.startedTasks}`);
+          tooltip.push(`${status.startedTasks} started task${status.startedTasks === 1 ? '' : 's'}`);
+        }
+        if ('completedTasks' in status && status.completedTasks! > 0) {
+          text.push(`$(check) ${status.completedTasks}`);
+          tooltip.push(`${status.completedTasks} completed task${status.completedTasks === 1 ? '' : 's'}`);
+        }
+      } else {
+        tooltip.push('No tasks');
       }
       this._statusBarItem.text = text.join(' ');
       this._statusBarItem.tooltip = tooltip.join('\n');
