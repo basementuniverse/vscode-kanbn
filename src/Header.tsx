@@ -1,13 +1,12 @@
 import React from "react";
 
-const Header = ({ name, description }) => {
+const Header = ({ name, description }: { name: string, description: string }) => {
   return (
-    <div>
-      <h1>{name}</h1>
-      <p>
+    <div className="kanbn-header">
+      <h1 className="kanbn-header-name">{name}</h1>
+      <p className="kanbn-header-description">
         {description}
       </p>
-      <hr />
     </div>
   );
 }
