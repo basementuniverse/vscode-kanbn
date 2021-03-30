@@ -73,7 +73,8 @@ export default class KanbnBoardPanel {
       // Restrict the webview to only loading content from allowed paths
       localResourceRoots: [
         vscode.Uri.file(path.join(this._extensionPath, 'build')),
-        vscode.Uri.file(path.join(this._workspacePath, '.kanbn'))
+        vscode.Uri.file(path.join(this._workspacePath, '.kanbn')),
+        vscode.Uri.file(path.join(this._extensionPath, 'node_modules', 'vscode-codicons', 'dist'))
       ]
     });
 
@@ -151,6 +152,9 @@ export default class KanbnBoardPanel {
     const customStyleUri = vscode.Uri
       .file(path.join(this._workspacePath, '.kanbn', 'board.css'))
       .with({ scheme: 'vscode-resource' });
+    const codiconsUri = vscode.Uri
+      .file(path.join(this._extensionPath, 'node_modules', 'vscode-codicons', 'dist', 'codicon.css'))
+      .with({ scheme: 'vscode-resource' });
 
     // Use a nonce to whitelist which scripts can be run
     const nonce = getNonce();
@@ -164,7 +168,8 @@ export default class KanbnBoardPanel {
 <title>Kanbn Board</title>
 <link rel="stylesheet" type="text/css" href="${styleUri}">
 <link rel="stylesheet" type="text/css" href="${customStyleUri}">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src vscode-resource: https:; script-src 'nonce-${nonce}';style-src vscode-resource: 'unsafe-inline' http: https: data:;">
+<link rel="stylesheet" type="text/css" href="${codiconsUri}">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src vscode-resource: https:; script-src 'nonce-${nonce}'; font-src vscode-resource:; style-src vscode-resource: 'unsafe-inline' http: https: data:;">
 <base href="${vscode.Uri.file(path.join(this._extensionPath, 'build')).with({ scheme: 'vscode-resource' })}/">
 </head>
 <body>

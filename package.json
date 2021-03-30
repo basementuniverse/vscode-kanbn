@@ -29,7 +29,8 @@
     "react-beautiful-dnd": "12.2.0",
     "react-dom": "^16.3.2",
     "terser": "3.14.1",
-    "vscode": "^1.1.37"
+    "vscode": "^1.1.37",
+    "vscode-codicons": "^0.0.15"
   },
   "scripts": {
     "vscode:prepublish": "./scripts/build-non-split.js && tsc -p tsconfig.extension.json",

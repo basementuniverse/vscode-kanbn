@@ -13,11 +13,11 @@
 */
 
 body {
-  margin: 0;
-  padding: 1em;
-  font-family: sans-serif;
-  background-color: var(--vscode-editor-background);
-  color: var(--vscode-foreground);
+    margin: 0;
+    padding: 1em;
+    font-family: sans-serif;
+    background-color: var(--vscode-editor-background);
+    color: var(--vscode-foreground);
 }
 
 .kanbn-header-name {
@@ -35,6 +35,14 @@ body {
     text-transform: uppercase;
     padding: 4px;
     padding-left: 8px;
+}
+
+.kanbn-create-task-button {
+    float: right;
+}
+
+.kanbn-create-task-button .codicon {
+    font-size: 14px;
 }
 
 .kanbn-column:first-child .kanbn-column-name {
@@ -86,8 +94,7 @@ body {
     color: var(--vscode-editor-foreground);
 }
 
-.kanbn-task button:focus,
-.kanbn-task button:hover {
+.kanbn-task button:focus, .kanbn-task button:hover {
     border: none;
     outline: none;
     text-decoration: underline;

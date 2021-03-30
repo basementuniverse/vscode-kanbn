@@ -25,7 +25,7 @@ const Task = ({ task, index }: { task: KanbnTask, index: number }) => {
           >
             <button
               type="button"
-              onClick={e => null} // TODO open task editor modal when clicked
+              onClick={e => null} // TODO open task editor webview panel when clicked
               title={task.id}
             >
               {task.name}

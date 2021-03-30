@@ -84,12 +84,15 @@ const Board = ({ columns, startedColumns, completedColumns }: {
               <h2 className="kanbn-column-name">
                 {columnName}
                 <span className="kanbn-column-count">{column.length || ''}</span>
+                <button
+                  type="button"
+                  className="kanbn-create-task-button"
+                  onClick={e => null}
+                  title={`Create task in ${columnName}`}
+                >
+                  <i className="codicon codicon-add"></i>
+                </button>
               </h2>
-              {/*
-              // TODO codicons https://github.com/microsoft/vscode-extension-samples/tree/main/webview-codicons-sample
-              // TODO 'Add task' button next to each column header
-              // TODO show count next to header
-              */}
               <div>
                 <Droppable droppableId={columnName} key={columnName}>
                   {(provided, snapshot) => {
