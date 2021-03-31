@@ -10,7 +10,8 @@ declare type KanbnTask = {
     created: Date,
     updated?: Date,
     completed?: Date,
-    assigned?: string
+    assigned?: string,
+    tags?: string[]
   },
   relations: Array<{
     type: string,

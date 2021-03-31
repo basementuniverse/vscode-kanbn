@@ -1,9 +1,10 @@
 import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import React, { useState } from "react";
 import Task from './Task';
+import VSCodeApi from "./VSCodeApi";
 
-declare var acquireVsCodeApi: any;
-const vscode = acquireVsCodeApi();
+declare var acquireVsCodeApi: Function;
+const vscode: VSCodeApi = acquireVsCodeApi();
 
 const onDragEnd = (result, columns, setColumns) => {
 
@@ -56,10 +57,11 @@ const onDragEnd = (result, columns, setColumns) => {
   });
 };
 
-const Board = ({ columns, startedColumns, completedColumns }: {
+const Board = ({ columns, startedColumns, completedColumns, dateFormat }: {
   columns: Record<string, KanbnTask[]>,
   startedColumns: string[],
-  completedColumns: string[]
+  completedColumns: string[],
+  dateFormat: string
 }) => {
   const [, setColumns] = useState(columns);
   return (
@@ -82,12 +84,25 @@ const Board = ({ columns, startedColumns, completedColumns }: {
               key={columnName}
             >
               <h2 className="kanbn-column-name">
+                {
+                  startedColumns.indexOf(columnName) > -1 &&
+                  <i className="codicon codicon-chevron-right"></i>
+                }
+                {
+                  completedColumns.indexOf(columnName) > -1 &&
+                  <i className="codicon codicon-check"></i>
+                }
                 {columnName}
                 <span className="kanbn-column-count">{column.length || ''}</span>
                 <button
                   type="button"
                   className="kanbn-create-task-button"
-                  onClick={e => null}
+                  onClick={() => {
+                    vscode.postMessage({
+                      command: 'kanbn.create',
+                      column: columnName
+                    })
+                  }}
                   title={`Create task in ${columnName}`}
                 >
                   <i className="codicon codicon-add"></i>
@@ -105,7 +120,12 @@ const Board = ({ columns, startedColumns, completedColumns }: {
                           snapshot.isDraggingOver ? 'drag-over' : null
                         ].filter(i => i).join(' ')}
                       >
-                        {column.map((task, index) => <Task task={task} index={index} />)}
+                        {column.map((task, index) => <Task
+                          task={task}
+                          index={index}
+                          dateFormat={dateFormat}
+                          vscode={vscode}
+                        />)}
                         {provided.placeholder}
                       </div>
                     );

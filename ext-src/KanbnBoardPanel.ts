@@ -47,7 +47,8 @@ export default class KanbnBoardPanel {
           task => KanbnBoardPanel.currentPanel!._kanbn.hydrateTask(index, task)
         ),
         startedColumns: index.options.startedColumns ?? [],
-        completedColumns: index.options.completedColumns ?? []
+        completedColumns: index.options.completedColumns ?? [],
+        dateFormat: KanbnBoardPanel.currentPanel._kanbn.getDateFormat(index)
       });
     }
   }
@@ -99,6 +100,11 @@ export default class KanbnBoardPanel {
           vscode.window.showErrorMessage(message.text);
           return;
 
+        case 'kanbn.task':
+          // TODO open task panel with task
+          vscode.window.showInformationMessage(`Opening task ${message.taskId}`);
+          return;
+
         // Move a task
         case 'kanbn.move':
           try {
@@ -110,17 +116,20 @@ export default class KanbnBoardPanel {
 
         // Create a task
         case 'kanbn.create':
-          //
+          // TODO open task panel with blank task
+          vscode.window.showInformationMessage(`Creating new task in column ${message.column}`);
           return;
 
         // Update a task
         case 'kanbn.update':
-          //
+          // TODO update task
+          vscode.window.showInformationMessage(`Editing task ${message.taskId}`);
           return;
 
         // Delete a task
         case 'kanbn.delete':
-          //
+          // TODO delete task
+          vscode.window.showInformationMessage(`Deleting task ${message.taskId}`);
           return;
       }
     }, null, this._disposables);

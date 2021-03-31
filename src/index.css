@@ -86,7 +86,7 @@ body {
     border-color: var(--vscode-activityBar-activeBackground);
 }
 
-.kanbn-task button {
+.kanbn-task-name {
     border: none;
     outline: none;
     background-color: transparent;
@@ -94,7 +94,7 @@ body {
     color: var(--vscode-editor-foreground);
 }
 
-.kanbn-task button:focus, .kanbn-task button:hover {
+.kanbn-task-name:focus, .kanbn-task-name:hover {
     border: none;
     outline: none;
     text-decoration: underline;

@@ -1,7 +1,14 @@
 import React from "react";
 import { Draggable } from "react-beautiful-dnd";
+import formatDate from 'dateformat';
+import VSCodeApi from "./VSCodeApi";
 
-const Task = ({ task, index }: { task: KanbnTask, index: number }) => {
+const Task = ({ task, index, dateFormat, vscode }: {
+  task: KanbnTask,
+  index: number,
+  dateFormat: string,
+  vscode: VSCodeApi
+}) => {
   return (
     <Draggable
       key={task.id}
@@ -25,20 +32,74 @@ const Task = ({ task, index }: { task: KanbnTask, index: number }) => {
           >
             <button
               type="button"
-              onClick={e => null} // TODO open task editor webview panel when clicked
+              className="kanbn-task-name"
+              onClick={() => {
+                vscode.postMessage({
+                  command: 'kanbn.task',
+                  taskId: task.id
+                })
+              }}
               title={task.id}
             >
               {task.name}
             </button>
-            {/*
-            // TODO add task info
-            truncated description (?),
-            progress as %-filled bottom border,
-            created/updated (updated date, fallback to created),
-            tags (provide default colours in css, put tagname in className),
-            count sub-tasks (if >0),
-            count comments (if >0)
-            */}
+            {
+              'tags' in task.metadata &&
+              <div className="kanbn-task-tags">
+                {task.metadata.tags!.map(tag => {
+                  return (
+                    <span className={[
+                      'kanbn-task-tag',
+                      `kanbn-task-tag-${tag}`
+                    ].join(' ')}>
+                      {tag}
+                    </span>
+                  );
+                })}
+              </div>
+            }
+            {
+              'assigned' in task.metadata &&
+              <div className="kanbn-task-assigned">
+                <i className="codicon codicon-account"></i>{task.metadata.assigned}
+              </div>
+            }
+            <div className="kanbn-task-date">
+              {
+                'updated' in task.metadata
+                  ? formatDate(task.metadata.updated, dateFormat)
+                  : formatDate(task.metadata.created, dateFormat)
+              }
+            </div>
+            <div className="kanbn-task-description">
+              {task.description}
+            </div>
+            {
+              task.comments.length > 0 &&
+              <div className="kanbn-task-comments">
+                <i className="codicon codicon-comment"></i>{task.comments.length}
+              </div>
+            }
+            {
+              task.subTasks.length > 0 &&
+              <div className="kanbn-task-sub-tasks">
+                <i className="codicon codicon-tasklist"></i>
+                {task.subTasks.filter(subTask => subTask.completed).length} / {task.subTasks.length}
+              </div>
+            }
+            {
+              task.workload !== undefined &&
+              <div className="kanbn-task-workload">
+                <i className="codicon codicon-run"></i>{task.workload}
+              </div>
+            }
+            {
+              task.workload !== undefined &&
+              task.progress !== undefined &&
+              <div className="kanbn-task-progress" style={{
+                width: `${task.progress * 100}%`
+              }}></div>
+            }
           </div>
         );
       }}

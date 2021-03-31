@@ -10,6 +10,7 @@ function App() {
   const [columns, setColumns] = useState({});
   const [startedColumns, setStartedColumns] = useState([]);
   const [completedColumns, setCompletedColumns] = useState([]);
+  const [dateFormat, setDateFormat] = useState('');
 
   window.addEventListener('message', event => {
     const tasks = Object.fromEntries(event.data.tasks.map(task => [task.id, task]));
@@ -23,12 +24,21 @@ function App() {
     ));
     setStartedColumns(event.data.startedColumns);
     setCompletedColumns(event.data.completedColumns);
+    setDateFormat(event.data.dateFormat);
   });
 
   return (
     <div>
-      <Header name={name} description={description} />
-      <Board columns={columns} startedColumns={startedColumns} completedColumns={completedColumns} />
+      <Header
+        name={name}
+        description={description}
+      />
+      <Board
+        columns={columns}
+        startedColumns={startedColumns}
+        completedColumns={completedColumns}
+        dateFormat={dateFormat}
+      />
     </div>
   );
 }
