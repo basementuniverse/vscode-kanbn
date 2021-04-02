@@ -3,25 +3,77 @@ import * as vscode from 'vscode';
 
 export default class KanbnTaskPanel {
   private static readonly viewType = 'react';
+  private static panels: KanbnTaskPanel[] = [];
 
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionPath: string;
   private readonly _workspacePath: string;
   private readonly _kanbn: typeof import('@basementuniverse/kanbn/src/main');
+  private readonly _taskId: string|null;
+  private readonly _columnName: string;
   private _disposables: vscode.Disposable[] = [];
+
+  public static async show(
+    extensionPath: string,
+    workspacePath: string,
+    kanbn: typeof import('@basementuniverse/kanbn/src/main'),
+    taskId: string|null,
+    columnName: string
+  ) {
+    const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
+
+    // Create a new panel
+    const taskPanel = new KanbnTaskPanel(
+      extensionPath,
+      workspacePath,
+      column || vscode.ViewColumn.One,
+      kanbn,
+      taskId,
+      columnName
+    );
+    KanbnTaskPanel.panels.push(taskPanel);
+
+    let index: any;
+    try {
+      index = await kanbn.getIndex();
+    } catch (error) {
+      vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
+      return;
+    }
+    let task: any = null;
+    if (taskId) {
+      try {
+        task = await kanbn.getTask(taskId);
+      } catch (error) {
+        vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
+        return;
+      }
+    }
+    taskPanel._panel.webview.postMessage({
+      type: 'task',
+      task,
+      columnName: taskPanel._columnName,
+      tasks: await kanbn.loadAllTrackedTasks(index),
+      dateFormat: kanbn.getDateFormat(index)
+    });
+  }
 
   private constructor(
     extensionPath: string,
     workspacePath: string,
     column: vscode.ViewColumn,
-    kanbn: typeof import('@basementuniverse/kanbn/src/main')
+    kanbn: typeof import('@basementuniverse/kanbn/src/main'),
+    taskId: string|null,
+    columnName: string
   ) {
     this._extensionPath = extensionPath;
     this._workspacePath = workspacePath;
     this._kanbn = kanbn;
+    this._taskId = taskId;
+    this._columnName = columnName;
 
     // Create and show a new webview panel
-    this._panel = vscode.window.createWebviewPanel(KanbnTaskPanel.viewType, 'Kanbn Task', column, {
+    this._panel = vscode.window.createWebviewPanel(KanbnTaskPanel.viewType, 'New task', column, {
       // Enable javascript in the webview
       enableScripts: true,
 
@@ -31,15 +83,17 @@ export default class KanbnTaskPanel {
       // Restrict the webview to only loading content from allowed paths
       localResourceRoots: [
         vscode.Uri.file(path.join(this._extensionPath, 'build')),
-        vscode.Uri.file(path.join(this._workspacePath, '.kanbn')),
+        vscode.Uri.file(path.join(this._workspacePath, this._kanbn.getFolderName())),
         vscode.Uri.file(path.join(this._extensionPath, 'node_modules', 'vscode-codicons', 'dist'))
       ]
     });
 
     // Set the webview's title to the kanbn task name
-    // this._kanbn.getIndex().then(index => {
-    //   this._panel.title = index.name;
-    // });
+    if (this._taskId !== null) {
+      this._kanbn.getTask(this._taskId).then(task => {
+        this._panel.title = task.name;
+      });
+    }
 
     // Set the webview's initial html content
     this._panel.webview.html = this._getHtmlForWebview();
@@ -60,7 +114,7 @@ export default class KanbnTaskPanel {
         // Update a task
         case 'kanbn.update':
           // TODO update task
-          vscode.window.showInformationMessage(`Editing task ${message.taskId}`);
+          vscode.window.showInformationMessage(`Updating task ${message.taskId}`);
           return;
 
         // Delete a task
@@ -93,7 +147,7 @@ export default class KanbnTaskPanel {
       .file(path.join(this._extensionPath, 'build', mainStyle))
       .with({ scheme: 'vscode-resource' });
     const customStyleUri = vscode.Uri
-      .file(path.join(this._workspacePath, '.kanbn', 'board.css'))
+      .file(path.join(this._workspacePath, this._kanbn.getFolderName(), 'board.css'))
       .with({ scheme: 'vscode-resource' });
     const codiconsUri = vscode.Uri
       .file(path.join(this._extensionPath, 'node_modules', 'vscode-codicons', 'dist', 'codicon.css'))

@@ -10,6 +10,7 @@ declare type KanbnTask = {
     created: Date,
     updated?: Date,
     started?: Date,
+    due?: Date,
     completed?: Date,
     assigned?: string,
     tags?: string[]

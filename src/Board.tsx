@@ -1,13 +1,10 @@
 import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import React, { useState } from "react";
-import Task from './Task';
-import VSCodeApi from "./VSCodeApi";
+import TaskItem from './TaskItem';
 import { paramCase } from 'param-case';
+import VSCodeApi from "./VSCodeApi";
 
-declare var acquireVsCodeApi: Function;
-const vscode: VSCodeApi = acquireVsCodeApi();
-
-const onDragEnd = (result, columns, setColumns) => {
+const onDragEnd = (result, columns, setColumns, vscode: VSCodeApi) => {
 
   // No destination means the item was dragged to an invalid location
   if (!result.destination) {
@@ -53,16 +50,17 @@ const onDragEnd = (result, columns, setColumns) => {
   vscode.postMessage({
     command: 'kanbn.move',
     task: removed.id,
-    column: destination.droppableId,
+    columnName: destination.droppableId,
     position: destination.index
   });
 };
 
-const Board = ({ columns, startedColumns, completedColumns, dateFormat }: {
+const Board = ({ columns, startedColumns, completedColumns, dateFormat, vscode }: {
   columns: Record<string, KanbnTask[]>,
   startedColumns: string[],
   completedColumns: string[],
-  dateFormat: string
+  dateFormat: string,
+  vscode: VSCodeApi
 }) => {
   const [, setColumns] = useState(columns);
   return (
@@ -73,7 +71,7 @@ const Board = ({ columns, startedColumns, completedColumns, dateFormat }: {
       }}
     >
       <DragDropContext
-        onDragEnd={result => onDragEnd(result, columns, setColumns)}
+        onDragEnd={result => onDragEnd(result, columns, setColumns, vscode)}
       >
         {Object.entries(columns).map(([columnName, column]) => {
           return (
@@ -104,7 +102,7 @@ const Board = ({ columns, startedColumns, completedColumns, dateFormat }: {
                   onClick={() => {
                     vscode.postMessage({
                       command: 'kanbn.create',
-                      column: columnName
+                      columnName
                     })
                   }}
                   title={`Create task in ${columnName}`}
@@ -124,7 +122,7 @@ const Board = ({ columns, startedColumns, completedColumns, dateFormat }: {
                           snapshot.isDraggingOver ? 'drag-over' : null
                         ].filter(i => i).join(' ')}
                       >
-                        {column.map((task, index) => <Task
+                        {column.map((task, index) => <TaskItem
                           task={task}
                           index={index}
                           dateFormat={dateFormat}

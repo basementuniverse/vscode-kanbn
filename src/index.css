@@ -41,6 +41,8 @@ body {
     height: 16px;
     width: 16px;
     margin-right: 8px;
+    cursor: pointer;
+    border-radius: 1px;
 }
 
 .kanbn-create-task-button:focus, .kanbn-create-task-button:hover {
@@ -127,6 +129,7 @@ body {
     background-color: transparent;
     font-weight: bold;
     color: var(--vscode-editor-foreground);
+    cursor: pointer;
 }
 
 .kanbn-task-name:focus, .kanbn-task-name:hover {
@@ -156,10 +159,11 @@ body {
     display: inline-block;
     background-color: var(--vscode-activityBar-inactiveForeground);
     color: var(--vscode-editor-background);
+    font-size: 0.8em;
     font-weight: bold;
     padding: 2px 4px;
     margin: 4px 4px 4px 0;
-    border-radius: 2px;
+    border-radius: 4px;
 }
 
 .kanbn-task-tag-Nothing {

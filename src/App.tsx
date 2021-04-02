@@ -1,44 +1,77 @@
-import Board from './Board';
 import Header from './Header';
+import Board from './Board';
+import TaskEditor from './TaskEditor';
 import React, { useState } from "react";
+import VSCodeApi from "./VSCodeApi";
+
+declare var acquireVsCodeApi: Function;
+const vscode: VSCodeApi = acquireVsCodeApi();
 
 const zip = (a: Array<any>, b: Array<any>): Array<[any, any]> => a.map((v: any, i: number): [any, any] => [v, b[i]]);
 
 function App() {
+  const [type, setType] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [columns, setColumns] = useState({});
   const [startedColumns, setStartedColumns] = useState([]);
   const [completedColumns, setCompletedColumns] = useState([]);
   const [dateFormat, setDateFormat] = useState('');
+  const [task, setTask] = useState({});
+  const [columnName, setColumnName] = useState('');
 
   window.addEventListener('message', event => {
-    const tasks = Object.fromEntries(event.data.tasks.map(task => [task.id, task]));
-    setName(event.data.index.name);
-    setDescription(event.data.index.description);
-    setColumns(Object.fromEntries(
-      zip(
-        Object.keys(event.data.index.columns),
-        Object.values(event.data.index.columns).map(column => (column as string[]).map(taskId => tasks[taskId]))
-      )
-    ));
-    setStartedColumns(event.data.startedColumns);
-    setCompletedColumns(event.data.completedColumns);
+    switch (event.data.type) {
+      case 'index':
+        const tasks = Object.fromEntries(event.data.tasks.map(task => [task.id, task]));
+        setName(event.data.index.name);
+        setDescription(event.data.index.description);
+        setColumns(Object.fromEntries(
+          zip(
+            Object.keys(event.data.index.columns),
+            Object.values(event.data.index.columns).map(column => (column as string[]).map(taskId => tasks[taskId]))
+          )
+        ));
+        setStartedColumns(event.data.startedColumns);
+        setCompletedColumns(event.data.completedColumns);
+        break;
+
+      case 'task':
+        setTask(event.data.task);
+        setColumnName(event.data.columnName);
+        break;
+    }
+    setType(event.data.type);
     setDateFormat(event.data.dateFormat);
   });
 
   return (
     <div>
-      <Header
-        name={name}
-        description={description}
-      />
-      <Board
-        columns={columns}
-        startedColumns={startedColumns}
-        completedColumns={completedColumns}
-        dateFormat={dateFormat}
-      />
+      {
+        type === 'index' &&
+        <React.Fragment>
+          <Header
+            name={name}
+            description={description}
+          />
+          <Board
+            columns={columns}
+            startedColumns={startedColumns}
+            completedColumns={completedColumns}
+            dateFormat={dateFormat}
+            vscode={vscode}
+          />
+        </React.Fragment>
+      }
+      {
+        type === 'task' &&
+        <TaskEditor
+          task={task as KanbnTask|null}
+          columnName={columnName}
+          dateFormat={dateFormat}
+          vscode={vscode}
+        />
+      }
     </div>
   );
 }

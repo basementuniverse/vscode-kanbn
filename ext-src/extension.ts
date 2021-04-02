@@ -87,7 +87,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Initialise file watcher
     const uri = vscode.workspace.workspaceFolders[0].uri.fsPath;
-    const fileWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(uri, '.kanbn/*'));
+    const fileWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(
+      uri,
+      `${kanbn.getFolderName()}/**.*`
+    ));
     fileWatcher.onDidChange(() => {
       kanbnStatusBarItem.update();
       KanbnBoardPanel.update();

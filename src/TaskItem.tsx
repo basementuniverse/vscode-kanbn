@@ -3,7 +3,7 @@ import { Draggable } from "react-beautiful-dnd";
 import formatDate from 'dateformat';
 import VSCodeApi from "./VSCodeApi";
 
-const Task = ({ task, index, dateFormat, vscode }: {
+const TaskItem = ({ task, index, dateFormat, vscode }: {
   task: KanbnTask,
   index: number,
   dateFormat: string,
@@ -12,6 +12,7 @@ const Task = ({ task, index, dateFormat, vscode }: {
   const createdDate = 'created' in task.metadata ? formatDate(task.metadata.created, dateFormat) : '';
   const updatedDate = 'updated' in task.metadata ? formatDate(task.metadata.updated, dateFormat) : '';
   const startedDate = 'started' in task.metadata ? formatDate(task.metadata.started, dateFormat) : '';
+  const dueDate = 'due' in task.metadata ? formatDate(task.metadata.due, dateFormat) : '';
   const completedDate = 'completed' in task.metadata ? formatDate(task.metadata.completed, dateFormat) : '';
   return (
     <Draggable
@@ -41,7 +42,8 @@ const Task = ({ task, index, dateFormat, vscode }: {
                 onClick={() => {
                   vscode.postMessage({
                     command: 'kanbn.task',
-                    taskId: task.id
+                    taskId: task.id,
+                    columnName: task.column
                   })
                 }}
                 title={task.id}
@@ -79,6 +81,7 @@ const Task = ({ task, index, dateFormat, vscode }: {
                   createdDate ? `Created ${createdDate}` : null,
                   updatedDate ? `Updated ${updatedDate}` : null,
                   startedDate ? `Started ${startedDate}` : null,
+                  dueDate ? `Due ${dueDate}` : null,
                   completedDate ? `Completed ${completedDate}` : null
                 ].filter(i => i).join('\n')}>
                   <i className="codicon codicon-clock"></i>{updatedDate || createdDate}
@@ -118,4 +121,4 @@ const Task = ({ task, index, dateFormat, vscode }: {
   );
 }
 
-export default Task;
+export default TaskItem;

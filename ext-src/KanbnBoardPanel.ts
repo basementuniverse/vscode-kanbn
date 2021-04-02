@@ -43,6 +43,7 @@ export default class KanbnBoardPanel {
         return;
       }
       KanbnBoardPanel.currentPanel._panel.webview.postMessage({
+        type: 'index',
         index,
         tasks: (await KanbnBoardPanel.currentPanel._kanbn.loadAllTrackedTasks(index)).map(
           task => KanbnBoardPanel.currentPanel!._kanbn.hydrateTask(index, task)
@@ -75,10 +76,14 @@ export default class KanbnBoardPanel {
       // Restrict the webview to only loading content from allowed paths
       localResourceRoots: [
         vscode.Uri.file(path.join(this._extensionPath, 'build')),
-        vscode.Uri.file(path.join(this._workspacePath, '.kanbn')),
+        vscode.Uri.file(path.join(this._workspacePath, this._kanbn.getFolderName())),
         vscode.Uri.file(path.join(this._extensionPath, 'node_modules', 'vscode-codicons', 'dist'))
       ]
     });
+    this._panel.iconPath = {
+      light: vscode.Uri.file(path.join(this._extensionPath, 'resources', 'project_light.svg')),
+      dark: vscode.Uri.file(path.join(this._extensionPath, 'resources', 'project_dark.svg'))
+    };
 
     // Set the webview's title to the kanbn project name
     this._kanbn.getIndex().then(index => {
@@ -102,19 +107,19 @@ export default class KanbnBoardPanel {
           return;
 
         case 'kanbn.task':
-          // KanbnTaskPanel.create(
-          //   this._extensionPath,
-          //   this._workspacePath,
-          //   this._kanbn,
-          //   message.taskId
-          // );
-          vscode.window.showInformationMessage(`Opening task ${message.taskId}`);
+          KanbnTaskPanel.show(
+            this._extensionPath,
+            this._workspacePath,
+            this._kanbn,
+            message.taskId,
+            message.columnName
+          );
           return;
 
         // Move a task
         case 'kanbn.move':
           try {
-            await kanbn.moveTask(message.task, message.column, message.position);
+            await kanbn.moveTask(message.task, message.columnName, message.position);
           } catch (e) {
             vscode.window.showErrorMessage(e.message);
           }
@@ -122,20 +127,13 @@ export default class KanbnBoardPanel {
 
         // Create a task
         case 'kanbn.create':
-          // TODO open task panel with blank task
-          vscode.window.showInformationMessage(`Creating new task in column ${message.column}`);
-          return;
-
-        // Update a task
-        case 'kanbn.update':
-          // TODO update task
-          vscode.window.showInformationMessage(`Editing task ${message.taskId}`);
-          return;
-
-        // Delete a task
-        case 'kanbn.delete':
-          // TODO delete task
-          vscode.window.showInformationMessage(`Deleting task ${message.taskId}`);
+          KanbnTaskPanel.show(
+            this._extensionPath,
+            this._workspacePath,
+            this._kanbn,
+            null,
+            message.columnName
+          );
           return;
       }
     }, null, this._disposables);
@@ -165,7 +163,7 @@ export default class KanbnBoardPanel {
       .file(path.join(this._extensionPath, 'build', mainStyle))
       .with({ scheme: 'vscode-resource' });
     const customStyleUri = vscode.Uri
-      .file(path.join(this._workspacePath, '.kanbn', 'board.css'))
+      .file(path.join(this._workspacePath, this._kanbn.getFolderName(), 'board.css'))
       .with({ scheme: 'vscode-resource' });
     const codiconsUri = vscode.Uri
       .file(path.join(this._extensionPath, 'node_modules', 'vscode-codicons', 'dist', 'codicon.css'))
