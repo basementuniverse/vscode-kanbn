@@ -9,6 +9,10 @@ const Task = ({ task, index, dateFormat, vscode }: {
   dateFormat: string,
   vscode: VSCodeApi
 }) => {
+  const createdDate = 'created' in task.metadata ? formatDate(task.metadata.created, dateFormat) : '';
+  const updatedDate = 'updated' in task.metadata ? formatDate(task.metadata.updated, dateFormat) : '';
+  const startedDate = 'started' in task.metadata ? formatDate(task.metadata.started, dateFormat) : '';
+  const completedDate = 'completed' in task.metadata ? formatDate(task.metadata.completed, dateFormat) : '';
   return (
     <Draggable
       key={task.id}
@@ -30,76 +34,83 @@ const Task = ({ task, index, dateFormat, vscode }: {
               ...provided.draggableProps.style
             }}
           >
-            <button
-              type="button"
-              className="kanbn-task-name"
-              onClick={() => {
-                vscode.postMessage({
-                  command: 'kanbn.task',
-                  taskId: task.id
-                })
-              }}
-              title={task.id}
-            >
-              {task.name}
-            </button>
-            {
-              'tags' in task.metadata &&
-              <div className="kanbn-task-tags">
-                {task.metadata.tags!.map(tag => {
-                  return (
-                    <span className={[
-                      'kanbn-task-tag',
-                      `kanbn-task-tag-${tag}`
-                    ].join(' ')}>
-                      {tag}
-                    </span>
-                  );
-                })}
-              </div>
-            }
-            {
-              'assigned' in task.metadata &&
-              <div className="kanbn-task-assigned">
-                <i className="codicon codicon-account"></i>{task.metadata.assigned}
-              </div>
-            }
-            <div className="kanbn-task-date">
+            <div className="kanbn-task-row">
+              <button
+                type="button"
+                className="kanbn-task-name"
+                onClick={() => {
+                  vscode.postMessage({
+                    command: 'kanbn.task',
+                    taskId: task.id
+                  })
+                }}
+                title={task.id}
+              >
+                {task.name}
+              </button>
+            </div>
+            <div className="kanbn-task-row">
               {
-                'updated' in task.metadata
-                  ? formatDate(task.metadata.updated, dateFormat)
-                  : formatDate(task.metadata.created, dateFormat)
+                'tags' in task.metadata &&
+                <div className="kanbn-task-data kanbn-task-tags">
+                  {task.metadata.tags!.map(tag => {
+                    return (
+                      <span className={[
+                        'kanbn-task-tag',
+                        `kanbn-task-tag-${tag}`
+                      ].join(' ')}>
+                        {tag}
+                      </span>
+                    );
+                  })}
+                </div>
               }
             </div>
-            <div className="kanbn-task-description">
-              {task.description}
+            <div className="kanbn-task-row">
+              {
+                'assigned' in task.metadata &&
+                <div className="kanbn-task-data kanbn-task-assigned">
+                  <i className="codicon codicon-account"></i>{task.metadata.assigned}
+                </div>
+              }
+              {
+                (createdDate || updatedDate) &&
+                <div className="kanbn-task-data kanbn-task-date" title={[
+                  createdDate ? `Created ${createdDate}` : null,
+                  updatedDate ? `Updated ${updatedDate}` : null,
+                  startedDate ? `Started ${startedDate}` : null,
+                  completedDate ? `Completed ${completedDate}` : null
+                ].filter(i => i).join('\n')}>
+                  <i className="codicon codicon-clock"></i>{updatedDate || createdDate}
+                </div>
+              }
+              {
+                task.comments.length > 0 &&
+                <div className="kanbn-task-data kanbn-task-comments">
+                  <i className="codicon codicon-comment"></i>{task.comments.length}
+                </div>
+              }
+              {
+                task.subTasks.length > 0 &&
+                <div className="kanbn-task-data kanbn-task-sub-tasks">
+                  <i className="codicon codicon-tasklist"></i>
+                  {task.subTasks.filter(subTask => subTask.completed).length} / {task.subTasks.length}
+                </div>
+              }
+              {
+                task.workload !== undefined &&
+                <div className="kanbn-task-data kanbn-task-workload">
+                  <i className="codicon codicon-run"></i>{task.workload}
+                </div>
+              }
+              {
+                task.workload !== undefined &&
+                task.progress !== undefined &&
+                <div className="kanbn-task-progress" style={{
+                  width: `${task.progress * 100}%`
+                }}></div>
+              }
             </div>
-            {
-              task.comments.length > 0 &&
-              <div className="kanbn-task-comments">
-                <i className="codicon codicon-comment"></i>{task.comments.length}
-              </div>
-            }
-            {
-              task.subTasks.length > 0 &&
-              <div className="kanbn-task-sub-tasks">
-                <i className="codicon codicon-tasklist"></i>
-                {task.subTasks.filter(subTask => subTask.completed).length} / {task.subTasks.length}
-              </div>
-            }
-            {
-              task.workload !== undefined &&
-              <div className="kanbn-task-workload">
-                <i className="codicon codicon-run"></i>{task.workload}
-              </div>
-            }
-            {
-              task.workload !== undefined &&
-              task.progress !== undefined &&
-              <div className="kanbn-task-progress" style={{
-                width: `${task.progress * 100}%`
-              }}></div>
-            }
           </div>
         );
       }}

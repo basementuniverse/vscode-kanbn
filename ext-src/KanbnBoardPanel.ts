@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
+import KanbnTaskPanel from './KanbnTaskPanel';
 
 export default class KanbnBoardPanel {
   public static currentPanel: KanbnBoardPanel | undefined;
@@ -101,7 +102,12 @@ export default class KanbnBoardPanel {
           return;
 
         case 'kanbn.task':
-          // TODO open task panel with task
+          // KanbnTaskPanel.create(
+          //   this._extensionPath,
+          //   this._workspacePath,
+          //   this._kanbn,
+          //   message.taskId
+          // );
           vscode.window.showInformationMessage(`Opening task ${message.taskId}`);
           return;
 

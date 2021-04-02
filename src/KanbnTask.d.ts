@@ -9,6 +9,7 @@ declare type KanbnTask = {
   metadata: {
     created: Date,
     updated?: Date,
+    started?: Date,
     completed?: Date,
     assigned?: string,
     tags?: string[]

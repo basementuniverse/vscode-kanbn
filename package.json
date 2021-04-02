@@ -27,6 +27,7 @@
     "@basementuniverse/kanbn": "file:~/Projects/kanbn",
     "@types/dateformat": "^3.0.1",
     "dateformat": "^4.5.1",
+    "param-case": "^3.0.4",
     "react": "^16.3.2",
     "react-beautiful-dnd": "12.2.0",
     "react-dom": "^16.3.2",

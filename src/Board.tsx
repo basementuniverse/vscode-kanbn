@@ -2,6 +2,7 @@ import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import React, { useState } from "react";
 import Task from './Task';
 import VSCodeApi from "./VSCodeApi";
+import { paramCase } from 'param-case';
 
 declare var acquireVsCodeApi: Function;
 const vscode: VSCodeApi = acquireVsCodeApi();
@@ -77,7 +78,10 @@ const Board = ({ columns, startedColumns, completedColumns, dateFormat }: {
         {Object.entries(columns).map(([columnName, column]) => {
           return (
             <div
-              className="kanbn-column"
+              className={[
+                'kanbn-column',
+                `kanbn-column-${paramCase(columnName)}`
+              ].join(' ')}
               style={{
                 flex: 1
               }}
@@ -86,11 +90,11 @@ const Board = ({ columns, startedColumns, completedColumns, dateFormat }: {
               <h2 className="kanbn-column-name">
                 {
                   startedColumns.indexOf(columnName) > -1 &&
-                  <i className="codicon codicon-chevron-right"></i>
+                  <i className="kanbn-column-icon codicon codicon-chevron-right"></i>
                 }
                 {
                   completedColumns.indexOf(columnName) > -1 &&
-                  <i className="codicon codicon-check"></i>
+                  <i className="kanbn-column-icon codicon codicon-check"></i>
                 }
                 {columnName}
                 <span className="kanbn-column-count">{column.length || ''}</span>
