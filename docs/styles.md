@@ -38,4 +38,9 @@ The kanbn board has a default style which is based on the current vscode theme, 
 
 ### Task editor
 
-- `// TODO add task editor classes`
+- `div.kanbn-task-editor`
+  - `h1.kanbn-task-editor-title`
+  - `div.kanbn-task-editor-form`
+    - `div.kanbn-task-editor-column-left`
+    - `div.kanbn-task-editor-column-right`
+    - `// TODO finish class structure docs...`

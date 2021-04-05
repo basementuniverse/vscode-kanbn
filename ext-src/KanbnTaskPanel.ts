@@ -146,6 +146,7 @@ export default class KanbnTaskPanel {
         // Delete a task
         case 'kanbn.delete':
           // TODO delete task
+          // TODO add yes/no confirmation buttons to information message, then delete task and close task panel
           vscode.window.showInformationMessage('delete task');
           return;
       }

@@ -174,32 +174,32 @@ body {
     border-radius: 4px;
 }
 
-.kanbn-task-tag-Nothing {
+.kanbn-task-tag-nothing {
     background-color: #6bf;
     color: #333;
 }
 
-.kanbn-task-tag-Tiny {
+.kanbn-task-tag-tiny {
     background-color: #36d;
     color: #333;
 }
 
-.kanbn-task-tag-Small {
+.kanbn-task-tag-small {
     background-color: #194;
     color: #333;
 }
 
-.kanbn-task-tag-Medium {
+.kanbn-task-tag-medium {
     background-color: #eb1;
     color: #333;
 }
 
-.kanbn-task-tag-Large {
+.kanbn-task-tag-large {
     background-color: #e83;
     color: #333;
 }
 
-.kanbn-task-tag-Huge {
+.kanbn-task-tag-huge {
     background-color: #f42;
     color: #333;
 }
@@ -218,6 +218,10 @@ body {
     margin-top: 0;
     padding-bottom: 0.5em;
     border-bottom: 1px var(--vscode-activityBar-inactiveForeground) solid;
+}
+
+.kanbn-task-editor-form {
+    display: flex;
 }
 
 .kanbn-task-editor-field .kanbn-task-editor-title {

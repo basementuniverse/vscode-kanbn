@@ -28,6 +28,19 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, vscode }
     });
   };
 
+  // Called when the delete task button is clicked
+  const handleRemoveTask = () => {
+    vscode.postMessage({
+      command: 'kanbn.delete',
+      taskId: task!.id
+    });
+  };
+
+  // TODO progress bar below progress input
+  // TODO auto-colour tags while typing
+  // TODO comments
+  // TODO make sure all buttons have title attributes, maybe remove labels from array delete buttons?
+
   return (
     <div className="kanbn-task-editor">
       <h1 className="kanbn-task-editor-title">{editing ? 'Update task' : 'Create new task'}</h1>
@@ -50,6 +63,10 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, vscode }
         }}
         validate={values => {
           const errors: { name?: string } = {};
+
+          // TODO validation
+
+          // Task name cannot be empty
           if (!values.name) {
             errors.name = 'Task name is required.';
           }
@@ -80,7 +97,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, vscode }
           isSubmitting
         }) => (
           <Form>
-            <div style={{ display: "flex" }}>
+            <div className="kanbn-task-editor-form">
               <div className="kanbn-task-editor-column-left">
                 <div className="kanbn-task-editor-field kanbn-task-editor-field-name">
                   <label className="kanbn-task-editor-field-label">
@@ -236,6 +253,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, vscode }
                     type="button"
                     className="kanbn-task-editor-button kanbn-task-editor-button-delete"
                     title="Delete"
+                    onClick={handleRemoveTask}
                   >
                     <i className="codicon codicon-trash"></i>Delete
                   </button>}
@@ -312,6 +330,53 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, vscode }
                     component="div"
                     name="progress"
                   />
+                </div>
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-tags">
+                  <label className="kanbn-task-editor-field-label">
+                    <p>Tags</p>
+                  </label>
+                  <FieldArray name="metadata.tags">
+                    {({ insert, remove, push }) => (
+                      <div>
+                        {(
+                          'tags' in values.metadata &&
+                          values.metadata.tags!.length > 0
+                        ) && values.metadata.tags!.map((tag, index) => (
+                          <div className="kanbn-task-editor-row kanbn-task-editor-row-tag" key={index}>
+                            <div className="kanbn-task-editor-column kanbn-task-editor-field-tag">
+                              <Field
+                                className="kanbn-task-editor-field-input"
+                                name={`metadata.tags.${index}`}
+                              />
+                              <ErrorMessage
+                                className="kanbn-task-editor-field-errors"
+                                component="div"
+                                name={`metadata.tags.${index}`}
+                              />
+                            </div>
+                            <div className="kanbn-task-editor-column kanbn-task-editor-column-buttons">
+                              <button
+                                type="button"
+                                className="kanbn-task-editor-button kanbn-task-editor-button-delete"
+                                onClick={() => remove(index)}
+                              >
+                                <i className="codicon codicon-trash"></i>Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="kanbn-task-editor-buttons">
+                          <button
+                            type="button"
+                            className="kanbn-task-editor-button kanbn-task-editor-button-add"
+                            onClick={() => push('')}
+                          >
+                            <i className="codicon codicon-plus"></i>Add tag
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </FieldArray>
                 </div>
               </div>
             </div>
