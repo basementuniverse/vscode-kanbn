@@ -1,4 +1,5 @@
 declare type KanbnTask = {
+  uuid?: string,
   id: string,
   name: string,
   description: string,

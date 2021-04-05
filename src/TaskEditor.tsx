@@ -1,12 +1,13 @@
 import React from 'react';
-import { Formik } from 'formik';
+import { Formik, Form, Field, ErrorMessage, FieldArray } from 'formik';
 import formatDate from 'dateformat';
 import VSCodeApi from './VSCodeApi';
 import { paramCase } from 'param-case';
-import * as gitUsername from 'git-user-name';
+import gitUsername from 'git-user-name';
 
-const TaskEditor = ({ task, columnName, columnNames, dateFormat, vscode }: {
+const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, vscode }: {
   task: KanbnTask|null,
+  tasks: Record<string, KanbnTask>,
   columnName: string,
   columnNames: string[],
   dateFormat: string,
@@ -32,6 +33,7 @@ const TaskEditor = ({ task, columnName, columnNames, dateFormat, vscode }: {
       <h1 className="kanbn-task-editor-title">{editing ? 'Update task' : 'Create new task'}</h1>
       <Formik
         initialValues={{
+          uuid: task ? task.uuid : '',
           id: task ? task.id : '',
           name: task ? task.name : '',
           description: task ? task.description : '',
@@ -39,22 +41,23 @@ const TaskEditor = ({ task, columnName, columnNames, dateFormat, vscode }: {
           progress: task ? task.progress : 0,
           metadata: {
             due: (task && 'due' in task.metadata) ? formatDate(new Date(task.metadata.due!), 'yyyy-mm-dd') : '',
-            assigned: (task && 'assigned' in task.metadata) ? task.metadata.assigned : gitUsername(),
+            assigned: (task && 'assigned' in task.metadata) ? task.metadata.assigned : (gitUsername() || ''),
             tags: (task && 'tags' in task.metadata) ? task.metadata.tags : []
           },
-          relations: [],
-          subTasks: [],
-          comments: []
+          relations: task ? task.relations : [],
+          subTasks: task ? task.subTasks : [],
+          comments: task ? task.comments : []
         }}
         validate={values => {
           const errors: { name?: string } = {};
-          // if (!values.email) {
-          //   errors.email = 'Required';
-          // } else if (
-          //   !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)
-          // ) {
-          //   errors.email = 'Invalid email address';
-          // }
+          if (!values.name) {
+            errors.name = 'Task name is required.';
+          }
+
+          // Check if the id is already in use
+          if (values.id in tasks && tasks[values.id].uuid !== values.uuid) {
+            errors.name = 'There is already a task with the same name or id.';
+          }
           return errors;
         }}
         onSubmit={(values, { setSubmitting }) => {
@@ -73,125 +76,246 @@ const TaskEditor = ({ task, columnName, columnNames, dateFormat, vscode }: {
       >
         {({
           values,
-          errors,
-          touched,
           handleChange,
-          handleBlur,
-          handleSubmit,
           isSubmitting
         }) => (
-          <form onSubmit={handleSubmit}>
-            <div
-              style={{
-                display: "flex"
-              }}
-            >
+          <Form>
+            <div style={{ display: "flex" }}>
               <div className="kanbn-task-editor-column-left">
-                <div className="kanbn-task-field kanbn-task-field-name">
-                  <label className="kanbn-task-field-label">
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-name">
+                  <label className="kanbn-task-editor-field-label">
                     <p>Name</p>
-                    <input
-                      className="kanbn-task-field-input"
-                      placeholder="Name"
+                    <Field
+                      className="kanbn-task-editor-field-input"
                       name="name"
-                      value={values.name}
+                      placeholder="Name"
                       onChange={e => {
                         handleChange(e);
                         handleUpdateName(e, values);
                       }}
-                      onBlur={handleBlur}
-                    ></input>
+                    />
                   </label>
-                  {errors.name && touched.name && errors.name}
-                  <span className="kanbn-task-id">{values.id}</span>
+                  <div className="kanbn-task-editor-id">{values.id}</div>
+                  <ErrorMessage
+                    className="kanbn-task-editor-field-errors"
+                    component="div"
+                    name="name"
+                  />
                 </div>
-                <div className="kanbn-task-field kanbn-task-field-description">
-                  <label className="kanbn-task-field-label">
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-description">
+                  <label className="kanbn-task-editor-field-label">
                     <p>Description</p>
-                    <textarea
-                      className="kanbn-task-field-textarea"
-                      placeholder="Description"
+                    <Field
+                      className="kanbn-task-editor-field-textarea"
+                      as="textarea"
                       name="description"
-                      value={values.description}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                    ></textarea>
+                    />
                   </label>
+                  <ErrorMessage
+                    className="kanbn-task-editor-field-errors"
+                    component="div"
+                    name="description"
+                  />
+                </div>
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-relations">
+                  <h2 className="kanbn-task-editor-title">Relations</h2>
+                  <FieldArray name="relations">
+                    {({ insert, remove, push }) => (
+                      <div>
+                        {values.relations.length > 0 && values.relations.map((relation, index) => (
+                          <div className="kanbn-task-editor-row kanbn-task-editor-row-relation" key={index}>
+                            <div className="kanbn-task-editor-column kanbn-task-editor-field-relation-type">
+                              <Field
+                                className="kanbn-task-editor-field-input"
+                                name={`relations.${index}.type`}
+                                placeholder="Relation type"
+                              />
+                              <ErrorMessage
+                                className="kanbn-task-editor-field-errors"
+                                component="div"
+                                name={`relations.${index}.type`}
+                              />
+                            </div>
+                            <div className="kanbn-task-editor-column kanbn-task-editor-field-relation-task">
+                              <Field
+                                className="kanbn-task-editor-field-select"
+                                as="select"
+                                name={`relations.${index}.task`}
+                              >
+                                {Object.keys(tasks).map(t => <option value={t}>{t}</option>)}
+                              </Field>
+                              <ErrorMessage
+                                className="kanbn-task-editor-field-errors"
+                                component="div"
+                                name={`relations.${index}.task`}
+                              />
+                            </div>
+                            <div className="kanbn-task-editor-column kanbn-task-editor-column-buttons">
+                              <button
+                                type="button"
+                                className="kanbn-task-editor-button kanbn-task-editor-button-delete"
+                                onClick={() => remove(index)}
+                              >
+                                <i className="codicon codicon-trash"></i>Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="kanbn-task-editor-buttons">
+                          <button
+                            type="button"
+                            className="kanbn-task-editor-button kanbn-task-editor-button-add"
+                            onClick={() => push({ type: '', task: '' })}
+                          >
+                            <i className="codicon codicon-plus"></i>Add relation
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </FieldArray>
+                </div>
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-subtasks">
+                  <h2 className="kanbn-task-editor-title">Sub-tasks</h2>
+                  <FieldArray name="subTasks">
+                    {({ insert, remove, push }) => (
+                      <div>
+                        {values.subTasks.length > 0 && values.subTasks.map((subTask, index) => (
+                          <div className="kanbn-task-editor-row kanbn-task-editor-row-subtask" key={index}>
+                            <div className="kanbn-task-editor-column kanbn-task-editor-field-subtask-completed">
+                              <Field
+                                className="kanbn-task-editor-field-checkbox"
+                                type="checkbox"
+                                name={`subTasks.${index}.completed`}
+                              />
+                              <ErrorMessage
+                                className="kanbn-task-editor-field-errors"
+                                component="div"
+                                name={`subTasks.${index}.completed`}
+                              />
+                            </div>
+                            <div className="kanbn-task-editor-column kanbn-task-editor-field-subtask-text">
+                              <Field
+                                className="kanbn-task-editor-field-input"
+                                name={`subTasks.${index}.text`}
+                                placeholder="Sub-task text"
+                              />
+                              <ErrorMessage
+                                className="kanbn-task-editor-field-errors"
+                                component="div"
+                                name={`subTasks.${index}.text`}
+                              />
+                            </div>
+                            <div className="kanbn-task-editor-column kanbn-task-editor-column-buttons">
+                              <button
+                                type="button"
+                                className="kanbn-task-editor-button kanbn-task-editor-button-delete"
+                                onClick={() => remove(index)}
+                              >
+                                <i className="codicon codicon-trash"></i>Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="kanbn-task-editor-buttons">
+                          <button
+                            type="button"
+                            className="kanbn-task-editor-button kanbn-task-editor-button-add"
+                            onClick={() => push({ completed: false, text: '' })}
+                          >
+                            <i className="codicon codicon-plus"></i>Add sub-task
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </FieldArray>
                 </div>
               </div>
               <div className="kanbn-task-editor-column-right">
-                <div>
+                <div className="kanbn-task-editor-buttons">
+                  {editing && <button
+                    type="button"
+                    className="kanbn-task-editor-button kanbn-task-editor-button-delete"
+                    title="Delete"
+                  >
+                    <i className="codicon codicon-trash"></i>Delete
+                  </button>}
                   <button
                     type="submit"
                     className="kanbn-task-editor-button kanbn-task-editor-button-submit"
                     title="Save"
                     disabled={isSubmitting}
-                  >Save</button>
-                  <button
-                    type="button"
-                    className="kanbn-task-editor-button kanbn-task-editor-button-delete"
-                    title="Delete"
-                  >Delete</button>
+                  >
+                    <i className="codicon codicon-save"></i>Save
+                  </button>
                 </div>
-                <div className="kanbn-task-field kanbn-task-field-column">
-                  <label className="kanbn-task-field-label">
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-column">
+                  <label className="kanbn-task-editor-field-label">
                     <p>Column</p>
-                    <select
-                      className="kanbn-task-field-select"
+                    <Field
+                      className="kanbn-task-editor-field-select"
+                      as="select"
                       name="column"
-                      value={values.column}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
                     >
                       {columnNames.map(c => <option value={c}>{c}</option>)}
-                    </select>
+                    </Field>
                   </label>
+                  <ErrorMessage
+                    className="kanbn-task-editor-field-errors"
+                    component="div"
+                    name="column"
+                  />
                 </div>
-                <div className="kanbn-task-field kanbn-task-field-assigned">
-                  <label className="kanbn-task-field-label">
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-assigned">
+                  <label className="kanbn-task-editor-field-label">
                     <p>Assigned to</p>
-                    <input
-                      className="kanbn-task-field-input"
-                      placeholder="Assigned to"
+                    <Field
+                      className="kanbn-task-editor-field-input"
                       name="metadata.assigned"
-                      value={values.metadata.assigned}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                    ></input>
+                      placeholder="Assigned to"
+                    />
                   </label>
+                  <ErrorMessage
+                    className="kanbn-task-editor-field-errors"
+                    component="div"
+                    name="metadata.assigned"
+                  />
                 </div>
-                <div className="kanbn-task-field kanbn-task-field-due">
-                  <label className="kanbn-task-field-label">
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-due">
+                  <label className="kanbn-task-editor-field-label">
                     <p>Due date</p>
-                    <input
+                    <Field
+                      className="kanbn-task-editor-field-input"
                       type="date"
-                      className="kanbn-task-field-input"
                       name="metadata.due"
-                      value={values.metadata.due}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                    ></input>
+                    />
                   </label>
+                  <ErrorMessage
+                    className="kanbn-task-editor-field-errors"
+                    component="div"
+                    name="metadata.due"
+                  />
                 </div>
-                <div className="kanbn-task-field kanbn-task-field-progress">
-                  <label className="kanbn-task-field-label">
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-progress">
+                  <label className="kanbn-task-editor-field-label">
                     <p>Progress</p>
-                    <input
+                    <Field
+                      className="kanbn-task-editor-field-input"
                       type="number"
-                      className="kanbn-task-field-input"
                       name="progress"
-                      value={values.progress}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
                       min="0"
                       max="1"
                       step="0.05"
-                    ></input>
+                    />
                   </label>
+                  <ErrorMessage
+                    className="kanbn-task-editor-field-errors"
+                    component="div"
+                    name="progress"
+                  />
                 </div>
               </div>
             </div>
-          </form>
+          </Form>
         )}
       </Formik>
     </div>

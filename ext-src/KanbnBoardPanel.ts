@@ -42,12 +42,19 @@ export default class KanbnBoardPanel {
         vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
         return;
       }
+      let tasks: any[];
+      try {
+        tasks = (await KanbnBoardPanel.currentPanel._kanbn.loadAllTrackedTasks(index)).map(
+          task => KanbnBoardPanel.currentPanel!._kanbn.hydrateTask(index, task)
+        );
+      } catch (error) {
+        vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
+        return;
+      }
       KanbnBoardPanel.currentPanel._panel.webview.postMessage({
         type: 'index',
         index,
-        tasks: (await KanbnBoardPanel.currentPanel._kanbn.loadAllTrackedTasks(index)).map(
-          task => KanbnBoardPanel.currentPanel!._kanbn.hydrateTask(index, task)
-        ),
+        tasks,
         startedColumns: index.options.startedColumns ?? [],
         completedColumns: index.options.completedColumns ?? [],
         dateFormat: KanbnBoardPanel.currentPanel._kanbn.getDateFormat(index)

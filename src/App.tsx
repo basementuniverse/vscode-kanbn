@@ -18,13 +18,14 @@ function App() {
   const [completedColumns, setCompletedColumns] = useState([]);
   const [dateFormat, setDateFormat] = useState('');
   const [task, setTask] = useState({});
+  const [tasks, setTasks] = useState({});
   const [columnName, setColumnName] = useState('');
   const [columnNames, setColumnNames] = useState([] as string[]);
 
   window.addEventListener('message', event => {
+    const tasks = Object.fromEntries(event.data.tasks.map(task => [task.id, task]));
     switch (event.data.type) {
       case 'index':
-        const tasks = Object.fromEntries(event.data.tasks.map(task => [task.id, task]));
         setName(event.data.index.name);
         setDescription(event.data.index.description);
         setColumns(Object.fromEntries(
@@ -39,6 +40,7 @@ function App() {
 
       case 'task':
         setTask(event.data.task);
+        setTasks(tasks);
         setColumnName(event.data.columnName);
         setColumnNames(Object.keys(event.data.index.columns));
         break;
@@ -69,6 +71,7 @@ function App() {
         type === 'task' &&
         <TaskEditor
           task={task as KanbnTask|null}
+          tasks={tasks}
           columnName={columnName}
           columnNames={columnNames}
           dateFormat={dateFormat}

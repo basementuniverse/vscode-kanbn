@@ -64,12 +64,7 @@ const Board = ({ columns, startedColumns, completedColumns, dateFormat, vscode }
 }) => {
   const [, setColumns] = useState(columns);
   return (
-    <div
-      className="kanbn-board"
-      style={{
-        display: "flex"
-      }}
-    >
+    <div className="kanbn-board">
       <DragDropContext
         onDragEnd={result => onDragEnd(result, columns, setColumns, vscode)}
       >
@@ -80,9 +75,6 @@ const Board = ({ columns, startedColumns, completedColumns, dateFormat, vscode }
                 'kanbn-column',
                 `kanbn-column-${paramCase(columnName)}`
               ].join(' ')}
-              style={{
-                flex: 1
-              }}
               key={columnName}
             >
               <h2 className="kanbn-column-name">

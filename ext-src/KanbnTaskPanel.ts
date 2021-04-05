@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { v4 as uuidv4 } from 'uuid';
 
 export default class KanbnTaskPanel {
   private static readonly viewType = 'react';
@@ -28,14 +29,21 @@ export default class KanbnTaskPanel {
       vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
       return;
     }
-    let task: any = null;
+    let tasks: any[];
+    try {
+      tasks = (await kanbn.loadAllTrackedTasks(index)).map(
+        task => ({
+          uuid: uuidv4(),
+          ...kanbn.hydrateTask(index, task)
+        })
+      );
+    } catch (error) {
+      vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
+      return;
+    }
+    let task = null;
     if (taskId) {
-      try {
-        task = await kanbn.hydrateTask(index, await kanbn.getTask(taskId));
-      } catch (error) {
-        vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
-        return;
-      }
+      task = tasks.find(t => t.id === taskId) ?? null;
     }
 
     // If no columnName is specified, use the first column
@@ -60,7 +68,7 @@ export default class KanbnTaskPanel {
       index,
       task,
       columnName: taskPanel._columnName,
-      tasks: await kanbn.loadAllTrackedTasks(index),
+      tasks,
       dateFormat: kanbn.getDateFormat(index)
     });
   }
