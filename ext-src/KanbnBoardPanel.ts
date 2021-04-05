@@ -126,7 +126,7 @@ export default class KanbnBoardPanel {
           return;
 
         // Create a task
-        case 'kanbn.create':
+        case 'kanbn.addTask':
           KanbnTaskPanel.show(
             this._extensionPath,
             this._workspacePath,

@@ -20,6 +20,11 @@
         "command": "kanbn.board",
         "title": "Open board",
         "category": "Kanbn"
+      },
+      {
+        "command": "kanbn.addTask",
+        "title": "Add task",
+        "category": "Kanbn"
       }
     ]
   },
@@ -27,6 +32,9 @@
     "@basementuniverse/kanbn": "file:~/Projects/kanbn",
     "@types/dateformat": "^3.0.1",
     "dateformat": "^4.5.1",
+    "git-user-name": "^2.0.0",
+    "immer": "^9.0.1",
+    "lodash": "^4.17.21",
     "param-case": "^3.0.4",
     "react": "^16.3.2",
     "react-beautiful-dnd": "12.2.0",
@@ -45,6 +53,7 @@
   },
   "devDependencies": {
     "@types/jest": "^23.3.14",
+    "@types/lodash": "^4.14.168",
     "@types/node": "^10.17.56",
     "@types/react": "^16.14.5",
     "@types/react-dom": "^16.9.12",

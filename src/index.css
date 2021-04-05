@@ -23,7 +23,7 @@ body {
     padding-left: 8px;
 }
 
-.kanbn-column-icon {
+.kanbn-column-name .codicon {
     font-size: 0.8em !important;
     margin-right: 0.5em;
 }
@@ -65,7 +65,7 @@ body {
 
 .kanbn-column-task-list {
     margin: 0 8px;
-    border-left: 3px var(--vscode-activityBar-inactiveForeground) solid;
+    border-left: 4px var(--vscode-activityBar-inactiveForeground) solid;
 }
 
 .kanbn-column-task-list.drag-over {
@@ -200,7 +200,67 @@ body {
     position: absolute;
     bottom: -2px;
     left: 0;
-    height: 4px;
+    height: 6px;
     background-color: #3c7;
     opacity: 0.7;
+}
+
+.kanbn-task-editor-title {
+    font-size: 1.5em;
+    margin-top: 0;
+    padding-bottom: 0.5em;
+    border-bottom: 1px var(--vscode-activityBar-inactiveForeground) solid;
+}
+
+.kanbn-task-editor-column-left {
+    width: 70%;
+    padding-right: 1em;
+}
+
+.kanbn-task-editor-column-right {
+    width: 30%;
+}
+
+.kanbn-task-field {
+    margin-bottom: 1em;
+}
+
+.kanbn-task-field-label p {
+    color: var(--vscode-editor-foreground);
+    font-size: 0.8em;
+    letter-spacing: 0.1em;
+    font-weight: bold;
+    text-transform: uppercase;
+    padding: 4px 0;
+}
+
+body.vscode-dark .kanbn-task-field-input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+}
+
+.kanbn-task-field-input,
+.kanbn-task-field-select,
+.kanbn-task-field-textarea {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    padding: 8px;
+    margin: 8px 0;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px transparent solid;
+}
+
+.kanbn-task-field-textarea {
+    min-height: 200px;
+    resize: vertical;
+}
+
+.kanbn-task-field-input:hover, .kanbn-task-field-input:focus {
+    border-color: var(--vscode-input-border);
+}
+
+.kanbn-task-id {
+    font-style: italic;
+    opacity: 0.8;
 }

@@ -18,9 +18,30 @@ export default class KanbnTaskPanel {
     workspacePath: string,
     kanbn: typeof import('@basementuniverse/kanbn/src/main'),
     taskId: string|null,
-    columnName: string
+    columnName: string|null
   ) {
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
+    let index: any;
+    try {
+      index = await kanbn.getIndex();
+    } catch (error) {
+      vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
+      return;
+    }
+    let task: any = null;
+    if (taskId) {
+      try {
+        task = await kanbn.hydrateTask(index, await kanbn.getTask(taskId));
+      } catch (error) {
+        vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
+        return;
+      }
+    }
+
+    // If no columnName is specified, use the first column
+    if (!columnName) {
+      columnName = Object.keys(index.columns)[0];
+    }
 
     // Create a new panel
     const taskPanel = new KanbnTaskPanel(
@@ -33,24 +54,10 @@ export default class KanbnTaskPanel {
     );
     KanbnTaskPanel.panels.push(taskPanel);
 
-    let index: any;
-    try {
-      index = await kanbn.getIndex();
-    } catch (error) {
-      vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
-      return;
-    }
-    let task: any = null;
-    if (taskId) {
-      try {
-        task = await kanbn.getTask(taskId);
-      } catch (error) {
-        vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
-        return;
-      }
-    }
+    // Send task data to the webview
     taskPanel._panel.webview.postMessage({
       type: 'task',
+      index,
       task,
       columnName: taskPanel._columnName,
       tasks: await kanbn.loadAllTrackedTasks(index),
@@ -78,7 +85,7 @@ export default class KanbnTaskPanel {
       enableScripts: true,
 
       // Retain state even when hidden
-      // retainContextWhenHidden: true,
+      retainContextWhenHidden: true,
 
       // Restrict the webview to only loading content from allowed paths
       localResourceRoots: [
@@ -111,16 +118,27 @@ export default class KanbnTaskPanel {
           vscode.window.showErrorMessage(message.text);
           return;
 
+        // Update the task webview panel title
+        case 'kanbn.updatePanelTitle':
+          this._panel.title = message.title;
+          return;
+
+        // Create a task
+        case 'kanbn.create':
+          // TODO create task
+          vscode.window.showInformationMessage('create task');
+          return;
+
         // Update a task
         case 'kanbn.update':
           // TODO update task
-          vscode.window.showInformationMessage(`Updating task ${message.taskId}`);
+          vscode.window.showInformationMessage('update task');
           return;
 
         // Delete a task
         case 'kanbn.delete':
           // TODO delete task
-          vscode.window.showInformationMessage(`Deleting task ${message.taskId}`);
+          vscode.window.showInformationMessage('delete task');
           return;
       }
     }, null, this._disposables);

@@ -88,11 +88,11 @@ const Board = ({ columns, startedColumns, completedColumns, dateFormat, vscode }
               <h2 className="kanbn-column-name">
                 {
                   startedColumns.indexOf(columnName) > -1 &&
-                  <i className="kanbn-column-icon codicon codicon-chevron-right"></i>
+                  <i className="codicon codicon-chevron-right"></i>
                 }
                 {
                   completedColumns.indexOf(columnName) > -1 &&
-                  <i className="kanbn-column-icon codicon codicon-check"></i>
+                  <i className="codicon codicon-check"></i>
                 }
                 {columnName}
                 <span className="kanbn-column-count">{column.length || ''}</span>
@@ -101,7 +101,7 @@ const Board = ({ columns, startedColumns, completedColumns, dateFormat, vscode }
                   className="kanbn-create-task-button"
                   onClick={() => {
                     vscode.postMessage({
-                      command: 'kanbn.create',
+                      command: 'kanbn.addTask',
                       columnName
                     })
                   }}
@@ -122,9 +122,9 @@ const Board = ({ columns, startedColumns, completedColumns, dateFormat, vscode }
                           snapshot.isDraggingOver ? 'drag-over' : null
                         ].filter(i => i).join(' ')}
                       >
-                        {column.map((task, index) => <TaskItem
+                        {column.map((task, position) => <TaskItem
                           task={task}
-                          index={index}
+                          position={position}
                           dateFormat={dateFormat}
                           vscode={vscode}
                         />)}

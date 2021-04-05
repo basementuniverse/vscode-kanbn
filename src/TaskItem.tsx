@@ -1,11 +1,12 @@
 import React from "react";
 import { Draggable } from "react-beautiful-dnd";
 import formatDate from 'dateformat';
+import { paramCase } from 'param-case';
 import VSCodeApi from "./VSCodeApi";
 
-const TaskItem = ({ task, index, dateFormat, vscode }: {
+const TaskItem = ({ task, position, dateFormat, vscode }: {
   task: KanbnTask,
-  index: number,
+  position: number,
   dateFormat: string,
   vscode: VSCodeApi
 }) => {
@@ -18,7 +19,7 @@ const TaskItem = ({ task, index, dateFormat, vscode }: {
     <Draggable
       key={task.id}
       draggableId={task.id}
-      index={index}
+      index={position}
     >
       {(provided, snapshot) => {
         return (
@@ -59,7 +60,7 @@ const TaskItem = ({ task, index, dateFormat, vscode }: {
                     return (
                       <span className={[
                         'kanbn-task-tag',
-                        `kanbn-task-tag-${tag}`
+                        `kanbn-task-tag-${paramCase(tag)}`
                       ].join(' ')}>
                         {tag}
                       </span>

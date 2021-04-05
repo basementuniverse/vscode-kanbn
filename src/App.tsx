@@ -19,6 +19,7 @@ function App() {
   const [dateFormat, setDateFormat] = useState('');
   const [task, setTask] = useState({});
   const [columnName, setColumnName] = useState('');
+  const [columnNames, setColumnNames] = useState([] as string[]);
 
   window.addEventListener('message', event => {
     switch (event.data.type) {
@@ -39,6 +40,7 @@ function App() {
       case 'task':
         setTask(event.data.task);
         setColumnName(event.data.columnName);
+        setColumnNames(Object.keys(event.data.index.columns));
         break;
     }
     setType(event.data.type);
@@ -46,7 +48,7 @@ function App() {
   });
 
   return (
-    <div>
+    <React.Fragment>
       {
         type === 'index' &&
         <React.Fragment>
@@ -68,11 +70,12 @@ function App() {
         <TaskEditor
           task={task as KanbnTask|null}
           columnName={columnName}
+          columnNames={columnNames}
           dateFormat={dateFormat}
           vscode={vscode}
         />
       }
-    </div>
+    </React.Fragment>
   );
 }
 

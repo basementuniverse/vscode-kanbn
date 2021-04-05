@@ -7,11 +7,11 @@ declare type KanbnTask = {
   remainingWorkload?: number,
   progress?: number,
   metadata: {
-    created: Date,
-    updated?: Date,
-    started?: Date,
-    due?: Date,
-    completed?: Date,
+    created: string,
+    updated?: string,
+    started?: string,
+    due?: string,
+    completed?: string,
     assigned?: string,
     tags?: string[]
   },
@@ -25,7 +25,7 @@ declare type KanbnTask = {
   }>,
   comments: Array<{
     author: string,
-    date: Date,
+    date: string,
     text: string
   }>
 };

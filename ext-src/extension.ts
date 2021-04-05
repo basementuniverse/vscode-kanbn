@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import KanbnStatusBarItem from './KanbnStatusBarItem';
 import KanbnBoardPanel from './KanbnBoardPanel';
+import KanbnTaskPanel from './KanbnTaskPanel';
 
 let kanbnStatusBarItem: KanbnStatusBarItem;
 
@@ -70,6 +71,33 @@ export async function activate(context: vscode.ExtensionContext) {
       KanbnBoardPanel.update();
     } else {
       vscode.window.showErrorMessage('You need to initialise kanbn before viewing the kanbn board.');
+    }
+  }));
+
+  // Register a command to add a new kanbn task.
+  context.subscriptions.push(vscode.commands.registerCommand('kanbn.addTask', async () => {
+
+    // If no workspace folder is opened, we can't add a new task
+    if (vscode.workspace.workspaceFolders === undefined) {
+      vscode.window.showErrorMessage('You need to open a workspace before adding a new task.');
+      return;
+    }
+
+    // Set the node process directory and import kanbn
+    process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
+    const kanbn = await import('@basementuniverse/kanbn/src/main');
+
+    // If kanbn is initialised, open the task webview
+    if (await kanbn.initialised()) {
+      KanbnTaskPanel.show(
+        context.extensionPath,
+        vscode.workspace.workspaceFolders[0].uri.fsPath,
+        kanbn,
+        null,
+        null
+      );
+    } else {
+      vscode.window.showErrorMessage('You need to initialise kanbn before adding a new task.');
     }
   }));
 
