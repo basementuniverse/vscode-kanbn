@@ -12,6 +12,51 @@ body {
     margin-top: 0;
     padding-bottom: 0.5em;
     border-bottom: 1px var(--vscode-activityBar-inactiveForeground) solid;
+    display: flex;
+}
+
+.kanbn-header-name p {
+    display: inline-block;
+    flex: 1;
+    margin: 0;
+    padding: 4px 0;
+}
+
+.kanbn-filter {
+    flex: 1;
+    text-align: right;
+}
+
+.kanbn-filter-input {
+    box-sizing: border-box;
+    width: 80%;
+    padding: 8px;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px transparent solid;
+}
+
+.kanbn-filter-input:hover, .kanbn-filter-input:focus {
+    border-color: var(--vscode-input-border);
+}
+
+.kanbn-filter-button {
+    outline: none;
+    border: none;
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    padding: 9px 1em;
+    margin-left: 8px;
+}
+
+.kanbn-filter-button .codicon {
+    font-size: 11px !important;
+    position: relative;
+    top: 1px;
+}
+
+.kanbn-filter-button:hover, .kanbn-filter-button:focus {
+    background-color: var(--vscode-button-hoverBackground);
 }
 
 .kanbn-board {

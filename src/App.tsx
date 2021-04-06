@@ -1,4 +1,3 @@
-import Header from './Header';
 import Board from './Board';
 import TaskEditor from './TaskEditor';
 import React, { useState } from "react";
@@ -53,19 +52,15 @@ function App() {
     <React.Fragment>
       {
         type === 'index' &&
-        <React.Fragment>
-          <Header
-            name={name}
-            description={description}
-          />
-          <Board
-            columns={columns}
-            startedColumns={startedColumns}
-            completedColumns={completedColumns}
-            dateFormat={dateFormat}
-            vscode={vscode}
-          />
-        </React.Fragment>
+        <Board
+          name={name}
+          description={description}
+          columns={columns}
+          startedColumns={startedColumns}
+          completedColumns={completedColumns}
+          dateFormat={dateFormat}
+          vscode={vscode}
+        />
       }
       {
         type === 'task' &&

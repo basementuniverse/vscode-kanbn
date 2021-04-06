@@ -55,7 +55,9 @@ const onDragEnd = (result, columns, setColumns, vscode: VSCodeApi) => {
   });
 };
 
-const Board = ({ columns, startedColumns, completedColumns, dateFormat, vscode }: {
+const Board = ({ name, description, columns, startedColumns, completedColumns, dateFormat, vscode }: {
+  name: string,
+  description: string,
   columns: Record<string, KanbnTask[]>,
   startedColumns: string[],
   completedColumns: string[],
@@ -63,74 +65,102 @@ const Board = ({ columns, startedColumns, completedColumns, dateFormat, vscode }
   vscode: VSCodeApi
 }) => {
   const [, setColumns] = useState(columns);
+
+  const filterTasks = () => {
+    console.log();
+  };
+
   return (
-    <div className="kanbn-board">
-      <DragDropContext
-        onDragEnd={result => onDragEnd(result, columns, setColumns, vscode)}
-      >
-        {Object.entries(columns).map(([columnName, column]) => {
-          return (
-            <div
-              className={[
-                'kanbn-column',
-                `kanbn-column-${paramCase(columnName)}`
-              ].join(' ')}
-              key={columnName}
+    <React.Fragment>
+      <div className="kanbn-header">
+        <h1 className="kanbn-header-name">
+          <p>{name}</p>
+          <div className="kanbn-filter">
+            <input
+              className="kanbn-filter-input"
+              placeholder="Filter tasks"
+            />
+            <button
+              type="button"
+              className="kanbn-filter-button"
+              onClick={filterTasks}
             >
-              <h2 className="kanbn-column-name">
-                {
-                  startedColumns.indexOf(columnName) > -1 &&
-                  <i className="codicon codicon-chevron-right"></i>
-                }
-                {
-                  completedColumns.indexOf(columnName) > -1 &&
-                  <i className="codicon codicon-check"></i>
-                }
-                {columnName}
-                <span className="kanbn-column-count">{column.length || ''}</span>
-                <button
-                  type="button"
-                  className="kanbn-create-task-button"
-                  title={`Create task in ${columnName}`}
-                  onClick={() => {
-                    vscode.postMessage({
-                      command: 'kanbn.addTask',
-                      columnName
-                    })
-                  }}
-                >
-                  <i className="codicon codicon-add"></i>
-                </button>
-              </h2>
-              <div>
-                <Droppable droppableId={columnName} key={columnName}>
-                  {(provided, snapshot) => {
-                    return (
-                      <div
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                        className={[
-                          'kanbn-column-task-list',
-                          snapshot.isDraggingOver ? 'drag-over' : null
-                        ].filter(i => i).join(' ')}
-                      >
-                        {column.map((task, position) => <TaskItem
-                          task={task}
-                          position={position}
-                          dateFormat={dateFormat}
-                          vscode={vscode}
-                        />)}
-                        {provided.placeholder}
-                      </div>
-                    );
-                  }}
-                </Droppable>
+              <i className="codicon codicon-filter"></i>
+            </button>
+          </div>
+        </h1>
+        <p className="kanbn-header-description">
+          {description}
+        </p>
+      </div>
+      <div className="kanbn-board">
+        <DragDropContext
+          onDragEnd={result => onDragEnd(result, columns, setColumns, vscode)}
+        >
+          {Object.entries(columns).map(([columnName, column]) => {
+            return (
+              <div
+                className={[
+                  'kanbn-column',
+                  `kanbn-column-${paramCase(columnName)}`
+                ].join(' ')}
+                key={columnName}
+              >
+                <h2 className="kanbn-column-name">
+                  {
+                    startedColumns.indexOf(columnName) > -1 &&
+                    <i className="codicon codicon-chevron-right"></i>
+                  }
+                  {
+                    completedColumns.indexOf(columnName) > -1 &&
+                    <i className="codicon codicon-check"></i>
+                  }
+                  {columnName}
+                  <span className="kanbn-column-count">{column.length || ''}</span>
+                  <button
+                    type="button"
+                    className="kanbn-create-task-button"
+                    title={`Create task in ${columnName}`}
+                    onClick={() => {
+                      vscode.postMessage({
+                        command: 'kanbn.addTask',
+                        columnName
+                      })
+                    }}
+                  >
+                    <i className="codicon codicon-add"></i>
+                  </button>
+                </h2>
+                <div>
+                  <Droppable droppableId={columnName} key={columnName}>
+                    {(provided, snapshot) => {
+                      return (
+                        <div
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
+                          className={[
+                            'kanbn-column-task-list',
+                            snapshot.isDraggingOver ? 'drag-over' : null
+                          ].filter(i => i).join(' ')}
+                        >
+                          {column.map((task, position) => <TaskItem
+                            task={task}
+                            position={position}
+                            dateFormat={dateFormat}
+                            vscode={vscode}
+                          />)}
+                          {provided.placeholder}
+                        </div>
+                      );
+                    }}
+                  </Droppable>
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </DragDropContext>
-    </div>
+            );
+          })}
+        </DragDropContext>
+      </div>
+    </React.Fragment>
   );
 };
 

@@ -46,11 +46,27 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, vscode }
     });
   };
 
+  // Called when the form is submitted
+  const handleSubmit = values => {
+    if (editing) {
+      vscode.postMessage({
+        command: 'kanbn.update',
+        taskData: values
+      });
+    } else {
+      vscode.postMessage({
+        command: 'kanbn.create',
+        taskData: values
+      });
+    }
+  };
+
   // Called when the delete task button is clicked
-  const handleRemoveTask = () => {
+  const handleRemoveTask = values => {
     vscode.postMessage({
       command: 'kanbn.delete',
-      taskId: task!.id
+      taskId: task!.id,
+      taskData: values
     });
   };
 
@@ -94,7 +110,8 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, vscode }
           subTasks: task ? task.subTasks : [],
           comments: task ? task.comments : []
         }}
-        validate={(values: KanbnTaskValidationInput): KanbnTaskValidationOutput => {
+        validate={(values: KanbnTaskValidationInput): KanbnTaskValidationOutput|{} => {
+          let hasErrors = false;
           const errors: KanbnTaskValidationOutput = {
             name: '',
             metadata: {
@@ -107,17 +124,20 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, vscode }
           // Task name cannot be empty
           if (!values.name) {
             errors.name = 'Task name is required.';
+            hasErrors = true;
           }
 
           // Check if the id is already in use
           if (values.id in tasks && tasks[values.id].uuid !== values.uuid) {
             errors.name = 'There is already a task with the same name or id.';
+            hasErrors = true;
           }
 
           // Tag names cannot be empty
           for (let i = 0; i < values.metadata.tags.length; i++) {
             if (!values.metadata.tags[i]) {
               errors.metadata.tags[i] = 'Tag cannot be empty.';
+              hasErrors = true;
             }
           }
 
@@ -127,6 +147,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, vscode }
               errors.subTasks[i] = {
                 text: 'Sub-task text cannot be empty.'
               };
+              hasErrors = true;
             }
           }
 
@@ -136,22 +157,14 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, vscode }
               errors.comments[i] = {
                 text: 'Comment text cannot be empty.'
               };
+              hasErrors = true;
             }
           }
 
-          return errors;
+          return hasErrors ? errors : {};
         }}
         onSubmit={(values, { setSubmitting }) => {
-          if (editing) {
-            vscode.postMessage({
-              command: 'kanbn.update'
-            });
-          } else {
-            vscode.postMessage({
-              command: 'kanbn.create'
-            });
-          }
-          console.log(values);
+          handleSubmit(values);
           setSubmitting(false);
         }}
       >
@@ -385,7 +398,9 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, vscode }
                     type="button"
                     className="kanbn-task-editor-button kanbn-task-editor-button-delete"
                     title="Delete task"
-                    onClick={handleRemoveTask}
+                    onClick={() => {
+                      handleRemoveTask(values);
+                    }}
                   >
                     <i className="codicon codicon-trash"></i>Delete
                   </button>}

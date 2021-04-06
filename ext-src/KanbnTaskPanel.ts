@@ -137,21 +137,29 @@ export default class KanbnTaskPanel {
 
         // Create a task
         case 'kanbn.create':
-          // TODO create task
-          vscode.window.showInformationMessage('create task');
+          // TODO convert dates
+          // await this._kanbn.createTask(message.taskData, message.taskData.column);
+          vscode.window.showInformationMessage(`Created task ${message.taskData.name}.`);
           return;
 
         // Update a task
         case 'kanbn.update':
-          // TODO update task
-          vscode.window.showInformationMessage('update task');
+          // TODO convert dates
+          // await this._kanbn.updateTask(message.taskData.id, message.taskData, message.taskData.column);
+          vscode.window.showInformationMessage(`Updated task ${message.taskData.name}.`);
           return;
 
         // Delete a task
         case 'kanbn.delete':
-          // TODO delete task
-          // TODO add yes/no confirmation buttons to information message, then delete task and close task panel
-          vscode.window.showInformationMessage('delete task');
+          vscode.window.showInformationMessage(`Delete task ${message.taskData.name}?`, 'Yes', 'No').then(
+            async value => {
+              if (value === 'Yes') {
+                // await this._kanbn.deleteTask(message.taskId, true);
+                vscode.window.showInformationMessage(`Deleted task ${message.taskData.name}.`);
+                // TODO close panel, will need to generate uuid for each panel
+              }
+            }
+          );
           return;
       }
     }, null, this._disposables);
