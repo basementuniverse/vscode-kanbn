@@ -91,13 +91,13 @@ const Board = ({ columns, startedColumns, completedColumns, dateFormat, vscode }
                 <button
                   type="button"
                   className="kanbn-create-task-button"
+                  title={`Create task in ${columnName}`}
                   onClick={() => {
                     vscode.postMessage({
                       command: 'kanbn.addTask',
                       columnName
                     })
                   }}
-                  title={`Create task in ${columnName}`}
                 >
                   <i className="codicon codicon-add"></i>
                 </button>
