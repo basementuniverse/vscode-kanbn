@@ -42,9 +42,9 @@ export async function activate(context: vscode.ExtensionContext) {
         name: newProjectName
       });
       vscode.window.showInformationMessage(`Initialised kanbn project '${newProjectName}'.`);
-      kanbnStatusBarItem.update();
       KanbnBoardPanel.update();
     }
+    kanbnStatusBarItem.update();
   }));
 
   // Register a command to open the kanbn board. This command will be invoked when the status bar item is clicked
@@ -72,6 +72,7 @@ export async function activate(context: vscode.ExtensionContext) {
     } else {
       vscode.window.showErrorMessage('You need to initialise kanbn before viewing the kanbn board.');
     }
+    kanbnStatusBarItem.update();
   }));
 
   // Register a command to add a new kanbn task.

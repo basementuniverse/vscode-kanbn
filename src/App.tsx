@@ -20,6 +20,7 @@ function App() {
   const [tasks, setTasks] = useState({});
   const [columnName, setColumnName] = useState('');
   const [columnNames, setColumnNames] = useState([] as string[]);
+  const [panelUuid, setPanelUuid] = useState('');
 
   window.addEventListener('message', event => {
     const tasks = Object.fromEntries(event.data.tasks.map(task => [task.id, task]));
@@ -42,6 +43,7 @@ function App() {
         setTasks(tasks);
         setColumnName(event.data.columnName);
         setColumnNames(Object.keys(event.data.index.columns));
+        setPanelUuid(event.data.panelUuid);
         break;
     }
     setType(event.data.type);
@@ -70,6 +72,7 @@ function App() {
           columnName={columnName}
           columnNames={columnNames}
           dateFormat={dateFormat}
+          panelUuid={panelUuid}
           vscode={vscode}
         />
       }

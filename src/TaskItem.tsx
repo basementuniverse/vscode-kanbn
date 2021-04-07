@@ -64,6 +64,7 @@ const TaskItem = ({ task, position, dateFormat, vscode }: {
             <div className="kanbn-task-row">
               {
                 'tags' in task.metadata &&
+                task.metadata.tags!.length > 0 &&
                 <div className="kanbn-task-data kanbn-task-tags">
                   {task.metadata.tags!.map(tag => {
                     return (
@@ -81,6 +82,7 @@ const TaskItem = ({ task, position, dateFormat, vscode }: {
             <div className="kanbn-task-row">
               {
                 'assigned' in task.metadata &&
+                !!task.metadata.assigned &&
                 <div className="kanbn-task-data kanbn-task-assigned">
                   <i className="codicon codicon-account"></i>{task.metadata.assigned}
                 </div>

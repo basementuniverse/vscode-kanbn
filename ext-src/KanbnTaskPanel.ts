@@ -2,16 +2,69 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { v4 as uuidv4 } from 'uuid';
 
+function transformTaskData(taskData: any) {
+  const result = {
+    id: taskData.id,
+    name: taskData.name,
+    description: taskData.description,
+    metadata: {
+      created: taskData.metadata.created
+        ? new Date(taskData.metadata.created)
+        : new Date(),
+      updated: new Date(),
+      assigned: taskData.metadata.assigned,
+      progress: taskData.progress,
+      tags: taskData.metadata.tags
+    } as any,
+    relations: taskData.relations,
+    subTasks: taskData.subTasks,
+    comments: taskData.comments.map((comment: any) => ({
+      author: comment.author,
+      date: new Date(Date.parse(comment.date)),
+      text: comment.text
+    }))
+  } as any;
+
+  // Add assigned
+  if (taskData.metadata.assigned) {
+    result.metadata['assigned'] = taskData.metadata.assigned;
+  }
+
+  // Add progress
+  if (taskData.progress > 0) {
+    result.metadata['progress'] = taskData.progress;
+  }
+
+  // Add tags
+  if (taskData.metadata.tags.length) {
+    result.metadata['tags'] = taskData.metadata.tags;
+  }
+
+  // Add due, started and completed dates if present
+  if (taskData.metadata.due) {
+    result.metadata['due'] = new Date(Date.parse(taskData.metadata.due));
+  }
+  if (taskData.metadata.started) {
+    result.metadata['started'] = new Date(Date.parse(taskData.metadata.started));
+  }
+  if (taskData.metadata.completed) {
+    result.metadata['completed'] = new Date(Date.parse(taskData.metadata.completed));
+  }
+
+  return result;
+}
+
 export default class KanbnTaskPanel {
   private static readonly viewType = 'react';
-  private static panels: KanbnTaskPanel[] = [];
+  private static panels: Record<string, KanbnTaskPanel> = {};
 
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionPath: string;
   private readonly _workspacePath: string;
   private readonly _kanbn: typeof import('@basementuniverse/kanbn/src/main');
-  private readonly _taskId: string|null;
-  private readonly _columnName: string;
+  private _taskId: string|null;
+  private _columnName: string|null;
+  private readonly _panelUuid: string;
   private _disposables: vscode.Disposable[] = [];
 
   public static async show(
@@ -22,55 +75,20 @@ export default class KanbnTaskPanel {
     columnName: string|null
   ) {
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
-    let index: any;
-    try {
-      index = await kanbn.getIndex();
-    } catch (error) {
-      vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
-      return;
-    }
-    let tasks: any[];
-    try {
-      tasks = (await kanbn.loadAllTrackedTasks(index)).map(
-        task => ({
-          uuid: uuidv4(),
-          ...kanbn.hydrateTask(index, task)
-        })
-      );
-    } catch (error) {
-      vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
-      return;
-    }
-    let task = null;
-    if (taskId) {
-      task = tasks.find(t => t.id === taskId) ?? null;
-    }
-
-    // If no columnName is specified, use the first column
-    if (!columnName) {
-      columnName = Object.keys(index.columns)[0];
-    }
 
     // Create a new panel
+    const panelUuid = uuidv4();
     const taskPanel = new KanbnTaskPanel(
       extensionPath,
       workspacePath,
       column || vscode.ViewColumn.One,
       kanbn,
       taskId,
-      columnName
+      columnName,
+      panelUuid
     );
-    KanbnTaskPanel.panels.push(taskPanel);
-
-    // Send task data to the webview
-    taskPanel._panel.webview.postMessage({
-      type: 'task',
-      index,
-      task,
-      columnName: taskPanel._columnName,
-      tasks,
-      dateFormat: kanbn.getDateFormat(index)
-    });
+    KanbnTaskPanel.panels[panelUuid] = taskPanel;
+    taskPanel.update();
   }
 
   private constructor(
@@ -79,13 +97,15 @@ export default class KanbnTaskPanel {
     column: vscode.ViewColumn,
     kanbn: typeof import('@basementuniverse/kanbn/src/main'),
     taskId: string|null,
-    columnName: string
+    columnName: string|null,
+    panelUuid: string
   ) {
     this._extensionPath = extensionPath;
     this._workspacePath = workspacePath;
     this._kanbn = kanbn;
     this._taskId = taskId;
     this._columnName = columnName;
+    this._panelUuid = panelUuid;
 
     // Create and show a new webview panel
     this._panel = vscode.window.createWebviewPanel(KanbnTaskPanel.viewType, 'New task', column, {
@@ -137,26 +157,31 @@ export default class KanbnTaskPanel {
 
         // Create a task
         case 'kanbn.create':
-          // TODO convert dates
-          // await this._kanbn.createTask(message.taskData, message.taskData.column);
-          vscode.window.showInformationMessage(`Created task ${message.taskData.name}.`);
+          await this._kanbn.createTask(transformTaskData(message.taskData), message.taskData.column);
+          KanbnTaskPanel.panels[message.panelUuid]._taskId = message.taskData.id;
+          KanbnTaskPanel.panels[message.panelUuid]._columnName = message.taskData.column;
+          KanbnTaskPanel.panels[message.panelUuid].update();
+          // vscode.window.showInformationMessage(`Created task '${message.taskData.name}'.`);
           return;
 
         // Update a task
         case 'kanbn.update':
-          // TODO convert dates
-          // await this._kanbn.updateTask(message.taskData.id, message.taskData, message.taskData.column);
-          vscode.window.showInformationMessage(`Updated task ${message.taskData.name}.`);
+          await this._kanbn.updateTask(message.taskId, transformTaskData(message.taskData), message.taskData.column);
+          KanbnTaskPanel.panels[message.panelUuid]._taskId = message.taskData.id;
+          KanbnTaskPanel.panels[message.panelUuid]._columnName = message.taskData.column;
+          KanbnTaskPanel.panels[message.panelUuid].update();
+          // vscode.window.showInformationMessage(`Updated task '${message.taskData.name}'.`);
           return;
 
-        // Delete a task
+        // Delete a task and close the webview panel
         case 'kanbn.delete':
-          vscode.window.showInformationMessage(`Delete task ${message.taskData.name}?`, 'Yes', 'No').then(
+          vscode.window.showInformationMessage(`Delete task '${message.taskData.name}'?`, 'Yes', 'No').then(
             async value => {
               if (value === 'Yes') {
-                // await this._kanbn.deleteTask(message.taskId, true);
-                vscode.window.showInformationMessage(`Deleted task ${message.taskData.name}.`);
-                // TODO close panel, will need to generate uuid for each panel
+                await this._kanbn.deleteTask(message.taskId, true);
+                KanbnTaskPanel.panels[message.panelUuid].dispose();
+                delete KanbnTaskPanel.panels[message.panelUuid];
+                // vscode.window.showInformationMessage(`Deleted task '${message.taskData.name}'.`);
               }
             }
           );
@@ -173,6 +198,48 @@ export default class KanbnTaskPanel {
         x.dispose();
       }
     }
+  }
+
+  private async update() {
+    let index: any;
+    try {
+      index = await this._kanbn.getIndex();
+    } catch (error) {
+      vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
+      return;
+    }
+    let tasks: any[];
+    try {
+      tasks = (await this._kanbn.loadAllTrackedTasks(index)).map(
+        task => ({
+          uuid: uuidv4(),
+          ...this._kanbn.hydrateTask(index, task)
+        })
+      );
+    } catch (error) {
+      vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
+      return;
+    }
+    let task = null;
+    if (this._taskId) {
+      task = tasks.find(t => t.id === this._taskId) ?? null;
+    }
+
+    // If no columnName is specified, use the first column
+    if (!this._columnName) {
+      this._columnName = Object.keys(index.columns)[0];
+    }
+
+    // Send task data to the webview
+    this._panel.webview.postMessage({
+      type: 'task',
+      index,
+      task,
+      tasks,
+      columnName: this._columnName,
+      dateFormat: this._kanbn.getDateFormat(index),
+      panelUuid: this._panelUuid
+    });
   }
 
   private _getHtmlForWebview() {

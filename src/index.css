@@ -120,6 +120,7 @@ body {
 .kanbn-column-task-list {
     margin: 0 8px;
     border-left: 4px var(--vscode-activityBar-inactiveForeground) solid;
+    min-height: 46px;
 }
 
 .kanbn-column-task-list.drag-over {
@@ -268,6 +269,11 @@ body {
     margin-top: 0;
     padding-bottom: 0.5em;
     border-bottom: 1px var(--vscode-activityBar-inactiveForeground) solid;
+}
+
+.kanbn-task-editor-dirty {
+    margin-left: 8px;
+    color: #f42;
 }
 
 .kanbn-task-editor-dates {
