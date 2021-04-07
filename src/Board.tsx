@@ -128,10 +128,11 @@ const filterTask = (task: KanbnTask, taskFilter: string) => {
   return result;
 };
 
-const Board = ({ name, description, columns, startedColumns, completedColumns, dateFormat, vscode }: {
+const Board = ({ name, description, columns, hiddenColumns, startedColumns, completedColumns, dateFormat, vscode }: {
   name: string,
   description: string,
   columns: Record<string, KanbnTask[]>,
+  hiddenColumns: string[],
   startedColumns: string[],
   completedColumns: string[],
   dateFormat: string,
@@ -176,6 +177,9 @@ const Board = ({ name, description, columns, startedColumns, completedColumns, d
           onDragEnd={result => onDragEnd(result, columns, setColumns, vscode)}
         >
           {Object.entries(columns).map(([columnName, column]) => {
+            if (hiddenColumns.indexOf(columnName) !== -1) {
+              return false;
+            }
             return (
               <div
                 className={[

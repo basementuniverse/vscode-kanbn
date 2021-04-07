@@ -55,6 +55,7 @@ export default class KanbnBoardPanel {
         type: 'index',
         index,
         tasks,
+        hiddenColumns: index.options.hiddenColumns ?? [],
         startedColumns: index.options.startedColumns ?? [],
         completedColumns: index.options.completedColumns ?? [],
         dateFormat: KanbnBoardPanel.currentPanel._kanbn.getDateFormat(index)

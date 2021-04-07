@@ -13,6 +13,7 @@ function App() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [columns, setColumns] = useState({});
+  const [hiddenColumns, setHiddenColumns] = useState([]);
   const [startedColumns, setStartedColumns] = useState([]);
   const [completedColumns, setCompletedColumns] = useState([]);
   const [dateFormat, setDateFormat] = useState('');
@@ -34,6 +35,7 @@ function App() {
             Object.values(event.data.index.columns).map(column => (column as string[]).map(taskId => tasks[taskId]))
           )
         ));
+        setHiddenColumns(event.data.hiddenColumns);
         setStartedColumns(event.data.startedColumns);
         setCompletedColumns(event.data.completedColumns);
         break;
@@ -58,6 +60,7 @@ function App() {
           name={name}
           description={description}
           columns={columns}
+          hiddenColumns={hiddenColumns}
           startedColumns={startedColumns}
           completedColumns={completedColumns}
           dateFormat={dateFormat}
