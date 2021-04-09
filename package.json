@@ -29,7 +29,7 @@
     ]
   },
   "dependencies": {
-    "@basementuniverse/kanbn": "file:~/Projects/kanbn",
+    "@basementuniverse/kanbn": "^0.2.4",
     "@types/dateformat": "^3.0.1",
     "dateformat": "^4.5.1",
     "formik": "^2.2.6",
