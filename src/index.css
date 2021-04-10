@@ -61,6 +61,7 @@ body {
 
 .kanbn-board {
     display: flex;
+    align-items: stretch;
 }
 
 .kanbn-column {
@@ -117,63 +118,52 @@ body {
     margin-left: 8px;
 }
 
+.kanbn-column-task-list-container {
+    height: calc(100% - 44px);
+}
+
 .kanbn-column-task-list {
     margin: 0 8px;
     border-left: 4px var(--vscode-activityBar-inactiveForeground) solid;
     min-height: 46px;
+    height: 100%;
+    transition: border-color .5s ease-in-out;
 }
 
 .kanbn-column-task-list.drag-over {
-    border-color: var(--vscode-activityBar-foreground);
+    border-color: var(--vscode-activityBar-foreground) !important;
 }
 
 .kanbn-column-backlog .kanbn-column-task-list {
     border-color: #36d;
 }
 
-.kanbn-column-backlog .kanbn-column-task-list.drag-over {
-    border-color: #69f;
-}
-
 .kanbn-column-in-progress .kanbn-column-task-list {
     border-color: #194;
-}
-
-.kanbn-column-in-progress .kanbn-column-task-list.drag-over {
-    border-color: #3c7;
 }
 
 .kanbn-column-todo .kanbn-column-task-list {
     border-color: #eb1;
 }
 
-.kanbn-column-todo .kanbn-column-task-list.drag-over {
-    border-color: #fe5;
-}
-
 .kanbn-column-done .kanbn-column-task-list {
     border-color: #e83;
-}
-
-.kanbn-column-done .kanbn-column-task-list.drag-over {
-    border-color: #fa4;
 }
 
 .kanbn-task {
     position: relative;
     overflow: hidden;
-    padding: 4px;
+    padding: 4px 4px 8px 4px;
     margin: 8px;
     min-height: 30px;
-    border: 1px var(--vscode-activityBar-inactiveForeground) solid;
-    border-radius: 2px;
+    border-left: 4px var(--vscode-activityBar-inactiveForeground) solid;
+    background-color: var(--vscode-input-background);
     color: var(--vscode-editor-foreground);
     transition: background-color .5s ease-in-out;
 }
 
 .kanbn-task.drag {
-    background-color: var(--vscode-activityBar-inactiveForeground);
-    border-color: var(--vscode-activityBar-activeBackground);
+    background-color: var(--vscode-button-hoverBackground);
 }
 
 .kanbn-task-name {
@@ -213,6 +203,7 @@ body {
 .kanbn-task-tag {
     display: inline-block;
     background-color: var(--vscode-activityBar-inactiveForeground);
+    color: #333;
     color: var(--vscode-editor-background);
     font-size: 0.8em;
     font-weight: bold;
@@ -223,32 +214,26 @@ body {
 
 .kanbn-task-tag-nothing {
     background-color: #6bf;
-    color: #333;
 }
 
 .kanbn-task-tag-tiny {
     background-color: #36d;
-    color: #333;
 }
 
 .kanbn-task-tag-small {
     background-color: #194;
-    color: #333;
 }
 
 .kanbn-task-tag-medium {
     background-color: #eb1;
-    color: #333;
 }
 
 .kanbn-task-tag-large {
     background-color: #e83;
-    color: #333;
 }
 
 .kanbn-task-tag-huge {
     background-color: #f42;
-    color: #333;
 }
 
 .kanbn-task-overdue {
@@ -262,6 +247,7 @@ body {
     height: 6px;
     background-color: #3c7;
     opacity: 0.7;
+    transition: width .5s ease-in-out;
 }
 
 .kanbn-task-editor-title {

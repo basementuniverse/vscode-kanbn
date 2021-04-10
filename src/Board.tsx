@@ -213,7 +213,7 @@ const Board = ({ name, description, columns, hiddenColumns, startedColumns, comp
                     <i className="codicon codicon-add"></i>
                   </button>
                 </h2>
-                <div>
+                <div className="kanbn-column-task-list-container">
                   <Droppable droppableId={columnName} key={columnName}>
                     {(provided, snapshot) => {
                       return (
