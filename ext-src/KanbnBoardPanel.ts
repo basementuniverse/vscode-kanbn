@@ -88,7 +88,7 @@ export default class KanbnBoardPanel {
         vscode.Uri.file(path.join(this._extensionPath, 'node_modules', 'vscode-codicons', 'dist'))
       ]
     });
-    this._panel.iconPath = {
+    (this._panel as any).iconPath = {
       light: vscode.Uri.file(path.join(this._extensionPath, 'resources', 'project_light.svg')),
       dark: vscode.Uri.file(path.join(this._extensionPath, 'resources', 'project_dark.svg'))
     };

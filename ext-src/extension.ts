@@ -7,13 +7,13 @@ let kanbnStatusBarItem: KanbnStatusBarItem;
 
 export async function activate(context: vscode.ExtensionContext) {
 
-  // Register a command to initialise kanbn in the current workspace. This command will be invoked when the status
-  // bar item is clicked in a workspace where kanbn isn't already initialised.
+  // Register a command to initialise Kanbn in the current workspace. This command will be invoked when the status
+  // bar item is clicked in a workspace where Kanbn isn't already initialised.
   context.subscriptions.push(vscode.commands.registerCommand('kanbn.init', async () => {
 
     // If no workspace folder is opened, we can't initialise kanbn
     if (vscode.workspace.workspaceFolders === undefined) {
-      vscode.window.showErrorMessage('You need to open a workspace before initialising kanbn.');
+      vscode.window.showErrorMessage('You need to open a workspace before initialising Kanbn.');
       return;
     }
 
@@ -41,7 +41,7 @@ export async function activate(context: vscode.ExtensionContext) {
       await kanbn.initialise({
         name: newProjectName
       });
-      vscode.window.showInformationMessage(`Initialised kanbn project '${newProjectName}'.`);
+      vscode.window.showInformationMessage(`Initialised Kanbn project '${newProjectName}'.`);
       KanbnBoardPanel.update();
     }
     kanbnStatusBarItem.update();
@@ -53,7 +53,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // If no workspace folder is opened, we can't open the kanbn board
     if (vscode.workspace.workspaceFolders === undefined) {
-      vscode.window.showErrorMessage('You need to open a workspace before viewing the kanbn board.');
+      vscode.window.showErrorMessage('You need to open a workspace before viewing the Kanbn board.');
       return;
     }
 
@@ -70,7 +70,7 @@ export async function activate(context: vscode.ExtensionContext) {
       );
       KanbnBoardPanel.update();
     } else {
-      vscode.window.showErrorMessage('You need to initialise kanbn before viewing the kanbn board.');
+      vscode.window.showErrorMessage('You need to initialise Kanbn before viewing the Kanbn board.');
     }
     kanbnStatusBarItem.update();
   }));
@@ -98,7 +98,7 @@ export async function activate(context: vscode.ExtensionContext) {
         null
       );
     } else {
-      vscode.window.showErrorMessage('You need to initialise kanbn before adding a new task.');
+      vscode.window.showErrorMessage('You need to initialise Kanbn before adding a new task.');
     }
   }));
 

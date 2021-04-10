@@ -42,8 +42,8 @@ export default class KanbnStatusBarItem {
       this._statusBarItem.tooltip = tooltip.join('\n');
       this._statusBarItem.command = 'kanbn.board';
     } else {
-      this._statusBarItem.text = '$(project) Not initialised';
-      this._statusBarItem.tooltip = 'Click to initialise';
+      this._statusBarItem.text = '$(project)';
+      this._statusBarItem.tooltip = 'Initialise Kanbn';
       this._statusBarItem.command = 'kanbn.init';
     }
     this._statusBarItem.show();
