@@ -1,6 +1,6 @@
 {
   "name": "vscode-kanbn",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "engines": {
     "vscode": "^1.23.0"
   },
@@ -13,7 +13,7 @@
     "commands": [
       {
         "command": "kanbn.init",
-        "title": "Initialise kanbn",
+        "title": "Initialise Kanbn",
         "category": "Kanbn"
       },
       {
