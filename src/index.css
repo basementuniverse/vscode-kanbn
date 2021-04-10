@@ -1,4 +1,6 @@
-body {
+body.vscode-light,
+body.vscode-dark,
+body.vscode-high-contrast {
     margin: 0;
     padding: 1em;
     font-family: var(--vscode-font-family);
