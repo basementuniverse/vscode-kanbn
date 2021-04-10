@@ -159,13 +159,19 @@ body.vscode-high-contrast {
     margin: 8px;
     min-height: 30px;
     border-left: 4px var(--vscode-activityBar-inactiveForeground) solid;
-    background-color: var(--vscode-input-background);
     color: var(--vscode-editor-foreground);
-    transition: background-color .5s ease-in-out;
+}
+
+body.vscode-light .kanbn-task {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+body.vscode-dark .kanbn-task {
+    background-color: rgba(255, 255, 255, 0.03);
 }
 
 .kanbn-task.drag {
-    background-color: var(--vscode-button-hoverBackground);
+    border-color: var(--vscode-activityBar-foreground);
 }
 
 .kanbn-task-name {
@@ -205,8 +211,8 @@ body.vscode-high-contrast {
 .kanbn-task-tag {
     display: inline-block;
     background-color: var(--vscode-activityBar-inactiveForeground);
-    color: #333;
-    color: var(--vscode-editor-background);
+    background-color: #555;
+    color: #ddd;
     font-size: 0.8em;
     font-weight: bold;
     padding: 2px 4px;
