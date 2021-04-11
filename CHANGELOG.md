@@ -1,3 +1,7 @@
+# 0.3.2
+
+* Fixed issue with pruned node_modules files, turns out some of them actually _were_ necessary...
+
 # 0.3.1
 
 * Fixed typo in .vscodeignore file
