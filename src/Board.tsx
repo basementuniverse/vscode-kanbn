@@ -106,7 +106,10 @@ const filterTask = (task: KanbnTask, taskFilter: string) => {
       let propertyValue = '';
       switch (parts[0]) {
         case 'description':
-          propertyValue = task.description;
+          propertyValue = [
+            task.description,
+            ...task.subTasks.map(subTask => subTask.text)
+          ].join(' ');
           break;
         case 'assigned':
           propertyValue = task.metadata.assigned || '';
