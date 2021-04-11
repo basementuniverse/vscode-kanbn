@@ -1,5 +1,8 @@
 {
   "name": "vscode-kanbn",
+  "displayName": "Kanbn Extension for Visual Studio Code",
+  "description": "An extension for Visual Studio Code that allows you to manage tasks on a kanban board.",
+  "icon": "resources/kanbn.png",
   "version": "0.2.0",
   "engines": {
     "vscode": "^1.23.0"
