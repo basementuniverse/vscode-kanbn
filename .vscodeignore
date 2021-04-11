@@ -1,0 +1,15 @@
+.github/**
+.vscode/**
+build/**/*.js.map
+ext-src/**
+public/**
+scripts/**
+src/**
+.editorconfig
+.env
+.gitignore
+package-lock.json
+tsconfig.extension.json
+tsconfig.json
+tsling.json
+yarn.lock
