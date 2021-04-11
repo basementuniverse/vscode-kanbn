@@ -7,7 +7,29 @@
   "engines": {
     "vscode": "^1.23.0"
   },
-  "publisher": "basementuniverse",
+  "author": "Gordon Larrigan",
+  "license": "MIT",
+  "publisher": "gordonlarrigan",
+  "keywords": [
+    "kanbn",
+    "kanban",
+    "project",
+    "management",
+    "task",
+    "todo",
+    "agile",
+    "scrum",
+    "sprint",
+    "board"
+  ],
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/basementuniverse/vscode-kanbn.git"
+  },
   "activationEvents": [
     "onStartupFinished"
   ],
