@@ -1,5 +1,7 @@
 # Kanbn Extension for Visual Studio Code
 
+[![MIT License](https://img.shields.io/github/license/basementuniverse/vscode-kanbn)](https://opensource.org/licenses/MIT)
+
 This extension adds a [Kanbn](https://www.npmjs.com/package/@basementuniverse/kanbn)-powered kanban board to Visual Studio Code.
 
 ![Kanbn](docs/preview.gif "Kanbn")
