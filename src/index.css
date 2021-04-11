@@ -15,6 +15,7 @@ body.vscode-high-contrast {
     padding-bottom: 0.5em;
     border-bottom: 1px var(--vscode-activityBar-inactiveForeground) solid;
     display: flex;
+    text-align: left;
 }
 
 .kanbn-header-name p {
@@ -183,6 +184,7 @@ body.vscode-dark .kanbn-task {
     font-weight: bold;
     color: var(--vscode-editor-foreground);
     cursor: pointer;
+    text-align: left;
 }
 
 .kanbn-task-name:focus, .kanbn-task-name:hover {
