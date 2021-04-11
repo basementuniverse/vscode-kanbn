@@ -2,9 +2,11 @@
 
 The Kanbn board has a default style which is based on the current vscode theme, however you can override this by creating a CSS file `.kanbn/board.css`. A reference of class names is provided below.
 
-To view the default stylesheet, see `src/index.css` in the extension folder (see [here](https://code.visualstudio.com/docs/editor/extension-gallery#_where-are-extensions-installed) to find out where extensions are installed on your platform).
+You can view the default stylesheet [here](https://github.com/basementuniverse/vscode-kanbn/blob/main/src/index.css).
 
 Visual Studio Code will add `vscode-light`, `vscode-dark` and `vscode-high-contrast` class names to the `body` tag, depending on the current theme.
+
+Various Codicon icons have been used in this extension. Check [here](https://code.visualstudio.com/api/references/icons-in-labels) for a listing of available icons.
 
 ## CSS classes
 

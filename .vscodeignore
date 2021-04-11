@@ -11,5 +11,5 @@ src/**
 package-lock.json
 tsconfig.extension.json
 tsconfig.json
-tsling.json
+tslint.json
 yarn.lock
