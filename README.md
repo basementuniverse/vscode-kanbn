@@ -32,6 +32,13 @@ Click on a task's title to open the task editor in a new tab. From here, you can
 
 You can also modify the index or task files directly, or by using Kanbn CLI commands, and the Kanbn board should update automatically to reflect these changes.
 
+The following commands are available:
+
+- `Kanbn: Initialise Kanbn` will initialise Kanbn in the open workspace.
+- `Kanbn: Open board` will open open the Kanbn board.
+- `Kanbn: Open burndown chart` will open a burndown chart.
+- `Kanbn: Add task` will open the task editor.
+
 ## Filtering the Kanbn board
 
 At the top-right of the Kanbn board there is a filter input. To filter visible tasks, enter a filter string and click the filter button (or press Enter). To clear any active filters, clear the filter string and click the filter button.

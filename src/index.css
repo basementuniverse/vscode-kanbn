@@ -46,7 +46,7 @@ body.vscode-high-contrast {
 
 .kanbn-clear-filter-button {
     position: absolute;
-    right: 45px;
+    right: 92px;
     outline: none;
     border: none;
     color: var(--vscode-button-foreground);
@@ -55,7 +55,8 @@ body.vscode-high-contrast {
     opacity: 0.6;
 }
 
-.kanbn-filter-button {
+.kanbn-filter-button,
+.kanbn-burndown-button {
     outline: none;
     border: none;
     background-color: var(--vscode-button-background);
@@ -64,18 +65,24 @@ body.vscode-high-contrast {
     margin-left: 8px;
 }
 
+.kanbn-filter-button .codicon,
 .kanbn-clear-filter-button .codicon,
-.kanbn-filter-button .codicon {
+.kanbn-burndown-button .codicon {
     font-size: 12px !important;
     position: relative;
     top: 1px;
+}
+
+.kanbn-burndown-button .codicon {
+    top: 2px;
 }
 
 .kanbn-clear-filter-button:hover, .kanbn-clear-filter-button:focus {
     opacity: 1;
 }
 
-.kanbn-filter-button:hover, .kanbn-filter-button:focus {
+.kanbn-filter-button:hover, .kanbn-filter-button:focus,
+.kanbn-burndown-button:hover, .kanbn-burndown-button:focus {
     background-color: var(--vscode-button-hoverBackground);
 }
 

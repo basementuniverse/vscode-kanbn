@@ -143,6 +143,12 @@ export default class KanbnBoardPanel {
             message.columnName
           );
           return;
+
+        // Open a burndown chart
+        case 'kanbn.burndown':
+          // TODO open a burndown chart webview panel
+          vscode.window.showInformationMessage('opening burndown chart...');
+          return;
       }
     }, null, this._disposables);
   }

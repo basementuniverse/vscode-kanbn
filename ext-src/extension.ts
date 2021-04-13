@@ -102,6 +102,13 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   }));
 
+  // Register a command to open a burndown chart.
+  context.subscriptions.push(vscode.commands.registerCommand('kanbn.burndown', async () => {
+
+    // TODO open burndown chart singleton webview panel
+    vscode.window.showErrorMessage('Not implemented yet!');
+  }));
+
   // If a workspace folder is open, add a status bar item and start watching for file changes
   if (vscode.workspace.workspaceFolders !== undefined) {
 

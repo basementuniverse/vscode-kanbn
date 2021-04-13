@@ -54,6 +54,11 @@
         "command": "kanbn.addTask",
         "title": "Add task",
         "category": "Kanbn"
+      },
+      {
+        "command": "kanbn.burndown",
+        "title": "Open burndown chart",
+        "category": "Kanbn"
       }
     ]
   },

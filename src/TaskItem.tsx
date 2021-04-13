@@ -54,7 +54,7 @@ const TaskItem = ({ task, position, dateFormat, vscode }: {
                     command: 'kanbn.task',
                     taskId: task.id,
                     columnName: task.column
-                  })
+                  });
                 }}
                 title={task.id}
               >

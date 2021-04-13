@@ -186,6 +186,18 @@ const Board = ({ name, description, columns, hiddenColumns, startedColumns, comp
               >
                 <i className="codicon codicon-filter"></i>
               </button>
+              <button
+                type="button"
+                className="kanbn-burndown-button"
+                onClick={() => {
+                  vscode.postMessage({
+                    command: 'kanbn.burndown'
+                  });
+                }}
+                title="Open burndown chart"
+              >
+                <i className="codicon codicon-graph"></i>
+              </button>
             </form>
           </div>
         </h1>
@@ -228,7 +240,7 @@ const Board = ({ name, description, columns, hiddenColumns, startedColumns, comp
                       vscode.postMessage({
                         command: 'kanbn.addTask',
                         columnName
-                      })
+                      });
                     }}
                   >
                     <i className="codicon codicon-add"></i>

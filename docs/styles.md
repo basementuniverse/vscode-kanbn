@@ -18,6 +18,7 @@ Various Codicon icons have been used in this extension. Check [here](https://cod
 - `kanbn-filter-input`
 - `kanbn-clear-filter-button`
 - `kanbn-filter-button`
+- `kanbn-burndown-button`
 - `kanbn-header-description`
 - `kanbn-board`
 - `kanbn-column`
