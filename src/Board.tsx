@@ -144,6 +144,12 @@ const Board = ({ name, description, columns, hiddenColumns, startedColumns, comp
   const [, setColumns] = useState(columns);
   const [taskFilter, setTaskFilter] = useState('');
 
+  // Called when the clear filter button is clicked
+  const clearFilters = e => {
+    (document.querySelector('.kanbn-filter-input') as HTMLInputElement).value = '';
+    filterTasks(e);
+  };
+
   // Called when the filter form is submitted
   const filterTasks = e => {
     e.preventDefault();
@@ -161,10 +167,22 @@ const Board = ({ name, description, columns, hiddenColumns, startedColumns, comp
                 className="kanbn-filter-input"
                 placeholder="Filter tasks"
               />
+              {
+                taskFilter &&
+                <button
+                  type="button"
+                  className="kanbn-clear-filter-button"
+                  onClick={clearFilters}
+                  title="Clear task filters"
+                >
+                  <i className="codicon codicon-clear-all"></i>
+                </button>
+              }
               <button
                 type="submit"
                 className="kanbn-filter-button"
                 onClick={filterTasks}
+                title="Filter tasks"
               >
                 <i className="codicon codicon-filter"></i>
               </button>

@@ -16,6 +16,7 @@ Various Codicon icons have been used in this extension. Check [here](https://cod
 - `kanbn-header-name`
 - `kanbn-filter`
 - `kanbn-filter-input`
+- `kanbn-clear-filter-button`
 - `kanbn-filter-button`
 - `kanbn-header-description`
 - `kanbn-board`

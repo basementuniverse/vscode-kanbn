@@ -26,6 +26,7 @@ body.vscode-high-contrast {
 }
 
 .kanbn-filter {
+    position: relative;
     flex: 1;
     text-align: right;
 }
@@ -43,6 +44,17 @@ body.vscode-high-contrast {
     border-color: var(--vscode-input-border);
 }
 
+.kanbn-clear-filter-button {
+    position: absolute;
+    right: 45px;
+    outline: none;
+    border: none;
+    color: var(--vscode-button-foreground);
+    background-color: transparent;
+    padding: 9px 1em;
+    opacity: 0.6;
+}
+
 .kanbn-filter-button {
     outline: none;
     border: none;
@@ -52,10 +64,15 @@ body.vscode-high-contrast {
     margin-left: 8px;
 }
 
+.kanbn-clear-filter-button .codicon,
 .kanbn-filter-button .codicon {
-    font-size: 11px !important;
+    font-size: 12px !important;
     position: relative;
     top: 1px;
+}
+
+.kanbn-clear-filter-button:hover, .kanbn-clear-filter-button:focus {
+    opacity: 1;
 }
 
 .kanbn-filter-button:hover, .kanbn-filter-button:focus {
