@@ -132,4 +132,10 @@ export async function activate(context: vscode.ExtensionContext) {
       KanbnBoardPanel.update();
     });
   }
+
+  // Handle configuration changes
+  vscode.workspace.onDidChangeConfiguration(e => {
+    kanbnStatusBarItem.update();
+    KanbnBoardPanel.update();
+  });
 }

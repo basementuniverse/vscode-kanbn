@@ -41,11 +41,16 @@ export default class KanbnStatusBarItem {
       this._statusBarItem.text = text.join(' ');
       this._statusBarItem.tooltip = tooltip.join('\n');
       this._statusBarItem.command = 'kanbn.board';
+      this._statusBarItem.show();
     } else {
       this._statusBarItem.text = '$(project)';
       this._statusBarItem.tooltip = 'Initialise Kanbn';
       this._statusBarItem.command = 'kanbn.init';
+      if (vscode.workspace.getConfiguration('vscode-kanbn').get('showUninitialisedStatusBarItem')) {
+        this._statusBarItem.show();
+      } else {
+        this._statusBarItem.hide();
+      }
     }
-    this._statusBarItem.show();
   }
 }

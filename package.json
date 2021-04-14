@@ -60,7 +60,32 @@
         "title": "Open burndown chart",
         "category": "Kanbn"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Kanbn",
+      "properties": {
+        "vscode-kanbn.showUninitialisedStatusBarItem": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the status bar item in workspaces where Kanbn has not yet been initialised."
+        },
+        "vscode-kanbn.showNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show notifications when a task is created, updated or deleted."
+        },
+        "vscode-kanbn.showSprintButton": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show a 'Start Sprint' button on the Kanbn board."
+        },
+        "vscode-kanbn.showBurndownButton": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show a 'Burndown Chart' button on the Kanbn board."
+        }
+      }
+    }
   },
   "dependencies": {
     "@basementuniverse/kanbn": "^0.2.4",
