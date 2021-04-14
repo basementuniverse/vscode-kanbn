@@ -16,9 +16,11 @@ Various Codicon icons have been used in this extension. Check [here](https://cod
 - `kanbn-header-name`
 - `kanbn-filter`
 - `kanbn-filter-input`
-- `kanbn-clear-filter-button`
-- `kanbn-filter-button`
-- `kanbn-burndown-button`
+- `kanbn-header-button`
+- `kanbn-header-button-filter`
+- `kanbn-header-button-clear-filter`
+- `kanbn-header-button-sprint`
+- `kanbn-header-button-burndown`
 - `kanbn-header-description`
 - `kanbn-board`
 - `kanbn-column`

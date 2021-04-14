@@ -32,16 +32,9 @@ Click on a task's title to open the task editor in a new tab. From here, you can
 
 You can also modify the index or task files directly, or by using Kanbn CLI commands, and the Kanbn board should update automatically to reflect these changes.
 
-The following commands are available:
-
-- `Kanbn: Initialise Kanbn` will initialise Kanbn in the open workspace.
-- `Kanbn: Open board` will open open the Kanbn board.
-- `Kanbn: Open burndown chart` will open a burndown chart.
-- `Kanbn: Add task` will open the task editor.
-
 ## Filtering the Kanbn board
 
-At the top-right of the Kanbn board there is a filter input. To filter visible tasks, enter a filter string and click the filter button (or press Enter). To clear any active filters, clear the filter string and click the filter button.
+At the top-right of the Kanbn board there is a filter input. To filter visible tasks, enter a filter string and click the filter button (or press Enter).
 
 ### Filter string syntax
 
@@ -52,6 +45,24 @@ Text entered into the filter string input will be tested against each task's `id
 - `assigned:search-string` will filter for tasks that contain `search-string` in their assigned user
 - `tag:search-string` will filter for tasks that contain `search-string` in one of their tags
 - `relation:search-string` will filter for tasks that contain `search-string` in one of their relations (either the relation type or related task id)
+
+## Commands
+
+The following commands are available:
+
+- `Kanbn: Initialise Kanbn` will initialise Kanbn in the open workspace.
+- `Kanbn: Open board` will open open the Kanbn board.
+- `Kanbn: Open burndown chart` will open a burndown chart.
+- `Kanbn: Add task` will open the task editor.
+
+## Configuration settings
+
+The following configuration settings are available:
+
+- `kanbn.showUninitialisedStatusBarItem` when set to `true`, the status bar item will be displayed in workspaces where Kanbn has not yet been initialised. If set to `false`, Kanbn can still be initialised using the `Kanbn: Initialise Kanbn` command.
+- `kanbn.showTaskNotifications` when set to `true`, notifications will be displayed when a task is created, updated or deleted.
+- `kanbn.showSprintButton` when set to `true`, a 'Start sprint` button will will appear above the Kanbn board. This button will show the current sprint name if a sprint is currently active, and can be used to start a new sprint.
+- `kanbn.showBurndownButton` when set to `true`, a 'Show burndown chart` button will appear above the Kanbn board.
 
 ## Styling the Kanbn board
 
