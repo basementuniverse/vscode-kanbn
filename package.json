@@ -64,25 +64,25 @@
     "configuration": {
       "title": "Kanbn",
       "properties": {
-        "vscode-kanbn.showUninitialisedStatusBarItem": {
+        "kanbn.showUninitialisedStatusBarItem": {
           "type": "boolean",
           "default": true,
           "description": "Show the status bar item in workspaces where Kanbn has not yet been initialised."
         },
-        "vscode-kanbn.showTaskNotifications": {
+        "kanbn.showTaskNotifications": {
           "type": "boolean",
           "default": true,
           "description": "Show notifications when a task is created, updated or deleted."
         },
-        "vscode-kanbn.showSprintButton": {
+        "kanbn.showSprintButton": {
           "type": "boolean",
           "default": false,
-          "description": "Show a 'Start Sprint' button on the Kanbn board."
+          "description": "Show a 'Start sprint' button on the Kanbn board."
         },
-        "vscode-kanbn.showBurndownButton": {
+        "kanbn.showBurndownButton": {
           "type": "boolean",
           "default": false,
-          "description": "Show a 'Burndown Chart' button on the Kanbn board."
+          "description": "Show a 'Burndown chart' button on the Kanbn board."
         }
       }
     }
