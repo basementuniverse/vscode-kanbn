@@ -69,7 +69,7 @@
           "default": true,
           "description": "Show the status bar item in workspaces where Kanbn has not yet been initialised."
         },
-        "vscode-kanbn.showNotifications": {
+        "vscode-kanbn.showTaskNotifications": {
           "type": "boolean",
           "default": true,
           "description": "Show notifications when a task is created, updated or deleted."

@@ -147,7 +147,7 @@ export default class KanbnBoardPanel {
         // Open a burndown chart
         case 'kanbn.burndown':
           // TODO open a burndown chart webview panel
-          vscode.window.showInformationMessage('opening burndown chart...');
+          vscode.window.showErrorMessage('Not implemented yet!');
           return;
       }
     }, null, this._disposables);

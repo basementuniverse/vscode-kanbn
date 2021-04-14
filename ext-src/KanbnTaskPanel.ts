@@ -161,7 +161,9 @@ export default class KanbnTaskPanel {
           KanbnTaskPanel.panels[message.panelUuid]._taskId = message.taskData.id;
           KanbnTaskPanel.panels[message.panelUuid]._columnName = message.taskData.column;
           KanbnTaskPanel.panels[message.panelUuid].update();
-          // vscode.window.showInformationMessage(`Created task '${message.taskData.name}'.`);
+          if (vscode.workspace.getConfiguration('vscode-kanbn').get('showTaskNotifications')) {
+            vscode.window.showInformationMessage(`Created task '${message.taskData.name}'.`);
+          }
           return;
 
         // Update a task
@@ -170,7 +172,9 @@ export default class KanbnTaskPanel {
           KanbnTaskPanel.panels[message.panelUuid]._taskId = message.taskData.id;
           KanbnTaskPanel.panels[message.panelUuid]._columnName = message.taskData.column;
           KanbnTaskPanel.panels[message.panelUuid].update();
-          // vscode.window.showInformationMessage(`Updated task '${message.taskData.name}'.`);
+          if (vscode.workspace.getConfiguration('vscode-kanbn').get('showTaskNotifications')) {
+            vscode.window.showInformationMessage(`Updated task '${message.taskData.name}'.`);
+          }
           return;
 
         // Delete a task and close the webview panel
@@ -181,7 +185,9 @@ export default class KanbnTaskPanel {
                 await this._kanbn.deleteTask(message.taskId, true);
                 KanbnTaskPanel.panels[message.panelUuid].dispose();
                 delete KanbnTaskPanel.panels[message.panelUuid];
-                // vscode.window.showInformationMessage(`Deleted task '${message.taskData.name}'.`);
+                if (vscode.workspace.getConfiguration('vscode-kanbn').get('showTaskNotifications')) {
+                  vscode.window.showInformationMessage(`Deleted task '${message.taskData.name}'.`);
+                }
               }
             }
           );
