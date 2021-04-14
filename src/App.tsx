@@ -24,6 +24,7 @@ function App() {
   const [panelUuid, setPanelUuid] = useState('');
   const [showBurndownButton, setShowBurndownButton] = useState(false);
   const [showSprintButton, setShowSprintButton] = useState(false);
+  const [currentSprint, setCurrentSprint] = useState(null);
 
   window.addEventListener('message', event => {
     const tasks = Object.fromEntries(event.data.tasks.map(task => [task.id, task]));
@@ -42,6 +43,13 @@ function App() {
         setCompletedColumns(event.data.completedColumns);
         setShowBurndownButton(event.data.showBurndownButton);
         setShowSprintButton(event.data.showSprintButton);
+
+        // Get current sprint
+        let sprint = null;
+        if ('sprints' in event.data.index.options && event.data.index.options.sprints.length) {
+          sprint = event.data.index.options.sprints[event.data.index.options.sprints.length - 1];
+        }
+        setCurrentSprint(sprint);
         break;
 
       case 'task':
@@ -70,6 +78,7 @@ function App() {
           dateFormat={dateFormat}
           showBurndownButton={showBurndownButton}
           showSprintButton={showSprintButton}
+          currentSprint={currentSprint}
           vscode={vscode}
         />
       }

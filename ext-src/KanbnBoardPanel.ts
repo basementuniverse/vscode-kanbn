@@ -151,6 +151,24 @@ export default class KanbnBoardPanel {
           // TODO open a burndown chart webview panel
           vscode.window.showErrorMessage('Not implemented yet!');
           return;
+
+        // Start a new sprint
+        case 'kanbn.sprint':
+
+          // Prompt for a sprint name
+          const newSprintName = await vscode.window.showInputBox({
+            placeHolder: 'The sprint name.'
+          });
+
+          // If the input prompt wasn't cancelled, start a new sprint
+          if (newSprintName !== undefined) {
+            try {
+              await kanbn.sprint(newSprintName, '', new Date());
+            } catch (e) {
+              vscode.window.showErrorMessage(e.message);
+            }
+          }
+          return;
       }
     }, null, this._disposables);
   }

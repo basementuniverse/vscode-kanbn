@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import TaskItem from './TaskItem';
 import { paramCase } from 'param-case';
 import VSCodeApi from "./VSCodeApi";
+import formatDate from 'dateformat';
 
 // Called when a task item has finished being dragged
 const onDragEnd = (result, columns, setColumns, vscode: VSCodeApi) => {
@@ -141,6 +142,7 @@ const Board = ({
   dateFormat,
   showBurndownButton,
   showSprintButton,
+  currentSprint,
   vscode
 }: {
   name: string,
@@ -152,6 +154,11 @@ const Board = ({
   dateFormat: string,
   showBurndownButton: boolean,
   showSprintButton: boolean,
+  currentSprint: {
+    start: string,
+    name: string,
+    description: string
+  }|null,
   vscode: VSCodeApi
 }) => {
   const [, setColumns] = useState(columns);
@@ -209,10 +216,15 @@ const Board = ({
                       command: 'kanbn.sprint'
                     });
                   }}
-                  title="Start a new sprint"
+                  title={[
+                    currentSprint
+                      ? `${currentSprint.name}\nStarted ${formatDate(currentSprint.start, dateFormat)}`
+                      : '',
+                    'Start a new sprint'
+                  ].join('\n')}
                 >
                   <i className="codicon codicon-rocket"></i>
-                  Sprint 1
+                  {currentSprint ? currentSprint.name : 'No sprint'}
                 </button>
               }
               {

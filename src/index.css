@@ -28,12 +28,17 @@ body.vscode-high-contrast {
 .kanbn-filter {
     position: relative;
     flex: 1;
-    text-align: right;
+}
+
+.kanbn-filter form {
+    width: 100%;
+    display: flex;
+    white-space: nowrap;
 }
 
 .kanbn-filter-input {
     box-sizing: border-box;
-    width: 60%;
+    flex: 1;
     padding: 8px;
     background-color: var(--vscode-input-background);
     color: var(--vscode-input-foreground);
