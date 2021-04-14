@@ -33,7 +33,7 @@ body.vscode-high-contrast {
 
 .kanbn-filter-input {
     box-sizing: border-box;
-    width: 80%;
+    width: 60%;
     padding: 8px;
     background-color: var(--vscode-input-background);
     color: var(--vscode-input-foreground);
@@ -44,45 +44,33 @@ body.vscode-high-contrast {
     border-color: var(--vscode-input-border);
 }
 
-.kanbn-clear-filter-button {
-    position: absolute;
-    right: 92px;
-    outline: none;
-    border: none;
-    color: var(--vscode-button-foreground);
-    background-color: transparent;
-    padding: 9px 1em;
-    opacity: 0.6;
-}
-
-.kanbn-filter-button,
-.kanbn-burndown-button {
+.kanbn-header-button {
     outline: none;
     border: none;
     background-color: var(--vscode-button-background);
     color: var(--vscode-button-foreground);
-    padding: 9px 1em;
+    padding: 9px;
     margin-left: 8px;
+    max-width: 120px;
+    overflow-x: hidden;
+    text-overflow: ellipsis;
 }
 
-.kanbn-filter-button .codicon,
-.kanbn-clear-filter-button .codicon,
-.kanbn-burndown-button .codicon {
+.kanbn-header-button .codicon {
     font-size: 12px !important;
     position: relative;
     top: 1px;
 }
 
-.kanbn-burndown-button .codicon {
+.kanbn-header-button-burndown .codicon {
     top: 2px;
 }
 
-.kanbn-clear-filter-button:hover, .kanbn-clear-filter-button:focus {
-    opacity: 1;
+.kanbn-header-button-sprint .codicon {
+    margin-right: 0.5em;
 }
 
-.kanbn-filter-button:hover, .kanbn-filter-button:focus,
-.kanbn-burndown-button:hover, .kanbn-burndown-button:focus {
+.kanbn-header-button:hover, .kanbn-header-button:focus {
     background-color: var(--vscode-button-hoverBackground);
 }
 

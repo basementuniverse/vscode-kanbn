@@ -131,7 +131,18 @@ const filterTask = (task: KanbnTask, taskFilter: string) => {
   return result;
 };
 
-const Board = ({ name, description, columns, hiddenColumns, startedColumns, completedColumns, dateFormat, vscode }: {
+const Board = ({
+  name,
+  description,
+  columns,
+  hiddenColumns,
+  startedColumns,
+  completedColumns,
+  dateFormat,
+  showBurndownButton,
+  showSprintButton,
+  vscode
+}: {
   name: string,
   description: string,
   columns: Record<string, KanbnTask[]>,
@@ -139,6 +150,8 @@ const Board = ({ name, description, columns, hiddenColumns, startedColumns, comp
   startedColumns: string[],
   completedColumns: string[],
   dateFormat: string,
+  showBurndownButton: boolean,
+  showSprintButton: boolean,
   vscode: VSCodeApi
 }) => {
   const [, setColumns] = useState(columns);
@@ -167,37 +180,56 @@ const Board = ({ name, description, columns, hiddenColumns, startedColumns, comp
                 className="kanbn-filter-input"
                 placeholder="Filter tasks"
               />
+              <button
+                type="submit"
+                className="kanbn-header-button kanbn-header-button-filter"
+                onClick={filterTasks}
+                title="Filter tasks"
+              >
+                <i className="codicon codicon-filter"></i>
+              </button>
               {
                 taskFilter &&
                 <button
                   type="button"
-                  className="kanbn-clear-filter-button"
+                  className="kanbn-header-button kanbn-header-button-clear-filter"
                   onClick={clearFilters}
                   title="Clear task filters"
                 >
                   <i className="codicon codicon-clear-all"></i>
                 </button>
               }
-              <button
-                type="submit"
-                className="kanbn-filter-button"
-                onClick={filterTasks}
-                title="Filter tasks"
-              >
-                <i className="codicon codicon-filter"></i>
-              </button>
-              <button
-                type="button"
-                className="kanbn-burndown-button"
-                onClick={() => {
-                  vscode.postMessage({
-                    command: 'kanbn.burndown'
-                  });
-                }}
-                title="Open burndown chart"
-              >
-                <i className="codicon codicon-graph"></i>
-              </button>
+              {
+                showSprintButton &&
+                <button
+                  type="button"
+                  className="kanbn-header-button kanbn-header-button-sprint"
+                  onClick={() => {
+                    vscode.postMessage({
+                      command: 'kanbn.sprint'
+                    });
+                  }}
+                  title="Start a new sprint"
+                >
+                  <i className="codicon codicon-rocket"></i>
+                  Sprint 1
+                </button>
+              }
+              {
+                showBurndownButton &&
+                <button
+                  type="button"
+                  className="kanbn-header-button kanbn-header-button-burndown"
+                  onClick={() => {
+                    vscode.postMessage({
+                      command: 'kanbn.burndown'
+                    });
+                  }}
+                  title="Open burndown chart"
+                >
+                  <i className="codicon codicon-graph"></i>
+                </button>
+              }
             </form>
           </div>
         </h1>

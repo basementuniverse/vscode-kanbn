@@ -22,6 +22,8 @@ function App() {
   const [columnName, setColumnName] = useState('');
   const [columnNames, setColumnNames] = useState([] as string[]);
   const [panelUuid, setPanelUuid] = useState('');
+  const [showBurndownButton, setShowBurndownButton] = useState(false);
+  const [showSprintButton, setShowSprintButton] = useState(false);
 
   window.addEventListener('message', event => {
     const tasks = Object.fromEntries(event.data.tasks.map(task => [task.id, task]));
@@ -38,6 +40,8 @@ function App() {
         setHiddenColumns(event.data.hiddenColumns);
         setStartedColumns(event.data.startedColumns);
         setCompletedColumns(event.data.completedColumns);
+        setShowBurndownButton(event.data.showBurndownButton);
+        setShowSprintButton(event.data.showSprintButton);
         break;
 
       case 'task':
@@ -64,6 +68,8 @@ function App() {
           startedColumns={startedColumns}
           completedColumns={completedColumns}
           dateFormat={dateFormat}
+          showBurndownButton={showBurndownButton}
+          showSprintButton={showSprintButton}
           vscode={vscode}
         />
       }
