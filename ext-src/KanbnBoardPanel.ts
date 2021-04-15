@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import KanbnTaskPanel from './KanbnTaskPanel';
+import KanbnBurndownPanel from './KanbnBurndownPanel';
 
 export default class KanbnBoardPanel {
   public static currentPanel: KanbnBoardPanel | undefined;
@@ -148,8 +149,12 @@ export default class KanbnBoardPanel {
 
         // Open a burndown chart
         case 'kanbn.burndown':
-          // TODO open a burndown chart webview panel
-          vscode.window.showErrorMessage('Not implemented yet!');
+          KanbnBurndownPanel.createOrShow(
+            this._extensionPath,
+            this._workspacePath,
+            this._kanbn
+          );
+          KanbnBurndownPanel.update();
           return;
 
         // Start a new sprint

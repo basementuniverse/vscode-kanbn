@@ -25,7 +25,9 @@ function App() {
   const [panelUuid, setPanelUuid] = useState('');
   const [showBurndownButton, setShowBurndownButton] = useState(false);
   const [showSprintButton, setShowSprintButton] = useState(false);
+  const [sprints, setSprints] = useState([]);
   const [currentSprint, setCurrentSprint] = useState(null);
+  const [burndownData, setBurndownData] = useState({ series: [] });
 
   window.addEventListener('message', event => {
     const tasks = Object.fromEntries(event.data.tasks.map(task => [task.id, task]));
@@ -59,6 +61,13 @@ function App() {
         setColumnName(event.data.columnName);
         setColumnNames(Object.keys(event.data.index.columns));
         setPanelUuid(event.data.panelUuid);
+        break;
+
+      case 'burndown':
+        setName(event.data.index.name);
+        setTasks(tasks);
+        setSprints(event.data.index.options.sprints || []);
+        setBurndownData(event.data.burndownData);
         break;
     }
     setType(event.data.type);
@@ -98,6 +107,10 @@ function App() {
       {
         type === 'burndown' &&
         <Burndown
+          name={name}
+          tasks={tasks}
+          sprints={sprints}
+          burndownData={burndownData}
         />
       }
     </React.Fragment>

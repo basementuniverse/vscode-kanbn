@@ -154,11 +154,7 @@ const Board = ({
   dateFormat: string,
   showBurndownButton: boolean,
   showSprintButton: boolean,
-  currentSprint: {
-    start: string,
-    name: string,
-    description: string
-  }|null,
+  currentSprint: KanbnSprint|null,
   vscode: VSCodeApi
 }) => {
   const [, setColumns] = useState(columns);

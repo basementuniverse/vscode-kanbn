@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import KanbnStatusBarItem from './KanbnStatusBarItem';
 import KanbnBoardPanel from './KanbnBoardPanel';
+import KanbnBurndownPanel from './KanbnBurndownPanel';
 import KanbnTaskPanel from './KanbnTaskPanel';
 
 let kanbnStatusBarItem: KanbnStatusBarItem;
@@ -105,8 +106,28 @@ export async function activate(context: vscode.ExtensionContext) {
   // Register a command to open a burndown chart.
   context.subscriptions.push(vscode.commands.registerCommand('kanbn.burndown', async () => {
 
-    // TODO open burndown chart singleton webview panel
-    vscode.window.showErrorMessage('Not implemented yet!');
+    // If no workspace folder is opened, we can't open the burndown chart
+    if (vscode.workspace.workspaceFolders === undefined) {
+      vscode.window.showErrorMessage('You need to open a workspace before viewing the burndown chart.');
+      return;
+    }
+
+    // Set the node process directory and import kanbn
+    process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
+    const kanbn = await import('@basementuniverse/kanbn/src/main');
+
+    // If kanbn is initialised, view the burndown chart
+    if (await kanbn.initialised()) {
+      KanbnBurndownPanel.createOrShow(
+        context.extensionPath,
+        vscode.workspace.workspaceFolders[0].uri.fsPath,
+        kanbn
+      );
+      KanbnBurndownPanel.update();
+    } else {
+      vscode.window.showErrorMessage('You need to initialise Kanbn before viewing the burndown chart.');
+    }
+    kanbnStatusBarItem.update();
   }));
 
   // If a workspace folder is open, add a status bar item and start watching for file changes
