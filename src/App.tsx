@@ -1,4 +1,5 @@
 import Board from './Board';
+import Burndown from './Burndown';
 import TaskEditor from './TaskEditor';
 import React, { useState } from "react";
 import VSCodeApi from "./VSCodeApi";
@@ -92,6 +93,11 @@ function App() {
           dateFormat={dateFormat}
           panelUuid={panelUuid}
           vscode={vscode}
+        />
+      }
+      {
+        type === 'burndown' &&
+        <Burndown
         />
       }
     </React.Fragment>
