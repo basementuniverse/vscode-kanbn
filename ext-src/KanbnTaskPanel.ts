@@ -1,6 +1,7 @@
-import * as path from 'path';
-import * as vscode from 'vscode';
-import { v4 as uuidv4 } from 'uuid';
+import * as path from "path";
+import * as vscode from "vscode";
+import getNonce from "./getNonce";
+import { v4 as uuidv4 } from "uuid";
 
 function transformTaskData(taskData: any) {
   const result = {
@@ -8,71 +9,69 @@ function transformTaskData(taskData: any) {
     name: taskData.name,
     description: taskData.description,
     metadata: {
-      created: taskData.metadata.created
-        ? new Date(taskData.metadata.created)
-        : new Date(),
+      created: taskData.metadata.created ? new Date(taskData.metadata.created) : new Date(),
       updated: new Date(),
       assigned: taskData.metadata.assigned,
       progress: taskData.progress,
-      tags: taskData.metadata.tags
+      tags: taskData.metadata.tags,
     } as any,
     relations: taskData.relations,
     subTasks: taskData.subTasks,
     comments: taskData.comments.map((comment: any) => ({
       author: comment.author,
       date: new Date(Date.parse(comment.date)),
-      text: comment.text
-    }))
+      text: comment.text,
+    })),
   } as any;
 
   // Add assigned
   if (taskData.metadata.assigned) {
-    result.metadata['assigned'] = taskData.metadata.assigned;
+    result.metadata["assigned"] = taskData.metadata.assigned;
   }
 
   // Add progress
   if (taskData.progress > 0) {
-    result.metadata['progress'] = taskData.progress;
+    result.metadata["progress"] = taskData.progress;
   }
 
   // Add tags
   if (taskData.metadata.tags.length) {
-    result.metadata['tags'] = taskData.metadata.tags;
+    result.metadata["tags"] = taskData.metadata.tags;
   }
 
   // Add due, started and completed dates if present
   if (taskData.metadata.due) {
-    result.metadata['due'] = new Date(Date.parse(taskData.metadata.due));
+    result.metadata["due"] = new Date(Date.parse(taskData.metadata.due));
   }
   if (taskData.metadata.started) {
-    result.metadata['started'] = new Date(Date.parse(taskData.metadata.started));
+    result.metadata["started"] = new Date(Date.parse(taskData.metadata.started));
   }
   if (taskData.metadata.completed) {
-    result.metadata['completed'] = new Date(Date.parse(taskData.metadata.completed));
+    result.metadata["completed"] = new Date(Date.parse(taskData.metadata.completed));
   }
 
   return result;
 }
 
 export default class KanbnTaskPanel {
-  private static readonly viewType = 'react';
+  private static readonly viewType = "react";
   private static panels: Record<string, KanbnTaskPanel> = {};
 
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionPath: string;
   private readonly _workspacePath: string;
-  private readonly _kanbn: typeof import('@basementuniverse/kanbn/src/main');
-  private _taskId: string|null;
-  private _columnName: string|null;
+  private readonly _kanbn: typeof import("@basementuniverse/kanbn/src/main");
   private readonly _panelUuid: string;
+  private _taskId: string | null;
+  private _columnName: string | null;
   private _disposables: vscode.Disposable[] = [];
 
   public static async show(
     extensionPath: string,
     workspacePath: string,
-    kanbn: typeof import('@basementuniverse/kanbn/src/main'),
-    taskId: string|null,
-    columnName: string|null
+    kanbn: typeof import("@basementuniverse/kanbn/src/main"),
+    taskId: string | null,
+    columnName: string | null
   ) {
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
@@ -95,9 +94,9 @@ export default class KanbnTaskPanel {
     extensionPath: string,
     workspacePath: string,
     column: vscode.ViewColumn,
-    kanbn: typeof import('@basementuniverse/kanbn/src/main'),
-    taskId: string|null,
-    columnName: string|null,
+    kanbn: typeof import("@basementuniverse/kanbn/src/main"),
+    taskId: string | null,
+    columnName: string | null,
     panelUuid: string
   ) {
     this._extensionPath = extensionPath;
@@ -108,7 +107,7 @@ export default class KanbnTaskPanel {
     this._panelUuid = panelUuid;
 
     // Create and show a new webview panel
-    this._panel = vscode.window.createWebviewPanel(KanbnTaskPanel.viewType, 'New task', column, {
+    this._panel = vscode.window.createWebviewPanel(KanbnTaskPanel.viewType, "New task", column, {
       // Enable javascript in the webview
       enableScripts: true,
 
@@ -117,19 +116,19 @@ export default class KanbnTaskPanel {
 
       // Restrict the webview to only loading content from allowed paths
       localResourceRoots: [
-        vscode.Uri.file(path.join(this._extensionPath, 'build')),
+        vscode.Uri.file(path.join(this._extensionPath, "build")),
         vscode.Uri.file(path.join(this._workspacePath, this._kanbn.getFolderName())),
-        vscode.Uri.file(path.join(this._extensionPath, 'node_modules', 'vscode-codicons', 'dist'))
-      ]
+        vscode.Uri.file(path.join(this._extensionPath, "node_modules", "vscode-codicons", "dist")),
+      ],
     });
     (this._panel as any).iconPath = {
-      light: vscode.Uri.file(path.join(this._extensionPath, 'resources', 'task_light.svg')),
-      dark: vscode.Uri.file(path.join(this._extensionPath, 'resources', 'task_dark.svg'))
+      light: vscode.Uri.file(path.join(this._extensionPath, "resources", "task_light.svg")),
+      dark: vscode.Uri.file(path.join(this._extensionPath, "resources", "task_dark.svg")),
     };
 
     // Set the webview's title to the kanbn task name
     if (this._taskId !== null) {
-      this._kanbn.getTask(this._taskId).then(task => {
+      this._kanbn.getTask(this._taskId).then((task) => {
         this._panel.title = task.name;
       });
     }
@@ -142,58 +141,61 @@ export default class KanbnTaskPanel {
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
     // Handle messages from the webview
-    this._panel.webview.onDidReceiveMessage(async message => {
-      switch (message.command) {
+    this._panel.webview.onDidReceiveMessage(
+      async (message) => {
+        switch (message.command) {
+          // Display error message
+          case "error":
+            vscode.window.showErrorMessage(message.text);
+            return;
 
-        // Display error message
-        case 'error':
-          vscode.window.showErrorMessage(message.text);
-          return;
+          // Update the task webview panel title
+          case "kanbn.updatePanelTitle":
+            this._panel.title = message.title;
+            return;
 
-        // Update the task webview panel title
-        case 'kanbn.updatePanelTitle':
-          this._panel.title = message.title;
-          return;
-
-        // Create a task
-        case 'kanbn.create':
-          await this._kanbn.createTask(transformTaskData(message.taskData), message.taskData.column);
-          KanbnTaskPanel.panels[message.panelUuid]._taskId = message.taskData.id;
-          KanbnTaskPanel.panels[message.panelUuid]._columnName = message.taskData.column;
-          KanbnTaskPanel.panels[message.panelUuid].update();
-          if (vscode.workspace.getConfiguration('kanbn').get('showTaskNotifications')) {
-            vscode.window.showInformationMessage(`Created task '${message.taskData.name}'.`);
-          }
-          return;
-
-        // Update a task
-        case 'kanbn.update':
-          await this._kanbn.updateTask(message.taskId, transformTaskData(message.taskData), message.taskData.column);
-          KanbnTaskPanel.panels[message.panelUuid]._taskId = message.taskData.id;
-          KanbnTaskPanel.panels[message.panelUuid]._columnName = message.taskData.column;
-          KanbnTaskPanel.panels[message.panelUuid].update();
-          if (vscode.workspace.getConfiguration('kanbn').get('showTaskNotifications')) {
-            vscode.window.showInformationMessage(`Updated task '${message.taskData.name}'.`);
-          }
-          return;
-
-        // Delete a task and close the webview panel
-        case 'kanbn.delete':
-          vscode.window.showInformationMessage(`Delete task '${message.taskData.name}'?`, 'Yes', 'No').then(
-            async value => {
-              if (value === 'Yes') {
-                await this._kanbn.deleteTask(message.taskId, true);
-                KanbnTaskPanel.panels[message.panelUuid].dispose();
-                delete KanbnTaskPanel.panels[message.panelUuid];
-                if (vscode.workspace.getConfiguration('kanbn').get('showTaskNotifications')) {
-                  vscode.window.showInformationMessage(`Deleted task '${message.taskData.name}'.`);
-                }
-              }
+          // Create a task
+          case "kanbn.create":
+            await this._kanbn.createTask(transformTaskData(message.taskData), message.taskData.column);
+            KanbnTaskPanel.panels[message.panelUuid]._taskId = message.taskData.id;
+            KanbnTaskPanel.panels[message.panelUuid]._columnName = message.taskData.column;
+            KanbnTaskPanel.panels[message.panelUuid].update();
+            if (vscode.workspace.getConfiguration("kanbn").get("showTaskNotifications")) {
+              vscode.window.showInformationMessage(`Created task '${message.taskData.name}'.`);
             }
-          );
-          return;
-      }
-    }, null, this._disposables);
+            return;
+
+          // Update a task
+          case "kanbn.update":
+            await this._kanbn.updateTask(message.taskId, transformTaskData(message.taskData), message.taskData.column);
+            KanbnTaskPanel.panels[message.panelUuid]._taskId = message.taskData.id;
+            KanbnTaskPanel.panels[message.panelUuid]._columnName = message.taskData.column;
+            KanbnTaskPanel.panels[message.panelUuid].update();
+            if (vscode.workspace.getConfiguration("kanbn").get("showTaskNotifications")) {
+              vscode.window.showInformationMessage(`Updated task '${message.taskData.name}'.`);
+            }
+            return;
+
+          // Delete a task and close the webview panel
+          case "kanbn.delete":
+            vscode.window
+              .showInformationMessage(`Delete task '${message.taskData.name}'?`, "Yes", "No")
+              .then(async (value) => {
+                if (value === "Yes") {
+                  await this._kanbn.deleteTask(message.taskId, true);
+                  KanbnTaskPanel.panels[message.panelUuid].dispose();
+                  delete KanbnTaskPanel.panels[message.panelUuid];
+                  if (vscode.workspace.getConfiguration("kanbn").get("showTaskNotifications")) {
+                    vscode.window.showInformationMessage(`Deleted task '${message.taskData.name}'.`);
+                  }
+                }
+              });
+            return;
+        }
+      },
+      null,
+      this._disposables
+    );
   }
 
   public dispose() {
@@ -216,19 +218,17 @@ export default class KanbnTaskPanel {
     }
     let tasks: any[];
     try {
-      tasks = (await this._kanbn.loadAllTrackedTasks(index)).map(
-        task => ({
-          uuid: uuidv4(),
-          ...this._kanbn.hydrateTask(index, task)
-        })
-      );
+      tasks = (await this._kanbn.loadAllTrackedTasks(index)).map((task) => ({
+        uuid: uuidv4(),
+        ...this._kanbn.hydrateTask(index, task),
+      }));
     } catch (error) {
       vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
       return;
     }
     let task = null;
     if (this._taskId) {
-      task = tasks.find(t => t.id === this._taskId) ?? null;
+      task = tasks.find((t) => t.id === this._taskId) ?? null;
     }
 
     // If no columnName is specified, use the first column
@@ -238,32 +238,32 @@ export default class KanbnTaskPanel {
 
     // Send task data to the webview
     this._panel.webview.postMessage({
-      type: 'task',
+      type: "task",
       index,
       task,
       tasks,
       columnName: this._columnName,
       dateFormat: this._kanbn.getDateFormat(index),
-      panelUuid: this._panelUuid
+      panelUuid: this._panelUuid,
     });
   }
 
   private _getHtmlForWebview() {
-    const manifest = require(path.join(this._extensionPath, 'build', 'asset-manifest.json'));
-    const mainScript = manifest['main.js'];
-    const mainStyle = manifest['main.css'];
-    const scriptUri = vscode.Uri
-      .file(path.join(this._extensionPath, 'build', mainScript))
-      .with({ scheme: 'vscode-resource' });
-    const styleUri = vscode.Uri
-      .file(path.join(this._extensionPath, 'build', mainStyle))
-      .with({ scheme: 'vscode-resource' });
-    const customStyleUri = vscode.Uri
-      .file(path.join(this._workspacePath, this._kanbn.getFolderName(), 'board.css'))
-      .with({ scheme: 'vscode-resource' });
-    const codiconsUri = vscode.Uri
-      .file(path.join(this._extensionPath, 'node_modules', 'vscode-codicons', 'dist', 'codicon.css'))
-      .with({ scheme: 'vscode-resource' });
+    const manifest = require(path.join(this._extensionPath, "build", "asset-manifest.json"));
+    const mainScript = manifest["main.js"];
+    const mainStyle = manifest["main.css"];
+    const scriptUri = vscode.Uri.file(path.join(this._extensionPath, "build", mainScript)).with({
+      scheme: "vscode-resource",
+    });
+    const styleUri = vscode.Uri.file(path.join(this._extensionPath, "build", mainStyle)).with({
+      scheme: "vscode-resource",
+    });
+    const customStyleUri = vscode.Uri.file(
+      path.join(this._workspacePath, this._kanbn.getFolderName(), "board.css")
+    ).with({ scheme: "vscode-resource" });
+    const codiconsUri = vscode.Uri.file(
+      path.join(this._extensionPath, "node_modules", "vscode-codicons", "dist", "codicon.css")
+    ).with({ scheme: "vscode-resource" });
 
     // Use a nonce to whitelist which scripts can be run
     const nonce = getNonce();
@@ -279,7 +279,7 @@ export default class KanbnTaskPanel {
 <link rel="stylesheet" type="text/css" href="${customStyleUri}">
 <link rel="stylesheet" type="text/css" href="${codiconsUri}">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src vscode-resource: https:; script-src 'nonce-${nonce}'; font-src vscode-resource:; style-src vscode-resource: 'unsafe-inline' http: https: data:;">
-<base href="${vscode.Uri.file(path.join(this._extensionPath, 'build')).with({ scheme: 'vscode-resource' })}/">
+<base href="${vscode.Uri.file(path.join(this._extensionPath, "build")).with({ scheme: "vscode-resource" })}/">
 </head>
 <body>
 <noscript>You need to enable JavaScript to run this app.</noscript>
@@ -288,13 +288,4 @@ export default class KanbnTaskPanel {
 </body>
 </html>`;
   }
-}
-
-function getNonce() {
-  let text = "";
-  const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; i < 32; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
 }

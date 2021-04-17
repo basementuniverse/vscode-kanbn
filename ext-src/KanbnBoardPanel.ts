@@ -1,23 +1,24 @@
-import * as path from 'path';
-import * as vscode from 'vscode';
-import KanbnTaskPanel from './KanbnTaskPanel';
-import KanbnBurndownPanel from './KanbnBurndownPanel';
+import * as path from "path";
+import * as vscode from "vscode";
+import getNonce from "./getNonce";
+import KanbnTaskPanel from "./KanbnTaskPanel";
+import KanbnBurndownPanel from "./KanbnBurndownPanel";
 
 export default class KanbnBoardPanel {
   public static currentPanel: KanbnBoardPanel | undefined;
 
-  private static readonly viewType = 'react';
+  private static readonly viewType = "react";
 
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionPath: string;
   private readonly _workspacePath: string;
-  private readonly _kanbn: typeof import('@basementuniverse/kanbn/src/main');
+  private readonly _kanbn: typeof import("@basementuniverse/kanbn/src/main");
   private _disposables: vscode.Disposable[] = [];
 
   public static createOrShow(
     extensionPath: string,
     workspacePath: string,
-    kanbn: typeof import('@basementuniverse/kanbn/src/main')
+    kanbn: typeof import("@basementuniverse/kanbn/src/main")
   ) {
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
@@ -45,23 +46,23 @@ export default class KanbnBoardPanel {
       }
       let tasks: any[];
       try {
-        tasks = (await KanbnBoardPanel.currentPanel._kanbn.loadAllTrackedTasks(index)).map(
-          task => KanbnBoardPanel.currentPanel!._kanbn.hydrateTask(index, task)
+        tasks = (await KanbnBoardPanel.currentPanel._kanbn.loadAllTrackedTasks(index)).map((task) =>
+          KanbnBoardPanel.currentPanel!._kanbn.hydrateTask(index, task)
         );
       } catch (error) {
         vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
         return;
       }
       KanbnBoardPanel.currentPanel._panel.webview.postMessage({
-        type: 'index',
+        type: "index",
         index,
         tasks,
         hiddenColumns: index.options.hiddenColumns ?? [],
         startedColumns: index.options.startedColumns ?? [],
         completedColumns: index.options.completedColumns ?? [],
         dateFormat: KanbnBoardPanel.currentPanel._kanbn.getDateFormat(index),
-        showBurndownButton: vscode.workspace.getConfiguration('kanbn').get('showBurndownButton'),
-        showSprintButton: vscode.workspace.getConfiguration('kanbn').get('showSprintButton')
+        showBurndownButton: vscode.workspace.getConfiguration("kanbn").get("showBurndownButton"),
+        showSprintButton: vscode.workspace.getConfiguration("kanbn").get("showSprintButton"),
       });
     }
   }
@@ -70,14 +71,14 @@ export default class KanbnBoardPanel {
     extensionPath: string,
     workspacePath: string,
     column: vscode.ViewColumn,
-    kanbn: typeof import('@basementuniverse/kanbn/src/main')
+    kanbn: typeof import("@basementuniverse/kanbn/src/main")
   ) {
     this._extensionPath = extensionPath;
     this._workspacePath = workspacePath;
     this._kanbn = kanbn;
 
     // Create and show a new webview panel
-    this._panel = vscode.window.createWebviewPanel(KanbnBoardPanel.viewType, 'Kanbn Board', column, {
+    this._panel = vscode.window.createWebviewPanel(KanbnBoardPanel.viewType, "Kanbn Board", column, {
       // Enable javascript in the webview
       enableScripts: true,
 
@@ -86,18 +87,18 @@ export default class KanbnBoardPanel {
 
       // Restrict the webview to only loading content from allowed paths
       localResourceRoots: [
-        vscode.Uri.file(path.join(this._extensionPath, 'build')),
+        vscode.Uri.file(path.join(this._extensionPath, "build")),
         vscode.Uri.file(path.join(this._workspacePath, this._kanbn.getFolderName())),
-        vscode.Uri.file(path.join(this._extensionPath, 'node_modules', 'vscode-codicons', 'dist'))
-      ]
+        vscode.Uri.file(path.join(this._extensionPath, "node_modules", "vscode-codicons", "dist")),
+      ],
     });
     (this._panel as any).iconPath = {
-      light: vscode.Uri.file(path.join(this._extensionPath, 'resources', 'project_light.svg')),
-      dark: vscode.Uri.file(path.join(this._extensionPath, 'resources', 'project_dark.svg'))
+      light: vscode.Uri.file(path.join(this._extensionPath, "resources", "project_light.svg")),
+      dark: vscode.Uri.file(path.join(this._extensionPath, "resources", "project_dark.svg")),
     };
 
     // Set the webview's title to the kanbn project name
-    this._kanbn.getIndex().then(index => {
+    this._kanbn.getIndex().then((index) => {
       this._panel.title = index.name;
     });
 
@@ -109,73 +110,65 @@ export default class KanbnBoardPanel {
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
     // Handle messages from the webview
-    this._panel.webview.onDidReceiveMessage(async message => {
-      switch (message.command) {
+    this._panel.webview.onDidReceiveMessage(
+      async (message) => {
+        switch (message.command) {
+          // Display error message
+          case "error":
+            vscode.window.showErrorMessage(message.text);
+            return;
 
-        // Display error message
-        case 'error':
-          vscode.window.showErrorMessage(message.text);
-          return;
+          case "kanbn.task":
+            KanbnTaskPanel.show(
+              this._extensionPath,
+              this._workspacePath,
+              this._kanbn,
+              message.taskId,
+              message.columnName
+            );
+            return;
 
-        case 'kanbn.task':
-          KanbnTaskPanel.show(
-            this._extensionPath,
-            this._workspacePath,
-            this._kanbn,
-            message.taskId,
-            message.columnName
-          );
-          return;
-
-        // Move a task
-        case 'kanbn.move':
-          try {
-            await kanbn.moveTask(message.task, message.columnName, message.position);
-          } catch (e) {
-            vscode.window.showErrorMessage(e.message);
-          }
-          return;
-
-        // Create a task
-        case 'kanbn.addTask':
-          KanbnTaskPanel.show(
-            this._extensionPath,
-            this._workspacePath,
-            this._kanbn,
-            null,
-            message.columnName
-          );
-          return;
-
-        // Open a burndown chart
-        case 'kanbn.burndown':
-          KanbnBurndownPanel.createOrShow(
-            this._extensionPath,
-            this._workspacePath,
-            this._kanbn
-          );
-          KanbnBurndownPanel.update();
-          return;
-
-        // Start a new sprint
-        case 'kanbn.sprint':
-
-          // Prompt for a sprint name
-          const newSprintName = await vscode.window.showInputBox({
-            placeHolder: 'The sprint name.'
-          });
-
-          // If the input prompt wasn't cancelled, start a new sprint
-          if (newSprintName !== undefined) {
+          // Move a task
+          case "kanbn.move":
             try {
-              await kanbn.sprint(newSprintName, '', new Date());
+              await kanbn.moveTask(message.task, message.columnName, message.position);
             } catch (e) {
               vscode.window.showErrorMessage(e.message);
             }
-          }
-          return;
-      }
-    }, null, this._disposables);
+            return;
+
+          // Create a task
+          case "kanbn.addTask":
+            KanbnTaskPanel.show(this._extensionPath, this._workspacePath, this._kanbn, null, message.columnName);
+            return;
+
+          // Open a burndown chart
+          case "kanbn.burndown":
+            KanbnBurndownPanel.show(this._extensionPath, this._workspacePath, this._kanbn);
+            KanbnBurndownPanel.updateAll();
+            return;
+
+          // Start a new sprint
+          case "kanbn.sprint":
+            // Prompt for a sprint name
+            const newSprintName = await vscode.window.showInputBox({
+              placeHolder: "The sprint name.",
+            });
+
+            // If the input prompt wasn't cancelled, start a new sprint
+            if (newSprintName !== undefined) {
+              try {
+                await kanbn.sprint(newSprintName, "", new Date());
+              } catch (e) {
+                vscode.window.showErrorMessage(e.message);
+              }
+            }
+            return;
+        }
+      },
+      null,
+      this._disposables
+    );
   }
 
   public dispose() {
@@ -192,21 +185,21 @@ export default class KanbnBoardPanel {
   }
 
   private _getHtmlForWebview() {
-    const manifest = require(path.join(this._extensionPath, 'build', 'asset-manifest.json'));
-    const mainScript = manifest['main.js'];
-    const mainStyle = manifest['main.css'];
-    const scriptUri = vscode.Uri
-      .file(path.join(this._extensionPath, 'build', mainScript))
-      .with({ scheme: 'vscode-resource' });
-    const styleUri = vscode.Uri
-      .file(path.join(this._extensionPath, 'build', mainStyle))
-      .with({ scheme: 'vscode-resource' });
-    const customStyleUri = vscode.Uri
-      .file(path.join(this._workspacePath, this._kanbn.getFolderName(), 'board.css'))
-      .with({ scheme: 'vscode-resource' });
-    const codiconsUri = vscode.Uri
-      .file(path.join(this._extensionPath, 'node_modules', 'vscode-codicons', 'dist', 'codicon.css'))
-      .with({ scheme: 'vscode-resource' });
+    const manifest = require(path.join(this._extensionPath, "build", "asset-manifest.json"));
+    const mainScript = manifest["main.js"];
+    const mainStyle = manifest["main.css"];
+    const scriptUri = vscode.Uri.file(path.join(this._extensionPath, "build", mainScript)).with({
+      scheme: "vscode-resource",
+    });
+    const styleUri = vscode.Uri.file(path.join(this._extensionPath, "build", mainStyle)).with({
+      scheme: "vscode-resource",
+    });
+    const customStyleUri = vscode.Uri.file(
+      path.join(this._workspacePath, this._kanbn.getFolderName(), "board.css")
+    ).with({ scheme: "vscode-resource" });
+    const codiconsUri = vscode.Uri.file(
+      path.join(this._extensionPath, "node_modules", "vscode-codicons", "dist", "codicon.css")
+    ).with({ scheme: "vscode-resource" });
 
     // Use a nonce to whitelist which scripts can be run
     const nonce = getNonce();
@@ -222,7 +215,7 @@ export default class KanbnBoardPanel {
 <link rel="stylesheet" type="text/css" href="${customStyleUri}">
 <link rel="stylesheet" type="text/css" href="${codiconsUri}">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src vscode-resource: https:; script-src 'nonce-${nonce}'; font-src vscode-resource:; style-src vscode-resource: 'unsafe-inline' http: https: data:;">
-<base href="${vscode.Uri.file(path.join(this._extensionPath, 'build')).with({ scheme: 'vscode-resource' })}/">
+<base href="${vscode.Uri.file(path.join(this._extensionPath, "build")).with({ scheme: "vscode-resource" })}/">
 </head>
 <body>
 <noscript>You need to enable JavaScript to run this app.</noscript>
@@ -231,13 +224,4 @@ export default class KanbnBoardPanel {
 </body>
 </html>`;
   }
-}
-
-function getNonce() {
-  let text = "";
-  const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; i < 32; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
 }

@@ -1,73 +1,72 @@
 import * as path from "path";
 import * as vscode from "vscode";
+import getNonce from "./getNonce";
+import { v4 as uuidv4 } from "uuid";
 
 export default class KanbnBurndownPanel {
-  public static currentPanel: KanbnBurndownPanel | undefined;
-
   private static readonly viewType = "react";
+  private static panels: Record<string, KanbnBurndownPanel> = {};
 
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionPath: string;
   private readonly _workspacePath: string;
   private readonly _kanbn: typeof import("@basementuniverse/kanbn/src/main");
+  private readonly _panelUuid: string;
   private _disposables: vscode.Disposable[] = [];
 
-  public static createOrShow(
+  public static async show(
     extensionPath: string,
     workspacePath: string,
     kanbn: typeof import("@basementuniverse/kanbn/src/main")
   ) {
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
-    // If we already have a panel, show it, otherwise create a new panel
-    if (KanbnBurndownPanel.currentPanel) {
-      KanbnBurndownPanel.currentPanel._panel.reveal(column);
-    } else {
-      KanbnBurndownPanel.currentPanel = new KanbnBurndownPanel(
-        extensionPath,
-        workspacePath,
-        column || vscode.ViewColumn.One,
-        kanbn
-      );
-    }
+    // Create a panel
+    const panelUuid = uuidv4();
+    const burndownPanel = new KanbnBurndownPanel(
+      extensionPath,
+      workspacePath,
+      column || vscode.ViewColumn.One,
+      kanbn,
+      panelUuid
+    );
+    KanbnBurndownPanel.panels[panelUuid] = burndownPanel;
   }
 
-  public static async update() {
-    if (KanbnBurndownPanel.currentPanel) {
-      let index: any;
-      try {
-        index = await KanbnBurndownPanel.currentPanel._kanbn.getIndex();
-      } catch (error) {
-        vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
-        return;
-      }
-      let tasks: any[];
-      try {
-        tasks = (await KanbnBurndownPanel.currentPanel._kanbn.loadAllTrackedTasks(index)).map(
-          task => KanbnBurndownPanel.currentPanel!._kanbn.hydrateTask(index, task)
-        );
-      } catch (error) {
-        vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
-        return;
-      }
-      KanbnBurndownPanel.currentPanel._panel.webview.postMessage({
-        type: "burndown",
-        index,
-        tasks,
-        dateFormat: KanbnBurndownPanel.currentPanel._kanbn.getDateFormat(index),
-      });
+  public static async updateAll() {
+    const panels = Object.values(KanbnBurndownPanel.panels);
+    if (panels.length === 0) {
+      return;
     }
+    const kanbn = panels[0]._kanbn;
+    let index: any;
+    try {
+      index = await kanbn.getIndex();
+    } catch (error) {
+      vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
+      return;
+    }
+    let tasks: any[];
+    try {
+      tasks = (await kanbn.loadAllTrackedTasks(index)).map((task) => kanbn.hydrateTask(index, task));
+    } catch (error) {
+      vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
+      return;
+    }
+    panels.forEach((panel) => panel._update(index, tasks));
   }
 
   private constructor(
     extensionPath: string,
     workspacePath: string,
     column: vscode.ViewColumn,
-    kanbn: typeof import("@basementuniverse/kanbn/src/main")
+    kanbn: typeof import("@basementuniverse/kanbn/src/main"),
+    panelUuid: string
   ) {
     this._extensionPath = extensionPath;
     this._workspacePath = workspacePath;
     this._kanbn = kanbn;
+    this._panelUuid = panelUuid;
 
     // Create and show a new webview panel
     this._panel = vscode.window.createWebviewPanel(KanbnBurndownPanel.viewType, "Burndown Chart", column, {
@@ -117,9 +116,6 @@ export default class KanbnBurndownPanel {
   }
 
   public dispose() {
-    KanbnBurndownPanel.currentPanel = undefined;
-
-    // Clean up our resources
     this._panel.dispose();
     while (this._disposables.length) {
       const x = this._disposables.pop();
@@ -127,6 +123,15 @@ export default class KanbnBurndownPanel {
         x.dispose();
       }
     }
+  }
+
+  private async _update(index: any, tasks: any[]) {
+    this._panel.webview.postMessage({
+      type: "burndown",
+      index,
+      tasks,
+      dateFormat: this._kanbn.getDateFormat(index),
+    });
   }
 
   private _getHtmlForWebview() {
@@ -169,13 +174,4 @@ export default class KanbnBurndownPanel {
 </body>
 </html>`;
   }
-}
-
-function getNonce() {
-  let text = "";
-  const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; i < 32; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
 }

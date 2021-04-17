@@ -20,7 +20,7 @@ body.vscode-high-contrast {
 
 .kanbn-header-name p {
     display: inline-block;
-    flex: 1;
+    flex: 2;
     margin: 0;
     padding: 4px 0;
 }
@@ -42,6 +42,8 @@ body.vscode-high-contrast {
     padding: 8px;
     background-color: var(--vscode-input-background);
     color: var(--vscode-input-foreground);
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
     border: 1px transparent solid;
 }
 
@@ -340,12 +342,13 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
     margin: 8px 0;
     background-color: var(--vscode-input-background);
     color: var(--vscode-input-foreground);
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
     border: 1px transparent solid;
 }
 
 .kanbn-task-editor-field-input[type=date] {
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
+    padding: 6px 8px;
 }
 
 .kanbn-task-editor-field-select {
@@ -476,4 +479,61 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
 
 .kanbn-task-editor-field-comment-text .kanbn-task-editor-field-textarea {
     min-height: 90px;
+}
+
+.kanbn-burndown-settings {
+    position: relative;
+    flex: 1;
+}
+
+.kanbn-burndown-settings form {
+    width: 100%;
+    display: flex;
+    white-space: nowrap;
+}
+
+.kanbn-burndown-settings-sprint-select {
+    box-sizing: border-box;
+    flex: 1;
+    padding: 8px;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px transparent solid;
+}
+
+.kanbn-burndown-settings-input {
+    box-sizing: border-box;
+    display: block;
+    flex: 0.5;
+    padding: 8px;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    border: 1px transparent solid;
+}
+
+.kanbn-burndown-settings-input[type=date] {
+    padding: 6px 8px;
+    margin-left: 8px;
+}
+
+.kanbn-burndown-settings-sprint-select:hover,
+.kanbn-burndown-settings-sprint-select:focus,
+.kanbn-burndown-settings-input:hover,
+.kanbn-burndown-settings-input:focus {
+    border-color: var(--vscode-input-border);
+}
+
+body.vscode-dark .kanbn-burndown-settings-input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+}
+
+.kanbn-header-button-inactive {
+    opacity: 0.6;
+}
+
+.kanbn-burndown {
+    height: 85vh;
+    width: 95vw;
 }

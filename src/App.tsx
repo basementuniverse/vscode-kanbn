@@ -30,7 +30,9 @@ function App() {
   const [burndownData, setBurndownData] = useState({ series: [] });
 
   window.addEventListener('message', event => {
-    const tasks = Object.fromEntries(event.data.tasks.map(task => [task.id, task]));
+    const tasks = event.data.tasks
+      ? Object.fromEntries(event.data.tasks.map(task => [task.id, task]))
+      : {};
     switch (event.data.type) {
       case 'index':
         setName(event.data.index.name);
@@ -66,7 +68,11 @@ function App() {
       case 'burndown':
         setName(event.data.index.name);
         setTasks(tasks);
-        setSprints(event.data.index.options.sprints || []);
+        setSprints(
+          'sprints' in event.data.index.options
+            ? event.data.index.options.sprints
+            : []
+        );
         setBurndownData(event.data.burndownData);
         break;
     }
@@ -111,6 +117,7 @@ function App() {
           tasks={tasks}
           sprints={sprints}
           burndownData={burndownData}
+          vscode={vscode}
         />
       }
     </React.Fragment>
