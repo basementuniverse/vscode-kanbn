@@ -56,7 +56,10 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
   const handleUpdateName = ({ target: { value }}, values) => {
 
     // Update the id preview
-    values.id = paramCase(value);
+    setTaskData({
+      ...taskData,
+      id: paramCase(value)
+    });
 
     // Update the webview panel title
     vscode.postMessage({
@@ -123,7 +126,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
     }
 
     // Check if the id is already in use
-    if (values.id in tasks && tasks[values.id].uuid !== (task ? task.uuid : '')) {
+    if (taskData.id in tasks && tasks[taskData.id].uuid !== (task ? task.uuid : '')) {
       errors.name = 'There is already a task with the same name or id.';
       hasErrors = true;
     }
@@ -203,7 +206,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
                         }}
                       />
                     </label>
-                    <div className="kanbn-task-editor-id">{values.id}</div>
+                    <div className="kanbn-task-editor-id">{taskData.id}</div>
                     <ErrorMessage
                       className="kanbn-task-editor-field-errors"
                       component="div"
