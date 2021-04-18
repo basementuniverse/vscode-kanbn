@@ -117,6 +117,7 @@ function App() {
           tasks={tasks}
           sprints={sprints}
           burndownData={burndownData}
+          dateFormat={dateFormat}
           vscode={vscode}
         />
       }

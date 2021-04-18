@@ -5,13 +5,17 @@ import { v4 as uuidv4 } from "uuid";
 
 export default class KanbnBurndownPanel {
   private static readonly viewType = "react";
-  private static panels: Record<string, KanbnBurndownPanel> = {};
+  private static panels: KanbnBurndownPanel[] = [];
 
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionPath: string;
   private readonly _workspacePath: string;
   private readonly _kanbn: typeof import("@basementuniverse/kanbn/src/main");
-  private readonly _panelUuid: string;
+  private sprintMode: boolean = true;
+  private sprint: string = '';
+  private startDate: string = '';
+  private endDate: string = '';
+  private assigned: string = '';
   private _disposables: vscode.Disposable[] = [];
 
   public static async show(
@@ -22,51 +26,32 @@ export default class KanbnBurndownPanel {
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
     // Create a panel
-    const panelUuid = uuidv4();
     const burndownPanel = new KanbnBurndownPanel(
       extensionPath,
       workspacePath,
       column || vscode.ViewColumn.One,
-      kanbn,
-      panelUuid
+      kanbn
     );
-    KanbnBurndownPanel.panels[panelUuid] = burndownPanel;
+    KanbnBurndownPanel.panels.push(burndownPanel);
   }
 
   public static async updateAll() {
-    const panels = Object.values(KanbnBurndownPanel.panels);
-    if (panels.length === 0) {
+    if (KanbnBurndownPanel.panels.length === 0) {
       return;
     }
-    const kanbn = panels[0]._kanbn;
-    let index: any;
-    try {
-      index = await kanbn.getIndex();
-    } catch (error) {
-      vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
-      return;
-    }
-    let tasks: any[];
-    try {
-      tasks = (await kanbn.loadAllTrackedTasks(index)).map((task) => kanbn.hydrateTask(index, task));
-    } catch (error) {
-      vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
-      return;
-    }
-    panels.forEach((panel) => panel._update(index, tasks));
+    const { index, tasks } = await KanbnBurndownPanel.panels[0].getKanbnIndexAndTasks();
+    KanbnBurndownPanel.panels.forEach((panel) => panel._update(index, tasks));
   }
 
   private constructor(
     extensionPath: string,
     workspacePath: string,
     column: vscode.ViewColumn,
-    kanbn: typeof import("@basementuniverse/kanbn/src/main"),
-    panelUuid: string
+    kanbn: typeof import("@basementuniverse/kanbn/src/main")
   ) {
     this._extensionPath = extensionPath;
     this._workspacePath = workspacePath;
     this._kanbn = kanbn;
-    this._panelUuid = panelUuid;
 
     // Create and show a new webview panel
     this._panel = vscode.window.createWebviewPanel(KanbnBurndownPanel.viewType, "Burndown Chart", column, {
@@ -104,9 +89,20 @@ export default class KanbnBurndownPanel {
     this._panel.webview.onDidReceiveMessage(
       async (message) => {
         switch (message.command) {
+
           // Display error message
           case "error":
             vscode.window.showErrorMessage(message.text);
+            return;
+
+          // Refresh the kanbn chart
+          case 'kanbn.refreshBurndownData':
+            this.sprintMode = message.sprintMode;
+            this.sprint = message.sprint;
+            this.startDate = message.startDate;
+            this.endDate = message.endDate;
+            this.assigned = message.assigned;
+            KanbnBurndownPanel.updateAll();
             return;
         }
       },
@@ -125,13 +121,44 @@ export default class KanbnBurndownPanel {
     }
   }
 
-  private async _update(index: any, tasks: any[]) {
+  private async _update(index: any|null, tasks: any[]|null) {
+    if (!index && !tasks) {
+      ({ index, tasks } = await this.getKanbnIndexAndTasks());
+    }
     this._panel.webview.postMessage({
       type: "burndown",
       index,
       tasks,
       dateFormat: this._kanbn.getDateFormat(index),
+      burndownData: await this._kanbn.burndown(
+        (this.sprintMode && this.sprint) ? [this.sprint] : null,
+        (!this.sprintMode && this.startDate && this.endDate)
+          ? [
+            new Date(Date.parse(this.startDate)),
+            new Date(Date.parse(this.endDate))
+          ]
+          : null,
+        this.assigned || null
+      )
     });
+  }
+
+  private async getKanbnIndexAndTasks(): Promise<{ index: any|null, tasks: any[]|null }> {
+    let index: any;
+    try {
+      index = await this._kanbn.getIndex();
+    } catch (error) {
+      vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
+      return { index: null, tasks: null };
+    }
+    let tasks: any[];
+    try {
+      tasks = (await this._kanbn.loadAllTrackedTasks(index)).map((task) => this._kanbn.hydrateTask(index, task));
+    } catch (error) {
+      vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
+      return { index: null, tasks: null };
+    }
+    return { index, tasks };
   }
 
   private _getHtmlForWebview() {

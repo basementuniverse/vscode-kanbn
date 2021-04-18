@@ -537,3 +537,11 @@ body.vscode-dark .kanbn-burndown-settings-input[type="date"]::-webkit-calendar-p
     height: 85vh;
     width: 95vw;
 }
+
+.kanbn-burndown-grid {
+    stroke: var(--vscode-activityBar-inactiveForeground);
+}
+
+.kanbn-burndown-line path {
+    stroke: #3c7;
+}
