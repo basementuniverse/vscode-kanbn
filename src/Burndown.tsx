@@ -79,13 +79,7 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
     setSprintMode(false);
     refreshBurndownData({ sprintMode: false });
   };
-
-  const chartMin = burndownData.series.length > 0
-    ? Date.parse(burndownData.series[0].from)
-    : 'auto';
-  const chartMax = burndownData.series.length > 0
-    ? Date.parse(burndownData.series[0].to)
-    : 'auto';
+  
   const chartData = burndownData.series.length > 0
     ? burndownData.series[0].dataPoints.map(dataPoint => ({
         x: Date.parse(dataPoint.x),
@@ -186,12 +180,19 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
       <div className="kanbn-burndown">
         <ResponsiveContainer width="100%" height="100%" className="kanbn-burndown-chart">
           <LineChart data={chartData}>
-            <Line className="kanbn-burndown-line" type="stepAfter" dataKey="y" />
+            <Line
+              className="kanbn-burndown-line"
+              type="stepAfter"
+              dataKey="y"
+              strokeWidth={2}
+              dot={{ className: 'kanbn-burndown-point' }}
+              isAnimationActive={false}
+            />
             <CartesianGrid className="kanbn-burndown-grid" strokeDasharray="5 5" vertical={false} />
             <XAxis
               dataKey="x"
               type="number"
-              domain={[chartMin, chartMax]}
+              domain={['dataMin', 'dataMax']}
               tickFormatter={formatXAxis}
               tickCount={6}
             />

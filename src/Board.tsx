@@ -213,10 +213,10 @@ const Board = ({
                     });
                   }}
                   title={[
+                    'Start a new sprint',
                     currentSprint
-                      ? `${currentSprint.name}\nStarted ${formatDate(currentSprint.start, dateFormat)}`
+                      ? `Current sprint:\n  ${currentSprint.name}\n  Started ${formatDate(currentSprint.start, dateFormat)}`
                       : '',
-                    'Start a new sprint'
                   ].join('\n')}
                 >
                   <i className="codicon codicon-rocket"></i>

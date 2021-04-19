@@ -546,6 +546,11 @@ body.vscode-dark .kanbn-burndown-settings-input[type="date"]::-webkit-calendar-p
     stroke: #3c7;
 }
 
+.kanbn-burndown-point {
+    stroke: var(--vscode-foreground);
+    fill: var(--vscode-editor-background);
+}
+
 .kanbn-burndown-tooltip {
     background-color: var(--vscode-menu-background);
     color: var(--vscode-menu-foreground);
