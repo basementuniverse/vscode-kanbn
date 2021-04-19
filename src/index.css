@@ -545,3 +545,21 @@ body.vscode-dark .kanbn-burndown-settings-input[type="date"]::-webkit-calendar-p
 .kanbn-burndown-line path {
     stroke: #3c7;
 }
+
+.kanbn-burndown-tooltip {
+    background-color: var(--vscode-menu-background);
+    color: var(--vscode-menu-foreground);
+    padding: 8px;
+}
+
+.kanbn-burndown-tooltip p {
+    margin: 0;
+}
+
+.kanbn-burndown-tooltip-date {
+    font-weight: bold;
+}
+
+.kanbn-burndown-tooltip-task {
+    font-style: italic;
+}

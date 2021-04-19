@@ -144,6 +144,7 @@ export default class KanbnTaskPanel {
     this._panel.webview.onDidReceiveMessage(
       async (message) => {
         switch (message.command) {
+
           // Display error message
           case "error":
             vscode.window.showErrorMessage(message.text);

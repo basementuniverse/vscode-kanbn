@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import VSCodeApi from "./VSCodeApi";
 import formatDate from 'dateformat';
-import dateFormat from 'dateformat';
+import { debounce } from 'throttle-debounce';
 
-const Burndown = ({ name, tasks, sprints, burndownData, dateFormat, vscode }: {
+const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
   name: string,
-  tasks: Record<string, KanbnTask>,
   sprints: KanbnSprint[],
   burndownData: {
     series: Array<{
@@ -29,57 +28,93 @@ const Burndown = ({ name, tasks, sprints, burndownData, dateFormat, vscode }: {
 }) => {
   const hasSprints = sprints.length > 0;
   const [sprintMode, setSprintMode] = useState(hasSprints);
-  const [sprint, setSprint] = useState(sprintMode ? burndownData.series[0].sprint.name : '');
-  const [startDate, setStartDate] = useState(sprintMode ? '' : formatDate(burndownData.series[0].from, 'yyyy-mm-dd'));
-  const [endDate, setEndDate] = useState(sprintMode ? '' : formatDate(burndownData.series[0].to, 'yyyy-mm-dd'));
-  const [assigned, setAssigned] = useState('');
+  const [sprint, setSprint] = useState((sprintMode && hasSprints) ? sprints[sprints.length - 1].name : '');
+  const [startDate, setStartDate] = useState(
+    (sprintMode && burndownData.series.length > 0)
+      ? ''
+      : formatDate(burndownData.series[0].from, 'yyyy-mm-dd')
+  );
+  const [endDate, setEndDate] = useState(
+    (sprintMode && burndownData.series.length > 0)
+      ? ''
+      : formatDate(burndownData.series[0].to, 'yyyy-mm-dd')
+  );
 
-  const refreshBurndownData = () => {
+  const refreshBurndownData = debounce(500, settings => {
     vscode.postMessage({
       command: 'kanbn.refreshBurndownData',
-      sprintMode,
-      sprint,
-      startDate,
-      endDate,
-      assigned
+      ...Object.assign(
+        {
+          sprintMode,
+          sprint,
+          startDate,
+          endDate
+        },
+        settings
+      )
     });
-  };
+  });
 
   const handleChangeSprint = ({ target: { value }}) => {
     setSprint(value);
-    refreshBurndownData();
+    refreshBurndownData({ sprint: value });
   };
 
   const handleChangeStartDate = ({ target: { value }}) => {
     setStartDate(value);
-    refreshBurndownData();
+    refreshBurndownData({ startDate: value });
   };
 
   const handleChangeEndDate = ({ target: { value }}) => {
     setEndDate(value);
-    refreshBurndownData();
+    refreshBurndownData({ endDate: value });
   };
 
   const handleClickSprintMode = () => {
     setSprintMode(true);
-    refreshBurndownData();
+    refreshBurndownData({ sprintMode: true });
   };
 
   const handleClickDateMode = () => {
     setSprintMode(false);
-    refreshBurndownData();
+    refreshBurndownData({ sprintMode: false });
   };
 
-  const chartMin = Date.parse(burndownData.series[0].from);
-  const chartMax = Date.parse(burndownData.series[0].to);
-  const chartData = burndownData.series[0].dataPoints.map(dataPoint => ({
-    x: Date.parse(dataPoint.x),
-    y: dataPoint.y,
-    'Active tasks': dataPoint.count,
-    'Activity': dataPoint.tasks.map(task => `${task.eventType} ${task.taskId}`).join('\n')
-  }));
+  const chartMin = burndownData.series.length > 0
+    ? Date.parse(burndownData.series[0].from)
+    : 'auto';
+  const chartMax = burndownData.series.length > 0
+    ? Date.parse(burndownData.series[0].to)
+    : 'auto';
+  const chartData = burndownData.series.length > 0
+    ? burndownData.series[0].dataPoints.map(dataPoint => ({
+        x: Date.parse(dataPoint.x),
+        y: dataPoint.y,
+        count: dataPoint.count,
+        tasks: dataPoint.tasks,
+      }))
+    : [];
 
   const formatXAxis = date => formatDate(date, dateFormat);
+
+  const renderTooltip = e => {
+    if (e.active && e.payload && e.payload.length) {
+      const data = e.payload[0].payload;
+      return (
+        <div className="kanbn-burndown-tooltip">
+          <p className="kanbn-burndown-tooltip-date">{formatDate(data.x, dateFormat)}</p>
+          <p className="kanbn-burndown-tooltip-workload">Total workload: {data.y}</p>
+          <p className="kanbn-burndown-tooltip-count">Active tasks: {data.count}</p>
+          {data.tasks.map(task => (
+            <p className="kanbn-burndown-tooltip-task">
+              {{ started: 'Started', completed: 'Completed' }[task.eventType]} {task.task.name}
+            </p>
+          ))}
+        </div>
+      )
+    }
+    return null;
+  };
 
   return (
     <React.Fragment>
@@ -151,11 +186,17 @@ const Burndown = ({ name, tasks, sprints, burndownData, dateFormat, vscode }: {
       <div className="kanbn-burndown">
         <ResponsiveContainer width="100%" height="100%" className="kanbn-burndown-chart">
           <LineChart data={chartData}>
-            <Line className="kanbn-burndown-line" type="monotone" dataKey="y" />
+            <Line className="kanbn-burndown-line" type="stepAfter" dataKey="y" />
             <CartesianGrid className="kanbn-burndown-grid" strokeDasharray="5 5" vertical={false} />
-            <XAxis dataKey="x" type="number" domain={[chartMin, chartMax]} tickFormatter={formatXAxis} />
+            <XAxis
+              dataKey="x"
+              type="number"
+              domain={[chartMin, chartMax]}
+              tickFormatter={formatXAxis}
+              tickCount={6}
+            />
             <YAxis />
-            <Tooltip />
+            <Tooltip content={renderTooltip} />
           </LineChart>
         </ResponsiveContainer>
       </div>
