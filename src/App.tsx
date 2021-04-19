@@ -114,7 +114,6 @@ function App() {
         type === 'burndown' &&
         <Burndown
           name={name}
-          tasks={tasks}
           sprints={sprints}
           burndownData={burndownData}
           dateFormat={dateFormat}

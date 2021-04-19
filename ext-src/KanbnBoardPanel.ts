@@ -113,11 +113,13 @@ export default class KanbnBoardPanel {
     this._panel.webview.onDidReceiveMessage(
       async (message) => {
         switch (message.command) {
+
           // Display error message
           case "error":
             vscode.window.showErrorMessage(message.text);
             return;
 
+          // Open a task in the editor
           case "kanbn.task":
             KanbnTaskPanel.show(
               this._extensionPath,
@@ -144,8 +146,8 @@ export default class KanbnBoardPanel {
 
           // Open a burndown chart
           case "kanbn.burndown":
-            KanbnBurndownPanel.show(this._extensionPath, this._workspacePath, this._kanbn);
-            KanbnBurndownPanel.updateAll();
+            KanbnBurndownPanel.createOrShow(this._extensionPath, this._workspacePath, this._kanbn);
+            KanbnBurndownPanel.update();
             return;
 
           // Start a new sprint
@@ -163,6 +165,7 @@ export default class KanbnBoardPanel {
                 vscode.window.showErrorMessage(e.message);
               }
             }
+            KanbnBurndownPanel.update();
             return;
         }
       },

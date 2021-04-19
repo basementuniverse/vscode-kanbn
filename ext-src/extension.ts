@@ -110,8 +110,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // If kanbn is initialised, view the burndown chart
       if (await kanbn.initialised()) {
-        KanbnBurndownPanel.show(context.extensionPath, vscode.workspace.workspaceFolders[0].uri.fsPath, kanbn);
-        KanbnBurndownPanel.updateAll();
+        KanbnBurndownPanel.createOrShow(context.extensionPath, vscode.workspace.workspaceFolders[0].uri.fsPath, kanbn);
+        KanbnBurndownPanel.update();
       } else {
         vscode.window.showErrorMessage("You need to initialise Kanbn before viewing the burndown chart.");
       }
@@ -138,7 +138,7 @@ export async function activate(context: vscode.ExtensionContext) {
     fileWatcher.onDidChange(() => {
       kanbnStatusBarItem.update();
       KanbnBoardPanel.update();
-      KanbnBurndownPanel.updateAll();
+      KanbnBurndownPanel.update();
     });
   }
 
