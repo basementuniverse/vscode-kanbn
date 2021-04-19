@@ -30,6 +30,7 @@ Various Codicon icons have been used in this extension. Check [here](https://cod
 - `kanbn-create-task-button`
 - `kanbn-column-task-list-container`
 - `kanbn-column-task-list`
+- `kanbn-column-task-list.drag-over`
 - `kanbn-task`
 - `kanbn-task-row`
 - `kanbn-task-name`
@@ -49,6 +50,7 @@ Various Codicon icons have been used in this extension. Check [here](https://cod
 
 - `kanbn-task-editor`
 - `kanbn-task-editor-title`
+- `kanbn-task-editor-dirty`
 - `kanbn-task-editor-dates`
 - `kanbn-task-editor-form`
 - `kanbn-task-editor-column-left`
@@ -96,3 +98,17 @@ Various Codicon icons have been used in this extension. Check [here](https://cod
 - `kanbn-task-editor-field-tag`
 - `kanbn-task-editor-tag-highlight`
 - `kanbn-task-tag-{Tag name in snake-case}`
+
+### Burndown chart
+
+- `kanbn-burndown`
+- `kanbn-burndown-settings`
+- `kanbn-burndown-settings-sprint-select`
+- `kanbn-burndown-settings-start-date`
+- `kanbn-burndown-settings-end-date`
+- `kanbn-burndown-settings-sprint-mode`
+- `kanbn-burndown-settings-date-mode`
+- `kanbn-header-button-active`
+- `kanbn-header-button-inactive`
+- `kanbn-burndown-grid`
+- `kanbn-burndown-line`
