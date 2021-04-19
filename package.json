@@ -88,7 +88,7 @@
     }
   },
   "dependencies": {
-    "@basementuniverse/kanbn": "^0.3.0",
+    "@basementuniverse/kanbn": "^0.4.0",
     "dateformat": "^4.5.1",
     "formik": "^2.2.6",
     "git-user-name": "^2.0.0",
@@ -98,6 +98,7 @@
     "react-dom": "^16.3.2",
     "recharts": "^2.0.9",
     "terser": "3.14.1",
+    "throttle-debounce": "^3.0.1",
     "uuid": "^8.3.2",
     "vscode-codicons": "^0.0.15"
   },
