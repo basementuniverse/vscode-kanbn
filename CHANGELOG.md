@@ -1,3 +1,7 @@
+# 0.5.0
+
+* Update kanbn dependency, now using YAML front matter for index options and task metadata
+
 # 0.4.0
 
 * Added button to clear filters
