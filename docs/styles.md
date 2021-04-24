@@ -1,6 +1,6 @@
 # Styles
 
-The Kanbn board has a default style which is based on the current vscode theme, however you can override this by creating a CSS file `.kanbn/board.css`. A reference of class names is provided below.
+The Kanbn board has a default style which is based on the current vscode theme, however you can override this by creating a CSS file called `board.css` inside the Kanbn directory (by default this is `.kanbn/`). A reference of class names is provided below.
 
 You can view the default stylesheet [here](https://github.com/basementuniverse/vscode-kanbn/blob/main/src/index.css).
 

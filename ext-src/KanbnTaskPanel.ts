@@ -61,6 +61,7 @@ export default class KanbnTaskPanel {
   private readonly _extensionPath: string;
   private readonly _workspacePath: string;
   private readonly _kanbn: typeof import("@basementuniverse/kanbn/src/main");
+  private readonly _kanbnFolderName: string;
   private readonly _panelUuid: string;
   private _taskId: string | null;
   private _columnName: string | null;
@@ -70,6 +71,7 @@ export default class KanbnTaskPanel {
     extensionPath: string,
     workspacePath: string,
     kanbn: typeof import("@basementuniverse/kanbn/src/main"),
+    kanbnFolderName: string,
     taskId: string | null,
     columnName: string | null
   ) {
@@ -82,6 +84,7 @@ export default class KanbnTaskPanel {
       workspacePath,
       column || vscode.ViewColumn.One,
       kanbn,
+      kanbnFolderName,
       taskId,
       columnName,
       panelUuid
@@ -95,6 +98,7 @@ export default class KanbnTaskPanel {
     workspacePath: string,
     column: vscode.ViewColumn,
     kanbn: typeof import("@basementuniverse/kanbn/src/main"),
+    kanbnFolderName: string,
     taskId: string | null,
     columnName: string | null,
     panelUuid: string
@@ -102,6 +106,7 @@ export default class KanbnTaskPanel {
     this._extensionPath = extensionPath;
     this._workspacePath = workspacePath;
     this._kanbn = kanbn;
+    this._kanbnFolderName = kanbnFolderName;
     this._taskId = taskId;
     this._columnName = columnName;
     this._panelUuid = panelUuid;
@@ -117,7 +122,7 @@ export default class KanbnTaskPanel {
       // Restrict the webview to only loading content from allowed paths
       localResourceRoots: [
         vscode.Uri.file(path.join(this._extensionPath, "build")),
-        vscode.Uri.file(path.join(this._workspacePath, this._kanbn.getFolderName())),
+        vscode.Uri.file(path.join(this._workspacePath, this._kanbnFolderName)),
         vscode.Uri.file(path.join(this._extensionPath, "node_modules", "vscode-codicons", "dist")),
       ],
     });
@@ -260,7 +265,7 @@ export default class KanbnTaskPanel {
       scheme: "vscode-resource",
     });
     const customStyleUri = vscode.Uri.file(
-      path.join(this._workspacePath, this._kanbn.getFolderName(), "board.css")
+      path.join(this._workspacePath, this._kanbnFolderName, "board.css")
     ).with({ scheme: "vscode-resource" });
     const codiconsUri = vscode.Uri.file(
       path.join(this._extensionPath, "node_modules", "vscode-codicons", "dist", "codicon.css")

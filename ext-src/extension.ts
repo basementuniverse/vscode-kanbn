@@ -64,7 +64,12 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // If kanbn is initialised, view the kanbn board
       if (await kanbn.initialised()) {
-        KanbnBoardPanel.createOrShow(context.extensionPath, vscode.workspace.workspaceFolders[0].uri.fsPath, kanbn);
+        KanbnBoardPanel.createOrShow(
+          context.extensionPath,
+          vscode.workspace.workspaceFolders[0].uri.fsPath,
+          kanbn,
+          await kanbn.getFolderName()
+        );
         KanbnBoardPanel.update();
       } else {
         vscode.window.showErrorMessage("You need to initialise Kanbn before viewing the Kanbn board.");
@@ -88,7 +93,14 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // If kanbn is initialised, open the task webview
       if (await kanbn.initialised()) {
-        KanbnTaskPanel.show(context.extensionPath, vscode.workspace.workspaceFolders[0].uri.fsPath, kanbn, null, null);
+        KanbnTaskPanel.show(
+          context.extensionPath,
+          vscode.workspace.workspaceFolders[0].uri.fsPath,
+          kanbn,
+          await kanbn.getFolderName(),
+          null,
+          null
+        );
       } else {
         vscode.window.showErrorMessage("You need to initialise Kanbn before adding a new task.");
       }
@@ -110,7 +122,12 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // If kanbn is initialised, view the burndown chart
       if (await kanbn.initialised()) {
-        KanbnBurndownPanel.createOrShow(context.extensionPath, vscode.workspace.workspaceFolders[0].uri.fsPath, kanbn);
+        KanbnBurndownPanel.createOrShow(
+          context.extensionPath,
+          vscode.workspace.workspaceFolders[0].uri.fsPath,
+          kanbn,
+          await kanbn.getFolderName()
+        );
         KanbnBurndownPanel.update();
       } else {
         vscode.window.showErrorMessage("You need to initialise Kanbn before viewing the burndown chart.");
@@ -132,8 +149,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Initialise file watcher
     const uri = vscode.workspace.workspaceFolders[0].uri.fsPath;
+    const kanbnFolderName = await kanbn.getFolderName();
     const fileWatcher = vscode.workspace.createFileSystemWatcher(
-      new vscode.RelativePattern(uri, `${kanbn.getFolderName()}/**.*`)
+      new vscode.RelativePattern(uri, `${kanbnFolderName}/**.*`)
     );
     fileWatcher.onDidChange(() => {
       kanbnStatusBarItem.update();

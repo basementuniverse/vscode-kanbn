@@ -11,6 +11,7 @@ export default class KanbnBurndownPanel {
   private readonly _extensionPath: string;
   private readonly _workspacePath: string;
   private readonly _kanbn: typeof import("@basementuniverse/kanbn/src/main");
+  private readonly _kanbnFolderName: string;
   private sprintMode: boolean = true;
   private sprint: string = '';
   private startDate: string = '';
@@ -20,7 +21,8 @@ export default class KanbnBurndownPanel {
   public static async createOrShow(
     extensionPath: string,
     workspacePath: string,
-    kanbn: typeof import("@basementuniverse/kanbn/src/main")
+    kanbn: typeof import("@basementuniverse/kanbn/src/main"),
+    kanbnFolderName: string
   ) {
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
@@ -32,7 +34,8 @@ export default class KanbnBurndownPanel {
         extensionPath,
         workspacePath,
         column || vscode.ViewColumn.One,
-        kanbn
+        kanbn,
+        kanbnFolderName
       );
     }
   }
@@ -73,11 +76,13 @@ export default class KanbnBurndownPanel {
     extensionPath: string,
     workspacePath: string,
     column: vscode.ViewColumn,
-    kanbn: typeof import("@basementuniverse/kanbn/src/main")
+    kanbn: typeof import("@basementuniverse/kanbn/src/main"),
+    kanbnFolderName: string
   ) {
     this._extensionPath = extensionPath;
     this._workspacePath = workspacePath;
     this._kanbn = kanbn;
+    this._kanbnFolderName = kanbnFolderName;
 
     // Create and show a new webview panel
     this._panel = vscode.window.createWebviewPanel(KanbnBurndownPanel.viewType, "Burndown Chart", column, {
@@ -90,7 +95,7 @@ export default class KanbnBurndownPanel {
       // Restrict the webview to only loading content from allowed paths
       localResourceRoots: [
         vscode.Uri.file(path.join(this._extensionPath, "build")),
-        vscode.Uri.file(path.join(this._workspacePath, this._kanbn.getFolderName())),
+        vscode.Uri.file(path.join(this._workspacePath, this._kanbnFolderName)),
         vscode.Uri.file(path.join(this._extensionPath, "node_modules", "vscode-codicons", "dist")),
       ],
     });
@@ -160,7 +165,7 @@ export default class KanbnBurndownPanel {
       scheme: "vscode-resource",
     });
     const customStyleUri = vscode.Uri.file(
-      path.join(this._workspacePath, this._kanbn.getFolderName(), "board.css")
+      path.join(this._workspacePath, this._kanbnFolderName, "board.css")
     ).with({ scheme: "vscode-resource" });
     const codiconsUri = vscode.Uri.file(
       path.join(this._extensionPath, "node_modules", "vscode-codicons", "dist", "codicon.css")

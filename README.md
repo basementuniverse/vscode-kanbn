@@ -66,4 +66,4 @@ The following configuration settings are available:
 
 ## Styling the Kanbn board
 
-This extension has been tested using various themes (light, dark and high-contrast), so it should always look somewhat presentable. However, if you'd like to set your own styles you can do so by creating a CSS file `.kanbn/board.css`. [Check here](docs/styles.md) for more information.
+This extension has been tested using various themes (light, dark and high-contrast), so it should always look somewhat presentable. However, if you'd like to set your own styles you can do so by creating a CSS file called `board.css` in the Kanbn directory. [Check here](docs/styles.md) for more information.

@@ -1,3 +1,7 @@
+# 0.6.0
+
+* Update kanbn dependency, folder names and index filename can now be configured, see [here](https://github.com/basementuniverse/kanbn/blob/master/docs/advanced-configuration.md) for more information
+
 # 0.5.0
 
 * Update kanbn dependency, now using YAML front matter for index options and task metadata
