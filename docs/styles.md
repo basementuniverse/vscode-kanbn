@@ -57,8 +57,11 @@ Various Codicon icons have been used in this extension. Check [here](https://cod
 - `kanbn-task-editor-field`
 - `kanbn-task-editor-field-name`
 - `kanbn-task-editor-field-label`
+- `kanbn-task-editor-field-label-description`
 - `kanbn-task-editor-field-input`
 - `kanbn-task-editor-id`
+- `kanbn-task-editor-description-preview`
+- `kanbn-task-editor-button-edit-description`
 - `kanbn-task-editor-field-description`
 - `kanbn-task-editor-field-textarea`
 - `kanbn-task-editor-field-subtasks`

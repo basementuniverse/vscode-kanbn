@@ -4,6 +4,7 @@ import formatDate from 'dateformat';
 import VSCodeApi from './VSCodeApi';
 import { paramCase } from 'param-case';
 import gitUsername from 'git-user-name';
+import ReactMarkdown from 'react-markdown';
 
 interface KanbnTaskValidationOutput {
   name: string,
@@ -23,7 +24,7 @@ interface KanbnTaskValidationInput extends KanbnTaskValidationOutput {
 }
 
 const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUuid, vscode }: {
-  task: KanbnTask|null,
+  task: KanbnTask | null,
   tasks: Record<string, KanbnTask>,
   columnName: string,
   columnNames: string[],
@@ -51,9 +52,10 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
     subTasks: task ? task.subTasks : [],
     comments: task ? task.comments : []
   });
+  const [editingDescription, setEditingDescription] = useState(!editing);
 
   // Called when the name field is changed
-  const handleUpdateName = ({ target: { value }}, values) => {
+  const handleUpdateName = ({ target: { value } }, values) => {
 
     // Update the id preview
     setTaskData({
@@ -108,7 +110,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
   };
 
   // Validate form data
-  const validate = (values: KanbnTaskValidationInput): KanbnTaskValidationOutput|{} => {
+  const validate = (values: KanbnTaskValidationInput): KanbnTaskValidationOutput | {} => {
     let hasErrors = false;
     const errors: KanbnTaskValidationOutput = {
       name: '',
@@ -214,14 +216,38 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
                     />
                   </div>
                   <div className="kanbn-task-editor-field kanbn-task-editor-field-description">
-                    <label className="kanbn-task-editor-field-label">
+                    <label
+                      className="kanbn-task-editor-field-label kanbn-task-editor-field-label-description"
+                      htmlFor="description-input"
+                    >
                       <p>Description</p>
-                      <Field
-                        className="kanbn-task-editor-field-textarea"
-                        as="textarea"
-                        name="description"
-                      />
                     </label>
+                    <button
+                      type="button"
+                      className="kanbn-task-editor-button kanbn-task-editor-button-edit-description"
+                      title="Edit description"
+                      onClick={() => {
+                        setEditingDescription(!editingDescription);
+                      }}
+                    >
+                      {
+                        editingDescription
+                          ? <React.Fragment><i className="codicon codicon-preview"></i> Preview</React.Fragment>
+                          : <React.Fragment><i className="codicon codicon-edit"></i> Edit</React.Fragment>
+                      }
+                    </button>
+                    {
+                      editingDescription
+                        ? <Field
+                          className="kanbn-task-editor-field-textarea"
+                          id="description-input"
+                          as="textarea"
+                          name="description"
+                        />
+                        : <ReactMarkdown className="kanbn-task-editor-description-preview">
+                          {taskData.description}
+                        </ReactMarkdown>
+                    }
                     <ErrorMessage
                       className="kanbn-task-editor-field-errors"
                       component="div"
