@@ -245,7 +245,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
                           name="description"
                         />
                         : <ReactMarkdown className="kanbn-task-editor-description-preview">
-                          {taskData.description}
+                          {values.description}
                         </ReactMarkdown>
                     }
                     <ErrorMessage
