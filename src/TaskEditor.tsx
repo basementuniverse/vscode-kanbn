@@ -53,6 +53,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
     comments: task ? task.comments : []
   });
   const [editingDescription, setEditingDescription] = useState(!editing);
+  const [editingComment, setEditingComment] = useState(-1);
 
   // Called when the name field is changed
   const handleUpdateName = ({ target: { value } }, values) => {
@@ -379,16 +380,25 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
                             <div className="kanbn-task-editor-row-comment" key={index}>
                               <div className="kanbn-task-editor-row">
                                 <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-author">
-                                  <Field
-                                    className="kanbn-task-editor-field-input"
-                                    name={`comments.${index}.author`}
-                                    placeholder="Comment author"
-                                  />
-                                  <ErrorMessage
-                                    className="kanbn-task-editor-field-errors"
-                                    component="div"
-                                    name={`comments.${index}.author`}
-                                  />
+                                  {
+                                    editingComment === index
+                                      ? <React.Fragment>
+                                        <Field
+                                          className="kanbn-task-editor-field-input"
+                                          name={`comments.${index}.author`}
+                                          placeholder="Comment author"
+                                        />
+                                        <ErrorMessage
+                                          className="kanbn-task-editor-field-errors"
+                                          component="div"
+                                          name={`comments.${index}.author`}
+                                        />
+                                      </React.Fragment>
+                                      : <div className="kanbn-task-editor-field-comment-author-value">
+                                        <i className="codicon codicon-account"></i>
+                                        {comment.author || 'Anonymous'}
+                                      </div>
+                                  }
                                 </div>
                                 <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-date">
                                   {formatDate(comment.date, dateFormat)}
@@ -402,20 +412,38 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
                                   >
                                     <i className="codicon codicon-trash"></i>
                                   </button>
+                                  <button
+                                    type="button"
+                                    className="kanbn-task-editor-button kanbn-task-editor-button-edit"
+                                    title="Edit comment"
+                                    onClick={() => {
+                                      setEditingComment(editingComment !== index ? index : -1);
+                                    }}
+                                  >
+                                    <i className="codicon codicon-edit"></i>
+                                  </button>
                                 </div>
                               </div>
                               <div className="kanbn-task-editor-row">
                                 <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-text">
-                                  <Field
-                                    className="kanbn-task-editor-field-textarea"
-                                    as="textarea"
-                                    name={`comments.${index}.text`}
-                                  />
-                                  <ErrorMessage
-                                    className="kanbn-task-editor-field-errors"
-                                    component="div"
-                                    name={`comments.${index}.text`}
-                                  />
+                                  {
+                                    editingComment === index
+                                      ? <React.Fragment>
+                                        <Field
+                                          className="kanbn-task-editor-field-textarea"
+                                          as="textarea"
+                                          name={`comments.${index}.text`}
+                                        />
+                                        <ErrorMessage
+                                          className="kanbn-task-editor-field-errors"
+                                          component="div"
+                                          name={`comments.${index}.text`}
+                                        />
+                                      </React.Fragment>
+                                      : <div className="kanbn-task-editor-comment-text">
+                                        {comment.text}
+                                      </div>
+                                  }
                                 </div>
                               </div>
                             </div>
@@ -425,7 +453,10 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
                               type="button"
                               className="kanbn-task-editor-button kanbn-task-editor-button-add"
                               title="Add comment"
-                              onClick={() => push({ text: '', date: new Date(), author: gitUsername() || '' })}
+                              onClick={() => {
+                                push({ text: '', date: new Date(), author: gitUsername() || '' });
+                                setEditingComment(values.comments.length);
+                              }}
                             >
                               <i className="codicon codicon-comment"></i>Add comment
                             </button>

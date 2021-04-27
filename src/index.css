@@ -451,7 +451,11 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
 }
 
 .kanbn-task-editor-column-buttons .kanbn-task-editor-button {
-    margin: 8px 0;
+    margin: 8px 0 8px 8px;
+}
+
+.kanbn-task-editor-column-buttons .kanbn-task-editor-button .codicon {
+    margin-right: 0;
 }
 
 .kanbn-task-editor-field-progress {
@@ -462,10 +466,6 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
     bottom: 0;
     height: 4px;
     opacity: 1;
-}
-
-.kanbn-task-editor-column .kanbn-task-editor-button-delete .codicon {
-    margin-right: 0;
 }
 
 .kanbn-task-editor-field-tag {
@@ -482,8 +482,18 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
 
 .kanbn-task-editor-row-comment {
     padding-bottom: 1em;
-    border-bottom: 1px var(--vscode-activityBar-inactiveForeground) solid;
     margin-bottom: 1em;
+}
+
+.kanbn-task-editor-field-comment-author-value {
+    padding: 16px 0;
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.kanbn-task-editor-field-comment-author-value .codicon {
+    font-size: 0.8em !important;
+    margin-right: 0.5em;
 }
 
 .kanbn-task-editor-field-comment-date {
@@ -497,15 +507,32 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
     min-height: 90px;
 }
 
+.kanbn-task-editor-comment-text {
+    position: relative;
+    padding: .5em;
+    background-color: var(--vscode-input-background);
+    min-height: 90px;
+    white-space: pre-wrap;
+}
+
+.kanbn-task-editor-comment-text::after {
+	content: "";
+	position: absolute;
+	height: 16px;
+	width: 24px;
+	bottom: -15px;
+	left: 95%;
+	background-color: var(--vscode-input-background);
+	clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
 .kanbn-task-editor-field-label-description {
     display: inline-block;
 }
 
 .kanbn-task-editor-description-preview {
     padding: .5em;
-    border: 1px var(--vscode-activityBar-inactiveForeground) solid;
-    border-radius: 3px;
-    margin-top: 0;
+    border: 1px var(--vscode-input-background) solid;
 }
 
 .kanbn-task-editor-button-edit-description {

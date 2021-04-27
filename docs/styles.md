@@ -76,6 +76,7 @@ Various Codicon icons have been used in this extension. Check [here](https://cod
 - `kanbn-task-editor-button-delete`
 - `kanbn-task-editor-buttons`
 - `kanbn-task-editor-button-add`
+- `kanbn-task-editor-button-edit`
 - `kanbn-task-editor-field-relations`
 - `kanbn-task-editor-row-relation`
 - `kanbn-task-editor-field-relation-type`
@@ -84,8 +85,10 @@ Various Codicon icons have been used in this extension. Check [here](https://cod
 - `kanbn-task-editor-field-comments`
 - `kanbn-task-editor-row-comment`
 - `kanbn-task-editor-field-comment-author`
+- `kanbn-task-editor-field-comment-author-value`
 - `kanbn-task-editor-field-comment-date`
 - `kanbn-task-editor-field-comment-text`
+- `kanbn-task-editor-comment-text`
 - `kanbn-task-editor-column-right`
 - `kanbn-task-editor-button-submit`
 - `kanbn-task-editor-field-column`
