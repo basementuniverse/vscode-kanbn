@@ -1,3 +1,8 @@
+# 0.7.0
+
+* Markdown preview for task descriptions
+* Task comments now render as comments, toggle comment editing by clicking the new edit button next to each comment
+
 # 0.6.0
 
 * Update kanbn dependency, folder names and index filename can now be configured, see [here](https://github.com/basementuniverse/kanbn/blob/master/docs/advanced-configuration.md) for more information
