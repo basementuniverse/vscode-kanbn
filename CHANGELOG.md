@@ -1,3 +1,8 @@
+# 0.7.1
+
+* Fixed bug where task editor would reset to Create mode after renaming a task
+* Updated default stylesheet to make tag text easier to see on some background colours
+
 # 0.7.0
 
 * Markdown preview for task descriptions
