@@ -240,8 +240,8 @@ body.vscode-dark .kanbn-task {
 .kanbn-task-tag {
     display: inline-block;
     background-color: var(--vscode-activityBar-inactiveForeground);
-    background-color: #555;
-    color: #ddd;
+    background-color: #999;
+    color: #333;
     font-size: 0.8em;
     font-weight: bold;
     padding: 2px 4px;
