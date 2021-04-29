@@ -57,12 +57,16 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
 
   // Called when the name field is changed
   const handleUpdateName = ({ target: { value } }, values) => {
+    const id = paramCase(value);
 
     // Update the id preview
     setTaskData({
       ...taskData,
-      id: paramCase(value)
+      id
     });
+
+    // Update values
+    values.id = id;
 
     // Update the webview panel title
     vscode.postMessage({
