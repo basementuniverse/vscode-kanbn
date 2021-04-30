@@ -1,3 +1,7 @@
+# 0.7.3
+
+* Speculative fix for no_case bug when parsing & converting task names
+
 # 0.7.2
 
 * Updated kanbn dependency, task workload calculations are now working correctly on burndown chart
