@@ -79,7 +79,7 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
     setSprintMode(false);
     refreshBurndownData({ sprintMode: false });
   };
-  
+
   const chartData = burndownData.series.length > 0
     ? burndownData.series[0].dataPoints.map(dataPoint => ({
         x: Date.parse(dataPoint.x),
@@ -101,7 +101,7 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
           <p className="kanbn-burndown-tooltip-count">Active tasks: {data.count}</p>
           {data.tasks.map(task => (
             <p className="kanbn-burndown-tooltip-task">
-              {{ started: 'Started', completed: 'Completed' }[task.eventType]} {task.task.name}
+              {{ created: 'Created', started: 'Started', completed: 'Completed' }[task.eventType]} {task.task.name}
             </p>
           ))}
         </div>

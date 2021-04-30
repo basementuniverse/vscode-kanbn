@@ -1,3 +1,8 @@
+# 0.7.2
+
+* Updated kanbn dependency, task workload calculations are now working correctly on burndown chart
+* Task creation events are now reported correctly on burndown chart
+
 # 0.7.1
 
 * Fixed bug where task editor would reset to Create mode after renaming a task
@@ -6,7 +11,7 @@
 # 0.7.0
 
 * Markdown preview for task descriptions
-* Task comments now render as comments, toggle comment editing by clicking the new edit button next to each comment
+* Task comments now render as comments, toggle comment editing by clicking the edit button next to each comment
 
 # 0.6.0
 
