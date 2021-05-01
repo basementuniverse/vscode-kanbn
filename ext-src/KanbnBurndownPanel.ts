@@ -66,7 +66,10 @@ export default class KanbnBurndownPanel {
               new Date(Date.parse(KanbnBurndownPanel.currentPanel.startDate)),
               new Date(Date.parse(KanbnBurndownPanel.currentPanel.endDate))
             ]
-            : null
+            : null,
+          null,
+          null,
+          'auto'
         )
       });
     }

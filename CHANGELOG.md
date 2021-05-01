@@ -1,3 +1,7 @@
+# 0.8.0
+
+* Update kanbn dependency, now using auto-normalisation for burndown chart datapoints, see [here](https://github.com/basementuniverse/kanbn/blob/master/docs/commands/burndown.txt) for more information
+
 # 0.7.3
 
 * Speculative fix for no_case bug when parsing & converting task names
