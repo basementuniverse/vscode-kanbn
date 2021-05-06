@@ -264,7 +264,7 @@ const Board = ({
                 <h2 className="kanbn-column-name">
                   {
                     startedColumns.indexOf(columnName) > -1 &&
-                    <i className="codicon codicon-chevron-right"></i>
+                    <i className="codicon codicon-play"></i>
                   }
                   {
                     completedColumns.indexOf(columnName) > -1 &&
