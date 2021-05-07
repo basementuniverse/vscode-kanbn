@@ -1,3 +1,11 @@
+# 0.9.0
+
+* Update kanbn dependency, markdown inside task comments will be parsed correctly (previously any markdown inside comments would be incorrectly compiled into the task description)
+* Task comments will be rendered as markdown instead of raw text
+* Better visual feedback when a task comment is being edited (the button icon and tooltip will change)
+* Textarea inputs will automatically resize based on their contents
+* Changed 'Started Column' icon to make it more consistent with the status bar icons
+
 # 0.8.0
 
 * Update kanbn dependency, now using auto-normalisation for burndown chart datapoints, see [here](https://github.com/basementuniverse/kanbn/blob/master/docs/commands/burndown.txt) for more information
