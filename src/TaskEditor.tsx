@@ -5,6 +5,7 @@ import VSCodeApi from './VSCodeApi';
 import { paramCase } from 'param-case';
 import gitUsername from 'git-user-name';
 import ReactMarkdown from 'react-markdown';
+import TextareaAutosize from 'react-textarea-autosize';
 
 interface KanbnTaskValidationOutput {
   name: string,
@@ -246,7 +247,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
                         ? <Field
                           className="kanbn-task-editor-field-textarea"
                           id="description-input"
-                          as="textarea"
+                          as={TextareaAutosize}
                           name="description"
                         />
                         : <ReactMarkdown className="kanbn-task-editor-description-preview">
@@ -419,12 +420,16 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
                                   <button
                                     type="button"
                                     className="kanbn-task-editor-button kanbn-task-editor-button-edit"
-                                    title="Edit comment"
+                                    title={editingComment === index ? "View comment" : "Edit comment"}
                                     onClick={() => {
                                       setEditingComment(editingComment !== index ? index : -1);
                                     }}
                                   >
-                                    <i className="codicon codicon-edit"></i>
+                                    {
+                                      editingComment === index
+                                        ? <i className="codicon codicon-preview"></i>
+                                        : <i className="codicon codicon-edit"></i>
+                                    }
                                   </button>
                                 </div>
                               </div>
@@ -435,7 +440,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
                                       ? <React.Fragment>
                                         <Field
                                           className="kanbn-task-editor-field-textarea"
-                                          as="textarea"
+                                          as={TextareaAutosize}
                                           name={`comments.${index}.text`}
                                         />
                                         <ErrorMessage
@@ -444,9 +449,9 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
                                           name={`comments.${index}.text`}
                                         />
                                       </React.Fragment>
-                                      : <div className="kanbn-task-editor-comment-text">
+                                      : <ReactMarkdown className="kanbn-task-editor-comment-text">
                                         {comment.text}
-                                      </div>
+                                      </ReactMarkdown>
                                   }
                                 </div>
                               </div>
