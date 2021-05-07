@@ -7,7 +7,7 @@
     "color": "#72abdd",
     "theme": "dark"
   },
-  "version": "0.8.0",
+  "version": "0.9.0",
   "engines": {
     "vscode": "^1.23.0"
   },
@@ -88,7 +88,7 @@
     }
   },
   "dependencies": {
-    "@basementuniverse/kanbn": "^0.7.0",
+    "@basementuniverse/kanbn": "^0.7.1",
     "dateformat": "^4.5.1",
     "formik": "^2.2.6",
     "git-user-name": "^2.0.0",
@@ -97,6 +97,7 @@
     "react-beautiful-dnd": "12.2.0",
     "react-dom": "^16.3.2",
     "react-markdown": "^6.0.1",
+    "react-textarea-autosize": "^8.3.2",
     "recharts": "^2.0.9",
     "terser": "3.14.1",
     "throttle-debounce": "^3.0.1",
