@@ -1,3 +1,4 @@
+import { status } from '@basementuniverse/kanbn/src/main';
 import * as vscode from 'vscode';
 
 export default class KanbnStatusBarItem {
@@ -18,7 +19,12 @@ export default class KanbnStatusBarItem {
       return;
     }
     if (await this._kanbn.initialised()) {
-      const status = await this._kanbn.status(true);
+      const status = (await this._kanbn.status(true)) as {
+        tasks: number,
+        columnTasks: Record<string, number>,
+        startedTasks?: number,
+        completedTasks?: number
+      };
       const text = [
         `$(project) ${status.tasks}`
       ];
