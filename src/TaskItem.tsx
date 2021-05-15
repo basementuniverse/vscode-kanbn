@@ -1,7 +1,7 @@
 import React from "react";
 import { Draggable } from "react-beautiful-dnd";
 import formatDate from 'dateformat';
-import { paramCase } from 'param-case';
+import { paramCase } from '@basementuniverse/kanbn/src/utility';
 import VSCodeApi from "./VSCodeApi";
 
 const TaskItem = ({ task, position, dateFormat, vscode }: {

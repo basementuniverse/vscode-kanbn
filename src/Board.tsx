@@ -1,7 +1,7 @@
 import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import React, { useState } from "react";
 import TaskItem from './TaskItem';
-import { paramCase } from 'param-case';
+import { paramCase } from '@basementuniverse/kanbn/src/utility';
 import VSCodeApi from "./VSCodeApi";
 import formatDate from 'dateformat';
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Formik, Form, Field, ErrorMessage, FieldArray } from 'formik';
 import formatDate from 'dateformat';
 import VSCodeApi from './VSCodeApi';
-import { paramCase } from 'param-case';
+import { paramCase } from '@basementuniverse/kanbn/src/utility';
 import gitUsername from 'git-user-name';
 import ReactMarkdown from 'react-markdown';
 import TextareaAutosize from 'react-textarea-autosize';
