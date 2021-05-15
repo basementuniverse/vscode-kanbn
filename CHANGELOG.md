@@ -1,3 +1,7 @@
+# 0.9.1
+
+* Update kanbn dependency, now has support for non-latin characters in task ids. _Note: task ids should be generated from the task name the same as before, but there might be edge-cases where this doesn't happen. You might need to manually rename some tasks and update their links in `index.md` accordingly. Use `kanbn validate` to quickly find issues. Please let me know via Github issues if this occurs!
+
 # 0.9.0
 
 * Update kanbn dependency, markdown inside task comments will be parsed correctly (previously any markdown inside comments would be incorrectly compiled into the task description)
