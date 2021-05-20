@@ -1,3 +1,7 @@
+# 0.9.3
+
+* Fixed performance issue where React app would keep adding event listeners every time the board was re-rendered
+
 # 0.9.2
 
 * Update kanbn dependency, fixes some bugs in paramCase converter that were causing task ids to not generate correctly (which would have broken lots of boards and required manual fixing... this should sort out most if not all of the problems)
