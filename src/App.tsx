@@ -1,7 +1,7 @@
 import Board from './Board';
 import Burndown from './Burndown';
 import TaskEditor from './TaskEditor';
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import VSCodeApi from "./VSCodeApi";
 
 declare var acquireVsCodeApi: Function;
@@ -29,7 +29,7 @@ function App() {
   const [currentSprint, setCurrentSprint] = useState(null);
   const [burndownData, setBurndownData] = useState({ series: [] });
 
-  window.addEventListener('message', event => {
+  const processMessage = useCallback(event => {
     const tasks = event.data.tasks
       ? Object.fromEntries(event.data.tasks.map(task => [task.id, task]))
       : {};
@@ -78,6 +78,13 @@ function App() {
     }
     setType(event.data.type);
     setDateFormat(event.data.dateFormat);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('message', processMessage);
+    return () => {
+      window.removeEventListener('message', processMessage);
+    };
   });
 
   return (
