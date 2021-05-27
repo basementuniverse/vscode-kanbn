@@ -1,3 +1,8 @@
+# 0.10.0
+
+* Added task archive, tasks can now be sent to the archive folder and restored from the archive folder
+* Fixed debounced updates on burndown chart
+
 # 0.9.3
 
 * Fixed performance issue where React app would keep adding event listeners every time the board was re-rendered

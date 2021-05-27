@@ -54,6 +54,7 @@ The following commands are available:
 - `Kanbn: Open board` will open open the Kanbn board.
 - `Kanbn: Open burndown chart` will open a burndown chart.
 - `Kanbn: Add task` will open the task editor.
+- `Kanbn: Restore task` will restore tasks from the archive.
 
 ## Configuration settings
 

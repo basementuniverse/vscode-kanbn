@@ -91,6 +91,7 @@ Various Codicon icons have been used in this extension. Check [here](https://cod
 - `kanbn-task-editor-comment-text`
 - `kanbn-task-editor-column-right`
 - `kanbn-task-editor-button-submit`
+- `kanbn-task-editor-button-archive`
 - `kanbn-task-editor-field-column`
 - `kanbn-task-editor-field-assigned`
 - `kanbn-task-editor-field-started`

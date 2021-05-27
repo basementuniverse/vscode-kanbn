@@ -135,7 +135,7 @@ export default class KanbnBurndownPanel {
             this.sprint = message.sprint;
             this.startDate = message.startDate;
             this.endDate = message.endDate;
-          KanbnBurndownPanel.update();
+            KanbnBurndownPanel.update();
             return;
         }
       },

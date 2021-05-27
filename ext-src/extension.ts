@@ -136,6 +136,68 @@ export async function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // Register a command to restore a task from the archive.
+  context.subscriptions.push(
+    vscode.commands.registerCommand("kanbn.restoreTask", async () => {
+      // If no workspace folder is opened, we can't restore tasks from the archive
+      if (vscode.workspace.workspaceFolders === undefined) {
+        vscode.window.showErrorMessage("You need to open a workspace before restoring tasks from the archive.");
+        return;
+      }
+
+      // Set the node process directory and import kanbn
+      process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
+      const kanbn = await import("@basementuniverse/kanbn/src/main");
+
+      // Get a list of archived tasks
+      let archivedTasks: string[] = [];
+      try {
+        archivedTasks = await kanbn.listArchivedTasks();
+      } catch (e) {}
+      if (archivedTasks.length === 0) {
+        vscode.window.showInformationMessage("There are no archived tasks to restore.");
+        return;
+      }
+
+      // Prompt for a selection of tasks to restore
+      const restoreTaskIds = await vscode.window.showQuickPick(
+        archivedTasks,
+        {
+          placeHolder: 'Select tasks to restore...',
+          canPickMany: true,
+        }
+      );
+      if (restoreTaskIds !== undefined && restoreTaskIds.length > 0) {
+
+        // Load index
+        const index = await kanbn.getIndex();
+
+        // Prompt for a column to restore the tasks into
+        const restoreColumn = await vscode.window.showQuickPick(
+          [
+            'None (use original)',
+            ...Object.keys(index.columns)
+          ],
+          {
+            canPickMany: false
+          }
+        );
+        if (restoreColumn !== undefined) {
+          for (let restoreTaskId of restoreTaskIds) {
+            await kanbn.restoreTask(restoreTaskId, restoreColumn === 'None (use original)' ? null : restoreColumn);
+          }
+          KanbnBoardPanel.update();
+          kanbnStatusBarItem.update();
+          if (vscode.workspace.getConfiguration("kanbn").get("showTaskNotifications")) {
+            vscode.window.showInformationMessage(
+              `Restored ${restoreTaskIds.length} task${restoreTaskIds.length === 1 ? '' : 's'}.`
+            );
+          }
+        }
+      }
+    })
+  );
+
   // If a workspace folder is open, add a status bar item and start watching for file changes
   if (vscode.workspace.workspaceFolders !== undefined) {
     // Set the node process directory and import kanbn

@@ -59,6 +59,11 @@
         "command": "kanbn.burndown",
         "title": "Open burndown chart",
         "category": "Kanbn"
+      },
+      {
+        "command": "kanbn.restoreTask",
+        "title": "Restore task",
+        "category": "Kanbn"
       }
     ],
     "configuration": {
@@ -88,7 +93,7 @@
     }
   },
   "dependencies": {
-    "@basementuniverse/kanbn": "^0.8.2",
+    "@basementuniverse/kanbn": "file:~/Projects/kanbn",
     "dateformat": "^4.5.1",
     "formik": "^2.2.6",
     "git-user-name": "^2.0.0",

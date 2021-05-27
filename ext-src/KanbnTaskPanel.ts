@@ -197,6 +197,16 @@ export default class KanbnTaskPanel {
                 }
               });
             return;
+
+          // Archive a task and close the webview panel
+          case 'kanbn.archive':
+            await this._kanbn.archiveTask(message.taskId);
+            KanbnTaskPanel.panels[message.panelUuid].dispose();
+            delete KanbnTaskPanel.panels[message.panelUuid];
+            if (vscode.workspace.getConfiguration("kanbn").get("showTaskNotifications")) {
+              vscode.window.showInformationMessage(`Archived task '${message.taskData.name}'.`);
+            }
+            return;
         }
       },
       null,

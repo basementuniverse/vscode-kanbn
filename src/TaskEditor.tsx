@@ -107,6 +107,16 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
     });
   };
 
+  // Called when the archive task button is clicked
+  const handleArchiveTask = values => {
+    vscode.postMessage({
+      command: 'kanbn.archive',
+      taskId: task!.id,
+      taskData: values,
+      panelUuid
+    });
+  }
+
   // Check if a task's due date is in the past
   const checkOverdue = (values: { metadata: { due?: string } }) => {
     if ('due' in values.metadata && values.metadata.due !== undefined) {
@@ -486,6 +496,16 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
                       }}
                     >
                       <i className="codicon codicon-trash"></i>Delete
+                    </button>}
+                    {editing && <button
+                      type="button"
+                      className="kanbn-task-editor-button kanbn-task-editor-button-archive"
+                      title="Archive task"
+                      onClick={() => {
+                        handleArchiveTask(values);
+                      }}
+                    >
+                      <i className="codicon codicon-archive"></i>Archive
                     </button>}
                     <button
                       type="submit"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import VSCodeApi from "./VSCodeApi";
 import formatDate from 'dateformat';
@@ -40,44 +40,96 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
       : formatDate(burndownData.series[0].to, 'yyyy-mm-dd')
   );
 
-  const refreshBurndownData = debounce(500, settings => {
+  const refreshBurndownData = useRef(debounce(500, settings => {
     vscode.postMessage({
       command: 'kanbn.refreshBurndownData',
-      ...Object.assign(
+      ...settings
+    });
+  })).current;
+
+  const handleChangeSprint = ({ target: { value }}) => {
+    setSprint(value);
+    refreshBurndownData(
+      Object.assign(
         {
           sprintMode,
           sprint,
           startDate,
           endDate
         },
-        settings
+        {
+          sprint: value
+        }
       )
-    });
-  });
-
-  const handleChangeSprint = ({ target: { value }}) => {
-    setSprint(value);
-    refreshBurndownData({ sprint: value });
+    );
   };
 
   const handleChangeStartDate = ({ target: { value }}) => {
     setStartDate(value);
-    refreshBurndownData({ startDate: value });
+    refreshBurndownData(
+      Object.assign(
+        {
+          sprintMode,
+          sprint,
+          startDate,
+          endDate
+        },
+        {
+          startDate: value
+        }
+      )
+    );
   };
 
   const handleChangeEndDate = ({ target: { value }}) => {
     setEndDate(value);
-    refreshBurndownData({ endDate: value });
+    refreshBurndownData(
+      Object.assign(
+        {
+          sprintMode,
+          sprint,
+          startDate,
+          endDate
+        },
+        {
+          endDate: value
+        }
+      )
+    );
   };
 
   const handleClickSprintMode = () => {
     setSprintMode(true);
-    refreshBurndownData({ sprintMode: true });
+    refreshBurndownData(
+      Object.assign(
+        {
+          sprintMode,
+          sprint,
+          startDate,
+          endDate
+        },
+        {
+          sprintMode: true
+        }
+      )
+    );
   };
 
   const handleClickDateMode = () => {
     setSprintMode(false);
-    refreshBurndownData({ sprintMode: false });
+    refreshBurndownData(
+      Object.assign(
+        {
+          sprintMode,
+          sprint,
+          startDate,
+          endDate
+        },
+        {
+          sprintMode: false
+        }
+      )
+    );
   };
 
   const chartData = burndownData.series.length > 0
