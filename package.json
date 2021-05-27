@@ -61,8 +61,13 @@
         "category": "Kanbn"
       },
       {
-        "command": "kanbn.restoreTask",
-        "title": "Restore task",
+        "command": "kanbn.archiveTasks",
+        "title": "Archive tasks",
+        "category": "Kanbn"
+      },
+      {
+        "command": "kanbn.restoreTasks",
+        "title": "Restore tasks",
         "category": "Kanbn"
       }
     ],

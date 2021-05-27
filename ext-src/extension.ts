@@ -136,9 +136,55 @@ export async function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // Register a command to archive tasks.
+  context.subscriptions.push(
+    vscode.commands.registerCommand("kanbn.archiveTasks", async () => {
+      // If no workspace folder is opened, we can't archive tasks
+      if (vscode.workspace.workspaceFolders === undefined) {
+        vscode.window.showErrorMessage("You need to open a workspace before sending tasks to the archive.");
+        return;
+      }
+
+      // Set the node process directory and import kanbn
+      process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
+      const kanbn = await import("@basementuniverse/kanbn/src/main");
+
+      // Get a list of tracked tasks
+      let tasks: string[] = [];
+      try {
+        tasks = [...(await kanbn.findTrackedTasks())];
+      } catch (e) {}
+      if (tasks.length === 0) {
+        vscode.window.showInformationMessage("There are no tasks to archive.");
+        return;
+      }
+
+      // Prompt for a selection of tasks to archive
+      const archiveTaskIds = await vscode.window.showQuickPick(
+        tasks,
+        {
+          placeHolder: 'Select tasks to archive...',
+          canPickMany: true,
+        }
+      );
+      if (archiveTaskIds !== undefined && archiveTaskIds.length > 0) {
+        for (let archiveTaskId of archiveTaskIds) {
+          await kanbn.archiveTask(archiveTaskId);
+        }
+        KanbnBoardPanel.update();
+        kanbnStatusBarItem.update();
+        if (vscode.workspace.getConfiguration("kanbn").get("showTaskNotifications")) {
+          vscode.window.showInformationMessage(
+            `Archived ${archiveTaskIds.length} task${archiveTaskIds.length === 1 ? '' : 's'}.`
+          );
+        }
+      }
+    })
+  );
+
   // Register a command to restore a task from the archive.
   context.subscriptions.push(
-    vscode.commands.registerCommand("kanbn.restoreTask", async () => {
+    vscode.commands.registerCommand("kanbn.restoreTasks", async () => {
       // If no workspace folder is opened, we can't restore tasks from the archive
       if (vscode.workspace.workspaceFolders === undefined) {
         vscode.window.showErrorMessage("You need to open a workspace before restoring tasks from the archive.");

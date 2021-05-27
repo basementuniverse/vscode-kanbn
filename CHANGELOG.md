@@ -1,6 +1,7 @@
 # 0.10.0
 
 * Added task archive, tasks can now be sent to the archive folder and restored from the archive folder
+* Added commands to archive and restore multiple tasks
 * Fixed debounced updates on burndown chart
 
 # 0.9.3
