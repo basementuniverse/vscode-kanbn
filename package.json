@@ -93,7 +93,7 @@
     }
   },
   "dependencies": {
-    "@basementuniverse/kanbn": "file:~/Projects/kanbn",
+    "@basementuniverse/kanbn": "^0.9.0",
     "dateformat": "^4.5.1",
     "formik": "^2.2.6",
     "git-user-name": "^2.0.0",
