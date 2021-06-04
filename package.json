@@ -109,6 +109,8 @@
     "react-markdown": "^6.0.1",
     "react-textarea-autosize": "^8.3.2",
     "recharts": "^2.0.9",
+    "rehype-katex": "^5.0.0",
+    "remark-math": "^4.0.0",
     "terser": "3.14.1",
     "throttle-debounce": "^3.0.1",
     "uuid": "^8.3.2",

@@ -6,6 +6,9 @@ import { paramCase } from '@basementuniverse/kanbn/src/utility';
 import gitUsername from 'git-user-name';
 import ReactMarkdown from 'react-markdown';
 import TextareaAutosize from 'react-textarea-autosize';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 interface KanbnTaskValidationOutput {
   name: string,
@@ -23,6 +26,12 @@ interface KanbnTaskValidationOutput {
 interface KanbnTaskValidationInput extends KanbnTaskValidationOutput {
   id: string
 }
+
+const Markdown = props => (<ReactMarkdown {...{
+  ...props,
+  remarkPlugins: [remarkMath],
+  rehypePlugins: [rehypeKatex]
+}}/>);
 
 const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUuid, vscode }: {
   task: KanbnTask | null,
@@ -260,9 +269,9 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
                           as={TextareaAutosize}
                           name="description"
                         />
-                        : <ReactMarkdown className="kanbn-task-editor-description-preview">
+                        : <Markdown className="kanbn-task-editor-description-preview">
                           {values.description}
-                        </ReactMarkdown>
+                        </Markdown>
                     }
                     <ErrorMessage
                       className="kanbn-task-editor-field-errors"
@@ -459,9 +468,9 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
                                           name={`comments.${index}.text`}
                                         />
                                       </React.Fragment>
-                                      : <ReactMarkdown className="kanbn-task-editor-comment-text">
+                                      : <Markdown className="kanbn-task-editor-comment-text">
                                         {comment.text}
-                                      </ReactMarkdown>
+                                      </Markdown>
                                   }
                                 </div>
                               </div>
