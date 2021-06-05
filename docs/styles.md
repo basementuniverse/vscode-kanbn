@@ -127,3 +127,7 @@ Various Codicon icons have been used in this extension. Check [here](https://cod
 - `kanbn-burndown-tooltip-workload`
 - `kanbn-burndown-tooltip-count`
 - `kanbn-burndown-tooltip-task`
+
+### Syntax highlighting
+
+See [index.css](https://github.com/basementuniverse/vscode-kanbn/blob/main/src/index.css) for built-in syntax highlighting styles and token class-names.

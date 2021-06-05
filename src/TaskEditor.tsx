@@ -8,6 +8,7 @@ import ReactMarkdown from 'react-markdown';
 import TextareaAutosize from 'react-textarea-autosize';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import 'katex/dist/katex.min.css';
 
 interface KanbnTaskValidationOutput {
@@ -27,11 +28,30 @@ interface KanbnTaskValidationInput extends KanbnTaskValidationOutput {
   id: string
 }
 
+const components = {
+  code({ node, inline, className, children, ...props }) {
+    const match = /language-(\w+)/.exec(className || '');
+    return !inline && match ? (
+      <SyntaxHighlighter
+        style=""
+        useInlineStyles={false}
+        language={match[1]}
+        PreTag="div"
+        children={String(children).replace(/\n$/, '')}
+        {...props}
+      />
+    ) : (
+      <code className={className} children={children} {...props} />
+    );
+  }
+};
+
 const Markdown = props => (<ReactMarkdown {...{
-  ...props,
   remarkPlugins: [remarkMath],
-  rehypePlugins: [rehypeKatex]
-}}/>);
+  rehypePlugins: [rehypeKatex],
+  components,
+  ...props,
+}} />);
 
 const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUuid, vscode }: {
   task: KanbnTask | null,
@@ -269,9 +289,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
                           as={TextareaAutosize}
                           name="description"
                         />
-                        : <Markdown className="kanbn-task-editor-description-preview">
-                          {values.description}
-                        </Markdown>
+                        : <Markdown className="kanbn-task-editor-description-preview" children={values.description} />
                     }
                     <ErrorMessage
                       className="kanbn-task-editor-field-errors"
@@ -468,9 +486,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
                                           name={`comments.${index}.text`}
                                         />
                                       </React.Fragment>
-                                      : <Markdown className="kanbn-task-editor-comment-text">
-                                        {comment.text}
-                                      </Markdown>
+                                      : <Markdown className="kanbn-task-editor-comment-text" children={comment.text} />
                                   }
                                 </div>
                               </div>

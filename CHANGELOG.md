@@ -1,3 +1,6 @@
+* Added KaTeX support to task markdown (description and comments)
+* Added syntax highlighting to code blocks in task markdown (description and comments)
+
 # 0.10.0
 
 * Added task archive, tasks can now be sent to the archive folder and restored from the archive folder

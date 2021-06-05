@@ -9,6 +9,10 @@ body.vscode-high-contrast {
     color: var(--vscode-foreground);
 }
 
+/*-----------------------------------------------------------------------------
+Board styles
+-----------------------------------------------------------------------------*/
+
 .kanbn-header-name {
     font-size: 1.5em;
     margin-top: 0;
@@ -83,6 +87,10 @@ body.vscode-high-contrast {
 
 .kanbn-header-button:hover, .kanbn-header-button:active {
     background-color: var(--vscode-button-hoverBackground);
+}
+
+.kanbn-header-button-inactive {
+    opacity: 0.6;
 }
 
 .kanbn-board {
@@ -179,6 +187,10 @@ body.vscode-high-contrast {
 .kanbn-column-done .kanbn-column-task-list {
     border-color: #e83;
 }
+
+/*-----------------------------------------------------------------------------
+Task styles
+-----------------------------------------------------------------------------*/
 
 .kanbn-task {
     position: relative;
@@ -286,6 +298,10 @@ body.vscode-dark .kanbn-task {
     opacity: 0.7;
     transition: width .5s ease-in-out;
 }
+
+/*-----------------------------------------------------------------------------
+Task editor styles
+-----------------------------------------------------------------------------*/
 
 .kanbn-task-editor-title {
     font-size: 1.5em;
@@ -539,6 +555,10 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
     float: right;
 }
 
+/*-----------------------------------------------------------------------------
+Burndown chart styles
+-----------------------------------------------------------------------------*/
+
 .kanbn-burndown-settings {
     position: relative;
     flex: 1;
@@ -587,10 +607,6 @@ body.vscode-dark .kanbn-burndown-settings-input[type="date"]::-webkit-calendar-p
     filter: invert(1);
 }
 
-.kanbn-header-button-inactive {
-    opacity: 0.6;
-}
-
 .kanbn-burndown {
     height: 85vh;
     width: 95vw;
@@ -625,4 +641,154 @@ body.vscode-dark .kanbn-burndown-settings-input[type="date"]::-webkit-calendar-p
 
 .kanbn-burndown-tooltip-task {
     font-style: italic;
+}
+
+/*-----------------------------------------------------------------------------
+Code block syntax highlighting styles
+-----------------------------------------------------------------------------*/
+
+body.vscode-dark code[class*="language-"] span.token.comment,
+body.vscode-dark code[class*="language-"] span.token.prolog,
+body.vscode-dark code[class*="language-"] span.token.cdata {
+    color: #808080;
+}
+
+body.vscode-dark code[class*="language-"] span.token.delimiter,
+body.vscode-dark code[class*="language-"] span.token.boolean,
+body.vscode-dark code[class*="language-"] span.token.keyword,
+body.vscode-dark code[class*="language-"] span.token.selector,
+body.vscode-dark code[class*="language-"] span.token.important,
+body.vscode-dark code[class*="language-"] span.token.atrule {
+    color: #cc7832;
+}
+
+body.vscode-dark code[class*="language-"] span.token.operator,
+body.vscode-dark code[class*="language-"] span.token.punctuation,
+body.vscode-dark code[class*="language-"] span.token.attr-name {
+    color: #a9b7c6;
+}
+
+body.vscode-dark code[class*="language-"] span.token.tag,
+body.vscode-dark code[class*="language-"] span.token.tag.punctuation,
+body.vscode-dark code[class*="language-"] span.token.doctype,
+body.vscode-dark code[class*="language-"] span.token.builtin {
+    color: #e8bf6a;
+}
+
+body.vscode-dark code[class*="language-"] span.token.entity,
+body.vscode-dark code[class*="language-"] span.token.number,
+body.vscode-dark code[class*="language-"] span.token.symbol {
+    color: #6897bb;
+}
+
+body.vscode-dark code[class*="language-"] span.token.property,
+body.vscode-dark code[class*="language-"] span.token.constant,
+body.vscode-dark code[class*="language-"] span.token.variable {
+    color: #9876aa;
+}
+
+body.vscode-dark code[class*="language-"] span.token.string,
+body.vscode-dark code[class*="language-"] span.token.char {
+    color: #6a8759;
+}
+
+body.vscode-dark code[class*="language-"] span.token.attr-value,
+body.vscode-dark code[class*="language-"] span.token.attr-value.punctuation {
+    color: #a5c261;
+}
+
+body.vscode-dark code[class*="language-"] span.token.attr-value.punctuation:first-child {
+    color: #a9b7c6;
+}
+
+body.vscode-dark code[class*="language-"] span.token.url {
+    color: #287bde;
+}
+
+body.vscode-dark code[class*="language-"] span.token.function {
+    color: #ffc66d;
+}
+
+body.vscode-dark code[class*="language-"] span.token.regex {
+    color: #364135;
+}
+
+body.vscode-dark code[class*="language-"] span.token.inserted {
+    color: #294436;
+}
+
+body.vscode-dark code[class*="language-"] span.token.deleted {
+    color: #484a4a;
+}
+
+body.vscode-dark code.language-css span.token.property,
+body.vscode-dark code.language-css span.token.property + .token.punctuation {
+    color: #a9b7c6;
+}
+
+body.vscode-dark code.language-css span.token.id,
+body.vscode-dark code.language-css .token.selector > .token.class,
+body.vscode-dark code.language-css .token.selector > .token.attribute,
+body.vscode-dark code.language-css .token.selector > .token.pseudo-class,
+body.vscode-dark code.language-css .token.selector > .token.pseudo-element {
+    color: #ffc66d;
+}
+
+body.vscode-light code[class*="language-"] span.token.comment,
+body.vscode-light code[class*="language-"] span.token.prolog,
+body.vscode-light code[class*="language-"] span.token.doctype,
+body.vscode-light code[class*="language-"] span.token.cdata {
+    color: #708090;
+}
+
+body.vscode-light code[class*="language-"] span.token.punctuation {
+    color: #999999;
+}
+
+body.vscode-light code[class*="language-"] span.token.namespace {
+    opacity: 0.7;
+}
+
+body.vscode-light code[class*="language-"] span.token.property,
+body.vscode-light code[class*="language-"] span.token.tag,
+body.vscode-light code[class*="language-"] span.token.boolean,
+body.vscode-light code[class*="language-"] span.token.number,
+body.vscode-light code[class*="language-"] span.token.constant,
+body.vscode-light code[class*="language-"] span.token.symbol,
+body.vscode-light code[class*="language-"] span.token.deleted {
+    color: #990055;
+}
+
+body.vscode-light code[class*="language-"] span.token.selector,
+body.vscode-light code[class*="language-"] span.token.attr-name,
+body.vscode-light code[class*="language-"] span.token.string,
+body.vscode-light code[class*="language-"] span.token.char,
+body.vscode-light code[class*="language-"] span.token.builtin,
+body.vscode-light code[class*="language-"] span.token.inserted {
+    color: #669900;
+}
+
+body.vscode-light code[class*="language-"] span.token.operator,
+body.vscode-light code[class*="language-"] span.token.entity,
+body.vscode-light code[class*="language-"] span.token.url,
+body.vscode-light code.language-css span.token.string {
+    color: #9a6e3a;
+    background: hsla(0, 0%, 100%, .5);
+}
+
+body.vscode-light code[class*="language-"] span.token.atrule,
+body.vscode-light code[class*="language-"] span.token.attr-value,
+body.vscode-light code[class*="language-"] span.token.keyword {
+    color: #0077aa;
+}
+
+body.vscode-light code[class*="language-"] span.token.function,
+body.vscode-light code[class*="language-"] span.token.class-name {
+    color: #dd4a68;
+}
+
+body.vscode-light code[class*="language-"] span.token.regex,
+body.vscode-light code[class*="language-"] span.token.important,
+body.vscode-light code[class*="language-"] span.token.variable {
+    color: #ee9900;
 }
