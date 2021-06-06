@@ -117,36 +117,42 @@ Board styles
     margin-right: 0.5em;
 }
 
-.kanbn-create-task-button {
+.kanbn-column-button {
     position: relative;
     top: -2px;
     left: -4px;
     float: right;
-    border: 1px transparent solid;
     outline: none;
-    color: var(--vscode-foreground);
+    border: 1px transparent solid;
     background-color: transparent;
+    color: var(--vscode-button-foreground);
     padding: 2px;
     height: 16px;
     width: 16px;
     margin-right: 8px;
-    cursor: pointer;
     border-radius: 1px;
 }
 
-.kanbn-create-task-button:focus {
-    border-color: var(--vscode-foreground);
-}
-
-.kanbn-create-task-button:hover, .kanbn-create-task-button:active {
-    border: none;
-    outline: none;
-    color: var(--vscode-editor-background);
-    background-color: var(--vscode-foreground);
-}
-
-.kanbn-create-task-button .codicon {
+.kanbn-column-button .codicon {
     font-size: 11px !important;
+    font-weight: 900;
+}
+
+.kanbn-column-button:focus {
+    border-color: var(--vscode-button-hoverBackground);
+}
+
+.kanbn-column-button:hover, .kanbn-column-button:active {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+.kanbn-column-button.kanbn-sort-column-button .codicon {
+    opacity: 0.5;
+    font-weight: normal;
+}
+
+.kanbn-column-button.kanbn-sort-column-button.kanbn-column-sorted .codicon {
+    opacity: 1;
 }
 
 .kanbn-column-count {

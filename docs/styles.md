@@ -27,7 +27,10 @@ Various Codicon icons have been used in this extension. Check [here](https://cod
 - `kanbn-column-{Column name in snake-case}`
 - `kanbn-column-name`
 - `kanbn-column-count`
+- `kanbn-column-button`
 - `kanbn-create-task-button`
+- `kanbn-sort-column-button`
+- `kanbn-column-sorted`
 - `kanbn-column-task-list-container`
 - `kanbn-column-task-list`
 - `kanbn-column-task-list.drag-over`

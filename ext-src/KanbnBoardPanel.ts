@@ -4,6 +4,21 @@ import getNonce from "./getNonce";
 import KanbnTaskPanel from "./KanbnTaskPanel";
 import KanbnBurndownPanel from "./KanbnBurndownPanel";
 
+const sortByFields: { [key: string]: string } = {
+  'Name': 'name',
+  'Created': 'created',
+  'Updated': 'updated',
+  'Started': 'started',
+  'Completed': 'completed',
+  'Due': 'due',
+  'Assigned': 'assigned',
+  'Count sub-tasks': 'countSubTasks',
+  'Count tags': 'countTags',
+  'Count relations': 'countRelations',
+  'Count comments': 'countComments',
+  'Workload': 'workload',
+};
+
 export default class KanbnBoardPanel {
   public static currentPanel: KanbnBoardPanel | undefined;
 
@@ -63,6 +78,7 @@ export default class KanbnBoardPanel {
         hiddenColumns: index.options.hiddenColumns ?? [],
         startedColumns: index.options.startedColumns ?? [],
         completedColumns: index.options.completedColumns ?? [],
+        columnSorting: index.options.columnSorting ?? {},
         dateFormat: KanbnBoardPanel.currentPanel._kanbn.getDateFormat(index),
         showBurndownButton: vscode.workspace.getConfiguration("kanbn").get("showBurndownButton"),
         showSprintButton: vscode.workspace.getConfiguration("kanbn").get("showSprintButton"),
@@ -155,6 +171,74 @@ export default class KanbnBoardPanel {
               null,
               message.columnName
             );
+            return;
+
+          // Sort a column
+          case "kanbn.sortColumn":
+            // Load the index
+            const index = await this._kanbn.getIndex();
+            let customFields = [];
+            if ('customFields' in index.options) {
+              customFields = index.options.customFields.map(
+                (customField: { name: string, type: string }) => customField.name
+              );
+            }
+            // Prompt for a task property to sort by
+            const sortBy: string = await vscode.window.showQuickPick(
+              [
+                'None',
+                ...Object.keys(sortByFields),
+                ...customFields,
+              ],
+              {
+                placeHolder: 'Sort this column by...',
+                canPickMany: false,
+              }
+            );
+            if (sortBy !== undefined) {
+              // Clear any saved sort settings for this column
+              if (sortBy === 'None') {
+                await this._kanbn.sort(message.columnName, [], false);
+                return;
+              }
+
+              // Prompt for sort direction and save settings
+              const sortDirection = await vscode.window.showQuickPick(
+                [
+                  'Ascending',
+                  'Descending',
+                ],
+                {
+                  placeHolder: 'Sort direction',
+                  canPickMany: false,
+                }
+              );
+              if (sortDirection !== undefined) {
+                const saveSort = await vscode.window.showQuickPick(
+                  [
+                    "Yes",
+                    "No",
+                  ],
+                  {
+                    placeHolder: 'Save sort settings for this column?',
+                    canPickMany: false,
+                  }
+                );
+                if (saveSort !== undefined) {
+                  await this._kanbn.sort(
+                    message.columnName,
+                    [
+                      {
+                        field: sortBy in sortByFields ? sortByFields[sortBy] : sortBy,
+                        order: sortDirection === 'Descending' ? 'descending' : 'ascending',
+                      }
+                    ],
+                    saveSort === 'Yes'
+                  );
+                  KanbnBoardPanel.update();
+                }
+              }
+            }
             return;
 
           // Open a burndown chart

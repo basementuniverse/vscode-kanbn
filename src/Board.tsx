@@ -139,6 +139,7 @@ const Board = ({
   hiddenColumns,
   startedColumns,
   completedColumns,
+  columnSorting,
   dateFormat,
   showBurndownButton,
   showSprintButton,
@@ -151,6 +152,7 @@ const Board = ({
   hiddenColumns: string[],
   startedColumns: string[],
   completedColumns: string[],
+  columnSorting: { [columnName: string]: { field: string, order: 'ascending' | 'descending' }[] },
   dateFormat: string,
   showBurndownButton: boolean,
   showSprintButton: boolean,
@@ -274,7 +276,7 @@ const Board = ({
                   <span className="kanbn-column-count">{column.length || ''}</span>
                   <button
                     type="button"
-                    className="kanbn-create-task-button"
+                    className="kanbn-column-button kanbn-create-task-button"
                     title={`Create task in ${columnName}`}
                     onClick={() => {
                       vscode.postMessage({
@@ -285,6 +287,30 @@ const Board = ({
                   >
                     <i className="codicon codicon-add"></i>
                   </button>
+                  {((columnIsSorted, columnSortSettings) => (
+                    <button
+                      type="button"
+                      className={[
+                        'kanbn-column-button',
+                        'kanbn-sort-column-button',
+                        columnIsSorted ? 'kanbn-column-sorted' : null
+                      ].filter(i => i).join(' ')}
+                      title={`Sort ${columnName}${columnIsSorted
+                        ? `\nCurrently sorted by:\n${columnSortSettings.map(
+                          sorter => `${sorter.field} (${sorter.order})`
+                        ).join('\n')}`
+                        : ''
+                      }`}
+                      onClick={() => {
+                        vscode.postMessage({
+                          command: 'kanbn.sortColumn',
+                          columnName
+                        });
+                      }}
+                    >
+                      <i className="codicon codicon-list-filter"></i>
+                    </button>
+                  ))(columnName in columnSorting, columnSorting[columnName] || [])}
                 </h2>
                 <div className="kanbn-column-task-list-container">
                   <Droppable droppableId={columnName} key={columnName}>
