@@ -1,5 +1,8 @@
+# 0.11.0
+
 * Added KaTeX support to task markdown (description and comments)
 * Added syntax highlighting to code blocks in task markdown (description and comments)
+* Added column sorting
 
 # 0.10.0
 
