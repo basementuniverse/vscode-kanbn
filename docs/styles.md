@@ -8,6 +8,62 @@ Visual Studio Code will add `vscode-light`, `vscode-dark` and `vscode-high-contr
 
 Various Codicon icons have been used in this extension. Check [here](https://code.visualstudio.com/api/references/icons-in-labels) for a listing of available icons.
 
+## Column and tag configuration
+
+Each column is given a CSS class containing the column name in param-case. You can use this to apply custom styles to specific columns.
+
+For example, say we have a column called 'In Progress'. We can apply a custom border colour like so:
+```css
+.kanbn-column-in-progress .kanbn-column-task-list {
+    border-color: #ff0;
+}
+```
+
+Similarly, each tag is given a CSS class containing the tag name in param-case.
+
+For example, say we have tags called 'QA required' and 'Breaking Change'. We can apply custom styles like so:
+```css
+.kanbn-task-tag-qa-required {
+    background-color: #418;
+}
+
+.kanbn-task-tag-breaking-change {
+    background-color: #900;
+    color: #eee;
+    font-size: 1.5em;
+}
+```
+
+## Task card configuration
+
+The task cards that appear on the Kanbn board can be configured by showing or hiding different elements, or by applying alternative styles to them.
+
+The following elements are hidden by default (but can be re-enabled by adding a custom board style):
+- Updated date
+- Started date
+- Due date
+- Completed date
+- Number of comments
+- Relations
+
+Task fields are generally contained within a `.kanbn-task-data` element, most of which have `display: inline-block` by default. Additionally, the outer-container of a task card is given CSS classes containing the task's column name, completed status and overdue status.
+
+Here's an example of a task card style using some of the above features:
+```css
+.kanbn-task-data-relation {
+    display: block; /* this will display task relations, one per line */
+}
+
+.kanbn-task-data-relation-blocks {
+    color: #900;
+    font-weight: bold;  /* this will highlight task relations of type 'blocks' */
+}
+
+.kanbn-task-completed .kanbn-task-data-completed {
+    display: inline-block; /* this will show the completed date only for tasks that have been completed */
+}
+```
+
 ## CSS classes
 
 ### Kanbn board
@@ -24,7 +80,7 @@ Various Codicon icons have been used in this extension. Check [here](https://cod
 - `kanbn-header-description`
 - `kanbn-board`
 - `kanbn-column`
-- `kanbn-column-{Column name in snake-case}`
+- `kanbn-column-{Column name in param-case}`
 - `kanbn-column-name`
 - `kanbn-column-count`
 - `kanbn-column-button`
@@ -35,19 +91,30 @@ Various Codicon icons have been used in this extension. Check [here](https://cod
 - `kanbn-column-task-list`
 - `kanbn-column-task-list.drag-over`
 - `kanbn-task`
-- `kanbn-task-row`
-- `kanbn-task-name`
-- `kanbn-task-data`
-- `kanbn-task-tags`
-- `kanbn-task-tag`
-- `kanbn-task-tag-{Tag name in snake-case}`
-- `kanbn-task-assigned`
-- `kanbn-task-date`
-- `kanbn-task-workload`
-- `kanbn-task-progress`
+- `kanbn-task-{Column name in param-case}`
 - `kanbn-task-overdue`
-- `kanbn-task-comments`
-- `kanbn-task-sub-tasks`
+- `kanbn-task-completed`
+- `drag`
+- `kanbn-task-data`
+- `kanbn-task-data-label`
+- `kanbn-task-data-name`
+- `kanbn-task-data-tags`
+- `kanbn-task-tag`
+- `kanbn-task-tag-{Tag name in param-case}`
+- `kanbn-task-data-custom-field`
+- `kanbn-task-data-{Custom field name in param-case}
+- `kanbn-task-data-assigned`
+- `kanbn-task-data-created`
+- `kanbn-task-data-updated`
+- `kanbn-task-data-started`
+- `kanbn-task-data-due`
+- `kanbn-task-data-completed`
+- `kanbn-task-data-comments`
+- `kanbn-task-data-sub-tasks`
+- `kanbn-task-data-relation`
+- `kanbn-task-data-relation-{Relation type in param-case}`
+- `kanbn-task-data-workload`
+- `kanbn-task-progress`
 
 ### Task editor
 
@@ -107,7 +174,7 @@ Various Codicon icons have been used in this extension. Check [here](https://cod
 - `kanbn-task-editor-row-tag`
 - `kanbn-task-editor-field-tag`
 - `kanbn-task-editor-tag-highlight`
-- `kanbn-task-tag-{Tag name in snake-case}`
+- `kanbn-task-tag-{Tag name in param-case}`
 
 ### Burndown chart
 

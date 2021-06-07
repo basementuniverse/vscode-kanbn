@@ -18,6 +18,7 @@ function App() {
   const [startedColumns, setStartedColumns] = useState([]);
   const [completedColumns, setCompletedColumns] = useState([]);
   const [columnSorting, setColumnSorting] = useState({});
+  const [customFields, setCustomFields] = useState([]);
   const [dateFormat, setDateFormat] = useState('');
   const [task, setTask] = useState({});
   const [tasks, setTasks] = useState({});
@@ -48,6 +49,7 @@ function App() {
         setStartedColumns(event.data.startedColumns);
         setCompletedColumns(event.data.completedColumns);
         setColumnSorting(event.data.columnSorting);
+        setCustomFields(event.data.customFields);
         setShowBurndownButton(event.data.showBurndownButton);
         setShowSprintButton(event.data.showSprintButton);
 
@@ -101,6 +103,7 @@ function App() {
           startedColumns={startedColumns}
           completedColumns={completedColumns}
           columnSorting={columnSorting}
+          customFields={customFields}
           dateFormat={dateFormat}
           showBurndownButton={showBurndownButton}
           showSprintButton={showSprintButton}

@@ -140,6 +140,7 @@ const Board = ({
   startedColumns,
   completedColumns,
   columnSorting,
+  customFields,
   dateFormat,
   showBurndownButton,
   showSprintButton,
@@ -153,6 +154,7 @@ const Board = ({
   startedColumns: string[],
   completedColumns: string[],
   columnSorting: { [columnName: string]: { field: string, order: 'ascending' | 'descending' }[] },
+  customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string' }[],
   dateFormat: string,
   showBurndownButton: boolean,
   showSprintButton: boolean,
@@ -326,6 +328,8 @@ const Board = ({
                         >
                           {column.filter(task => filterTask(task, taskFilter)).map((task, position) => <TaskItem
                             task={task}
+                            columnName={columnName}
+                            customFields={customFields}
                             position={position}
                             dateFormat={dateFormat}
                             vscode={vscode}

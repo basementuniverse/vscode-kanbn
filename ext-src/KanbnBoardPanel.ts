@@ -79,6 +79,7 @@ export default class KanbnBoardPanel {
         startedColumns: index.options.startedColumns ?? [],
         completedColumns: index.options.completedColumns ?? [],
         columnSorting: index.options.columnSorting ?? {},
+        customFields: index.options.customFields ?? [],
         dateFormat: KanbnBoardPanel.currentPanel._kanbn.getDateFormat(index),
         showBurndownButton: vscode.workspace.getConfiguration("kanbn").get("showBurndownButton"),
         showSprintButton: vscode.workspace.getConfiguration("kanbn").get("showSprintButton"),

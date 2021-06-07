@@ -220,7 +220,33 @@ body.vscode-dark .kanbn-task {
     border-color: var(--vscode-activityBar-foreground);
 }
 
-.kanbn-task-name {
+.kanbn-task-data {
+    display: inline-block;
+    margin: 4px 8px 4px 0;
+    min-width: 30%;
+    opacity: 0.7;
+    font-size: 0.9em;
+    font-weight: normal;
+    font-style: italic;
+}
+
+.kanbn-task-data-label {
+    opacity: 0.4;
+}
+
+.kanbn-task-data-name {
+    display: block;
+}
+
+.kanbn-task-data-tags {
+    display: block;
+}
+
+.kanbn-task-data-relation {
+    display: block;
+}
+
+.kanbn-task-data-name button {
     margin: 0;
     padding: 0;
     border: none;
@@ -232,20 +258,11 @@ body.vscode-dark .kanbn-task {
     text-align: left;
 }
 
-.kanbn-task-name:focus, .kanbn-task-name:hover {
+.kanbn-task-data-name button:focus,
+.kanbn-task-data-name button:hover {
     border: none;
     outline: none;
     text-decoration: underline;
-}
-
-.kanbn-task-data {
-    display: inline-block;
-    margin: 4px 8px 4px 0;
-    min-width: 30%;
-    opacity: 0.7;
-    font-size: 0.9em;
-    font-weight: normal;
-    font-style: italic;
 }
 
 .kanbn-task div .codicon {
@@ -291,7 +308,7 @@ body.vscode-dark .kanbn-task {
     background-color: #f42;
 }
 
-.kanbn-task-overdue {
+.kanbn-task-overdue .kanbn-task-data-due {
     color: #f22 !important;
 }
 
@@ -303,6 +320,30 @@ body.vscode-dark .kanbn-task {
     background-color: #3c7;
     opacity: 0.7;
     transition: width .5s ease-in-out;
+}
+
+.kanbn-task-data-updated {
+    display: none;
+}
+
+.kanbn-task-data-started {
+    display: none;
+}
+
+.kanbn-task-data-due {
+    display: none;
+}
+
+.kanbn-task-data-completed {
+    display: none;
+}
+
+.kanbn-task-data-comments {
+    display: none;
+}
+
+.kanbn-task-data-relation {
+    display: none;
 }
 
 /*-----------------------------------------------------------------------------
