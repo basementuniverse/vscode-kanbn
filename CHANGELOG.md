@@ -5,6 +5,7 @@
 * Added column sorting
 * Added relations and custom fields to task cards
 * Added task card customisation using `board.css`
+* Added custom fields to task editor
 
 # 0.10.0
 
