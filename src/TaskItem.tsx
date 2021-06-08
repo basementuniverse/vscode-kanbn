@@ -102,7 +102,9 @@ const TaskItem = ({ task, columnName, customFields, position, dateFormat, vscode
                             <>
                               <i className="codicon codicon-json"></i>
                               <span title={customField.name}>
-                                {task.metadata[customField.name]}
+                                {customField.type === 'date'
+                                  ? formatDate(task.metadata[customField.name], dateFormat)
+                                  : task.metadata[customField.name]}
                               </span>
                             </>
                           )

@@ -53,11 +53,12 @@ const Markdown = props => (<ReactMarkdown {...{
   ...props,
 }} />);
 
-const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUuid, vscode }: {
+const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFormat, panelUuid, vscode }: {
   task: KanbnTask | null,
   tasks: Record<string, KanbnTask>,
   columnName: string,
   columnNames: string[],
+  customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string' }[],
   dateFormat: string,
   panelUuid: string,
   vscode: VSCodeApi
@@ -76,7 +77,17 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
       due: (task && 'due' in task.metadata) ? formatDate(task.metadata.due!, 'yyyy-mm-dd') : '',
       completed: (task && 'completed' in task.metadata) ? formatDate(task.metadata.completed!, 'yyyy-mm-dd') : '',
       assigned: (task && 'assigned' in task.metadata) ? task.metadata.assigned : (gitUsername() || ''),
-      tags: (task && 'tags' in task.metadata) ? (task.metadata.tags || []) : []
+      tags: (task && 'tags' in task.metadata) ? (task.metadata.tags || []) : [],
+      ...Object.fromEntries(
+        customFields.map(customField => [
+          customField.name,
+          (task && customField.name in task.metadata)
+            ? (customField.type === 'date'
+              ? formatDate(task.metadata[customField.name], 'yyyy-mm-dd')
+              : task.metadata[customField.name]
+            ) : null,
+        ]),
+      )
     },
     relations: task ? task.relations : [],
     subTasks: task ? task.subTasks : [],
@@ -112,12 +123,14 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
         command: 'kanbn.update',
         taskId: task!.id,
         taskData: values,
+        customFields,
         panelUuid
       });
     } else {
       vscode.postMessage({
         command: 'kanbn.create',
         taskData: values,
+        customFields,
         panelUuid
       });
     }
@@ -224,484 +237,521 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, dateFormat, panelUui
           handleChange,
           isSubmitting
         }) => (
-          <React.Fragment>
+          <Form>
             <h1 className="kanbn-task-editor-title">
               {editing ? 'Update task' : 'Create new task'}
               {dirty && <span className="kanbn-task-editor-dirty">*</span>}
-              {editing && <span className="kanbn-task-editor-dates">
-                {
-                  [
-                    'created' in task!.metadata ? `Created ${formatDate(task!.metadata.created, dateFormat)}` : null,
-                    'updated' in task!.metadata ? `Updated ${formatDate(task!.metadata.updated, dateFormat)}` : null
-                  ].filter(i => i).join(', ')
-                }
-              </span>}
             </h1>
-            <Form>
-              <div className="kanbn-task-editor-form">
-                <div className="kanbn-task-editor-column-left">
-                  <div className="kanbn-task-editor-field kanbn-task-editor-field-name">
-                    <label className="kanbn-task-editor-field-label">
-                      <p>Name</p>
-                      <Field
-                        className="kanbn-task-editor-field-input"
-                        name="name"
-                        placeholder="Name"
-                        onChange={e => {
-                          handleChange(e);
-                          handleUpdateName(e, values);
-                        }}
-                      />
-                    </label>
-                    <div className="kanbn-task-editor-id">{taskData.id}</div>
-                    <ErrorMessage
-                      className="kanbn-task-editor-field-errors"
-                      component="div"
+            <div className="kanbn-task-editor-buttons kanbn-task-editor-main-buttons">
+              {editing && <button
+                type="button"
+                className="kanbn-task-editor-button kanbn-task-editor-button-delete"
+                title="Delete task"
+                onClick={() => {
+                  handleRemoveTask(values);
+                }}
+              >
+                <i className="codicon codicon-trash"></i>Delete
+              </button>}
+              {editing && <button
+                type="button"
+                className="kanbn-task-editor-button kanbn-task-editor-button-archive"
+                title="Archive task"
+                onClick={() => {
+                  handleArchiveTask(values);
+                }}
+              >
+                <i className="codicon codicon-archive"></i>Archive
+              </button>}
+              <button
+                type="submit"
+                className="kanbn-task-editor-button kanbn-task-editor-button-submit"
+                title="Save task"
+                disabled={isSubmitting}
+              >
+                <i className="codicon codicon-save"></i>Save
+              </button>
+            </div>
+            {editing && <span className="kanbn-task-editor-dates">
+              {
+                [
+                  'created' in task!.metadata ? `Created ${formatDate(task!.metadata.created, dateFormat)}` : null,
+                  'updated' in task!.metadata ? `Updated ${formatDate(task!.metadata.updated, dateFormat)}` : null
+                ].filter(i => i).join(', ')
+              }
+            </span>}
+            <div className="kanbn-task-editor-form">
+              <div className="kanbn-task-editor-column-left">
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-name">
+                  <label className="kanbn-task-editor-field-label">
+                    <p>Name</p>
+                    <Field
+                      className="kanbn-task-editor-field-input"
                       name="name"
-                    />
-                  </div>
-                  <div className="kanbn-task-editor-field kanbn-task-editor-field-description">
-                    <label
-                      className="kanbn-task-editor-field-label kanbn-task-editor-field-label-description"
-                      htmlFor="description-input"
-                    >
-                      <p>Description</p>
-                    </label>
-                    <button
-                      type="button"
-                      className="kanbn-task-editor-button kanbn-task-editor-button-edit-description"
-                      title="Edit description"
-                      onClick={() => {
-                        setEditingDescription(!editingDescription);
+                      placeholder="Name"
+                      onChange={e => {
+                        handleChange(e);
+                        handleUpdateName(e, values);
                       }}
-                    >
-                      {
-                        editingDescription
-                          ? <React.Fragment><i className="codicon codicon-preview"></i> Preview</React.Fragment>
-                          : <React.Fragment><i className="codicon codicon-edit"></i> Edit</React.Fragment>
-                      }
-                    </button>
+                    />
+                  </label>
+                  <div className="kanbn-task-editor-id">{taskData.id}</div>
+                  <ErrorMessage
+                    className="kanbn-task-editor-field-errors"
+                    component="div"
+                    name="name"
+                  />
+                </div>
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-description">
+                  <label
+                    className="kanbn-task-editor-field-label kanbn-task-editor-field-label-description"
+                    htmlFor="description-input"
+                  >
+                    <p>Description</p>
+                  </label>
+                  <button
+                    type="button"
+                    className="kanbn-task-editor-button kanbn-task-editor-button-edit-description"
+                    title="Edit description"
+                    onClick={() => {
+                      setEditingDescription(!editingDescription);
+                    }}
+                  >
                     {
                       editingDescription
-                        ? <Field
-                          className="kanbn-task-editor-field-textarea"
-                          id="description-input"
-                          as={TextareaAutosize}
-                          name="description"
-                        />
-                        : <Markdown className="kanbn-task-editor-description-preview" children={values.description} />
+                        ? <React.Fragment><i className="codicon codicon-preview"></i> Preview</React.Fragment>
+                        : <React.Fragment><i className="codicon codicon-edit"></i> Edit</React.Fragment>
                     }
-                    <ErrorMessage
-                      className="kanbn-task-editor-field-errors"
-                      component="div"
-                      name="description"
-                    />
-                  </div>
-                  <div className="kanbn-task-editor-field kanbn-task-editor-field-subtasks">
-                    <h2 className="kanbn-task-editor-title">Sub-tasks</h2>
-                    <FieldArray name="subTasks">
-                      {({ insert, remove, push }) => (
-                        <div>
-                          {values.subTasks.length > 0 && values.subTasks.map((subTask, index) => (
-                            <div className="kanbn-task-editor-row kanbn-task-editor-row-subtask" key={index}>
-                              <div className="kanbn-task-editor-column kanbn-task-editor-field-subtask-completed">
-                                <Field
-                                  className="kanbn-task-editor-field-checkbox"
-                                  type="checkbox"
-                                  name={`subTasks.${index}.completed`}
-                                />
-                                <ErrorMessage
-                                  className="kanbn-task-editor-field-errors"
-                                  component="div"
-                                  name={`subTasks.${index}.completed`}
-                                />
-                              </div>
-                              <div className="kanbn-task-editor-column kanbn-task-editor-field-subtask-text">
-                                <Field
-                                  className="kanbn-task-editor-field-input"
-                                  name={`subTasks.${index}.text`}
-                                  placeholder="Sub-task text"
-                                />
-                                <ErrorMessage
-                                  className="kanbn-task-editor-field-errors"
-                                  component="div"
-                                  name={`subTasks.${index}.text`}
-                                />
-                              </div>
-                              <div className="kanbn-task-editor-column kanbn-task-editor-column-buttons">
-                                <button
-                                  type="button"
-                                  className="kanbn-task-editor-button kanbn-task-editor-button-delete"
-                                  title="Remove sub-task"
-                                  onClick={() => remove(index)}
-                                >
-                                  <i className="codicon codicon-trash"></i>
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                          <div className="kanbn-task-editor-buttons">
-                            <button
-                              type="button"
-                              className="kanbn-task-editor-button kanbn-task-editor-button-add"
-                              title="Add sub-task"
-                              onClick={() => push({ completed: false, text: '' })}
-                            >
-                              <i className="codicon codicon-tasklist"></i>Add sub-task
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </FieldArray>
-                  </div>
-                  <div className="kanbn-task-editor-field kanbn-task-editor-field-relations">
-                    <h2 className="kanbn-task-editor-title">Relations</h2>
-                    <FieldArray name="relations">
-                      {({ insert, remove, push }) => (
-                        <div>
-                          {values.relations.length > 0 && values.relations.map((relation, index) => (
-                            <div className="kanbn-task-editor-row kanbn-task-editor-row-relation" key={index}>
-                              <div className="kanbn-task-editor-column kanbn-task-editor-field-relation-type">
-                                <Field
-                                  className="kanbn-task-editor-field-input"
-                                  name={`relations.${index}.type`}
-                                  placeholder="Relation type"
-                                />
-                                <ErrorMessage
-                                  className="kanbn-task-editor-field-errors"
-                                  component="div"
-                                  name={`relations.${index}.type`}
-                                />
-                              </div>
-                              <div className="kanbn-task-editor-column kanbn-task-editor-field-relation-task">
-                                <Field
-                                  className="kanbn-task-editor-field-select"
-                                  as="select"
-                                  name={`relations.${index}.task`}
-                                >
-                                  {Object.keys(tasks).map(t => <option value={t}>{t}</option>)}
-                                </Field>
-                                <ErrorMessage
-                                  className="kanbn-task-editor-field-errors"
-                                  component="div"
-                                  name={`relations.${index}.task`}
-                                />
-                              </div>
-                              <div className="kanbn-task-editor-column kanbn-task-editor-column-buttons">
-                                <button
-                                  type="button"
-                                  className="kanbn-task-editor-button kanbn-task-editor-button-delete"
-                                  title="Remove relation"
-                                  onClick={() => remove(index)}
-                                >
-                                  <i className="codicon codicon-trash"></i>
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                          <div className="kanbn-task-editor-buttons">
-                            <button
-                              type="button"
-                              className="kanbn-task-editor-button kanbn-task-editor-button-add"
-                              title="Add relation"
-                              onClick={() => push({ type: '', task: '' })}
-                            >
-                              <i className="codicon codicon-link"></i>Add relation
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </FieldArray>
-                  </div>
-                  <div className="kanbn-task-editor-field kanbn-task-editor-field-comments">
-                    <h2 className="kanbn-task-editor-title">Comments</h2>
-                    <FieldArray name="comments">
-                      {({ insert, remove, push }) => (
-                        <div>
-                          {values.comments.length > 0 && values.comments.map((comment, index) => (
-                            <div className="kanbn-task-editor-row-comment" key={index}>
-                              <div className="kanbn-task-editor-row">
-                                <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-author">
-                                  {
-                                    editingComment === index
-                                      ? <React.Fragment>
-                                        <Field
-                                          className="kanbn-task-editor-field-input"
-                                          name={`comments.${index}.author`}
-                                          placeholder="Comment author"
-                                        />
-                                        <ErrorMessage
-                                          className="kanbn-task-editor-field-errors"
-                                          component="div"
-                                          name={`comments.${index}.author`}
-                                        />
-                                      </React.Fragment>
-                                      : <div className="kanbn-task-editor-field-comment-author-value">
-                                        <i className="codicon codicon-account"></i>
-                                        {comment.author || 'Anonymous'}
-                                      </div>
-                                  }
-                                </div>
-                                <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-date">
-                                  {formatDate(comment.date, dateFormat)}
-                                </div>
-                                <div className="kanbn-task-editor-column kanbn-task-editor-column-buttons">
-                                  <button
-                                    type="button"
-                                    className="kanbn-task-editor-button kanbn-task-editor-button-delete"
-                                    title="Remove comment"
-                                    onClick={() => remove(index)}
-                                  >
-                                    <i className="codicon codicon-trash"></i>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="kanbn-task-editor-button kanbn-task-editor-button-edit"
-                                    title={editingComment === index ? "View comment" : "Edit comment"}
-                                    onClick={() => {
-                                      setEditingComment(editingComment !== index ? index : -1);
-                                    }}
-                                  >
-                                    {
-                                      editingComment === index
-                                        ? <i className="codicon codicon-preview"></i>
-                                        : <i className="codicon codicon-edit"></i>
-                                    }
-                                  </button>
-                                </div>
-                              </div>
-                              <div className="kanbn-task-editor-row">
-                                <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-text">
-                                  {
-                                    editingComment === index
-                                      ? <React.Fragment>
-                                        <Field
-                                          className="kanbn-task-editor-field-textarea"
-                                          as={TextareaAutosize}
-                                          name={`comments.${index}.text`}
-                                        />
-                                        <ErrorMessage
-                                          className="kanbn-task-editor-field-errors"
-                                          component="div"
-                                          name={`comments.${index}.text`}
-                                        />
-                                      </React.Fragment>
-                                      : <Markdown className="kanbn-task-editor-comment-text" children={comment.text} />
-                                  }
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                          <div className="kanbn-task-editor-buttons">
-                            <button
-                              type="button"
-                              className="kanbn-task-editor-button kanbn-task-editor-button-add"
-                              title="Add comment"
-                              onClick={() => {
-                                push({ text: '', date: new Date(), author: gitUsername() || '' });
-                                setEditingComment(values.comments.length);
-                              }}
-                            >
-                              <i className="codicon codicon-comment"></i>Add comment
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </FieldArray>
-                  </div>
+                  </button>
+                  {
+                    editingDescription
+                      ? <Field
+                        className="kanbn-task-editor-field-textarea"
+                        id="description-input"
+                        as={TextareaAutosize}
+                        name="description"
+                      />
+                      : <Markdown className="kanbn-task-editor-description-preview" children={values.description} />
+                  }
+                  <ErrorMessage
+                    className="kanbn-task-editor-field-errors"
+                    component="div"
+                    name="description"
+                  />
                 </div>
-                <div className="kanbn-task-editor-column-right">
-                  <div className="kanbn-task-editor-buttons">
-                    {editing && <button
-                      type="button"
-                      className="kanbn-task-editor-button kanbn-task-editor-button-delete"
-                      title="Delete task"
-                      onClick={() => {
-                        handleRemoveTask(values);
-                      }}
-                    >
-                      <i className="codicon codicon-trash"></i>Delete
-                    </button>}
-                    {editing && <button
-                      type="button"
-                      className="kanbn-task-editor-button kanbn-task-editor-button-archive"
-                      title="Archive task"
-                      onClick={() => {
-                        handleArchiveTask(values);
-                      }}
-                    >
-                      <i className="codicon codicon-archive"></i>Archive
-                    </button>}
-                    <button
-                      type="submit"
-                      className="kanbn-task-editor-button kanbn-task-editor-button-submit"
-                      title="Save task"
-                      disabled={isSubmitting}
-                    >
-                      <i className="codicon codicon-save"></i>Save
-                    </button>
-                  </div>
-                  <div className="kanbn-task-editor-field kanbn-task-editor-field-column">
-                    <label className="kanbn-task-editor-field-label">
-                      <p>Column</p>
-                      <Field
-                        className="kanbn-task-editor-field-select"
-                        as="select"
-                        name="column"
-                      >
-                        {columnNames.map(c => <option value={c}>{c}</option>)}
-                      </Field>
-                    </label>
-                    <ErrorMessage
-                      className="kanbn-task-editor-field-errors"
-                      component="div"
-                      name="column"
-                    />
-                  </div>
-                  <div className="kanbn-task-editor-field kanbn-task-editor-field-assigned">
-                    <label className="kanbn-task-editor-field-label">
-                      <p>Assigned to</p>
-                      <Field
-                        className="kanbn-task-editor-field-input"
-                        name="metadata.assigned"
-                        placeholder="Assigned to"
-                      />
-                    </label>
-                    <ErrorMessage
-                      className="kanbn-task-editor-field-errors"
-                      component="div"
-                      name="metadata.assigned"
-                    />
-                  </div>
-                  <div className="kanbn-task-editor-field kanbn-task-editor-field-started">
-                    <label className="kanbn-task-editor-field-label">
-                      <p>Started date</p>
-                      <Field
-                        className="kanbn-task-editor-field-input"
-                        type="date"
-                        name="metadata.started"
-                      />
-                    </label>
-                    <ErrorMessage
-                      className="kanbn-task-editor-field-errors"
-                      component="div"
-                      name="metadata.started"
-                    />
-                  </div>
-                  <div className="kanbn-task-editor-field kanbn-task-editor-field-due">
-                    <label className="kanbn-task-editor-field-label">
-                      <p>Due date</p>
-                      <Field
-                        className={[
-                          'kanbn-task-editor-field-input',
-                          checkOverdue(values) ? 'kanbn-task-overdue' : null
-                        ].filter(i => i).join(' ')}
-                        type="date"
-                        name="metadata.due"
-                      />
-                    </label>
-                    <ErrorMessage
-                      className="kanbn-task-editor-field-errors"
-                      component="div"
-                      name="metadata.due"
-                    />
-                  </div>
-                  <div className="kanbn-task-editor-field kanbn-task-editor-field-completed">
-                    <label className="kanbn-task-editor-field-label">
-                      <p>Completed date</p>
-                      <Field
-                        className="kanbn-task-editor-field-input"
-                        type="date"
-                        name="metadata.completed"
-                      />
-                    </label>
-                    <ErrorMessage
-                      className="kanbn-task-editor-field-errors"
-                      component="div"
-                      name="metadata.completed"
-                    />
-                  </div>
-                  <div className="kanbn-task-editor-field kanbn-task-editor-field-progress">
-                    <label className="kanbn-task-editor-field-label">
-                      <p>Progress</p>
-                      <Field
-                        className="kanbn-task-editor-field-input"
-                        type="number"
-                        name="progress"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                      />
-                      <div className="kanbn-task-progress" style={{
-                        width: `${Math.min(1, Math.max(0, values.progress || 0)) * 100}%`
-                      }}></div>
-                    </label>
-                    <ErrorMessage
-                      className="kanbn-task-editor-field-errors"
-                      component="div"
-                      name="progress"
-                    />
-                  </div>
-                  <div className="kanbn-task-editor-field kanbn-task-editor-field-tags">
-                    <label className="kanbn-task-editor-field-label">
-                      <p>Tags</p>
-                    </label>
-                    <FieldArray name="metadata.tags">
-                      {({ insert, remove, push }) => (
-                        <div>
-                          {(
-                            'tags' in values.metadata &&
-                            values.metadata.tags!.length > 0
-                          ) && values.metadata.tags!.map((tag, index) => (
-                            <div className="kanbn-task-editor-row kanbn-task-editor-row-tag" key={index}>
-                              <div className="kanbn-task-editor-column kanbn-task-editor-field-tag">
-                                <Field
-                                  className="kanbn-task-editor-field-input"
-                                  name={`metadata.tags.${index}`}
-                                  placeholder="Tag name"
-                                />
-                                <div
-                                  className={[
-                                    'kanbn-task-editor-tag-highlight',
-                                    `kanbn-task-tag-${paramCase(values.metadata.tags![index])}`
-                                  ].join(' ')}
-                                ></div>
-                                <ErrorMessage
-                                  className="kanbn-task-editor-field-errors"
-                                  component="div"
-                                  name={`metadata.tags.${index}`}
-                                />
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-subtasks">
+                  <h2 className="kanbn-task-editor-title">Sub-tasks</h2>
+                  <FieldArray name="subTasks">
+                    {({ insert, remove, push }) => (
+                      <div>
+                        {values.subTasks.length > 0 && values.subTasks.map((subTask, index) => (
+                          <div className="kanbn-task-editor-row kanbn-task-editor-row-subtask" key={index}>
+                            <div className="kanbn-task-editor-column kanbn-task-editor-field-subtask-completed">
+                              <Field
+                                className="kanbn-task-editor-field-checkbox"
+                                type="checkbox"
+                                name={`subTasks.${index}.completed`}
+                              />
+                              <ErrorMessage
+                                className="kanbn-task-editor-field-errors"
+                                component="div"
+                                name={`subTasks.${index}.completed`}
+                              />
+                            </div>
+                            <div className="kanbn-task-editor-column kanbn-task-editor-field-subtask-text">
+                              <Field
+                                className="kanbn-task-editor-field-input"
+                                name={`subTasks.${index}.text`}
+                                placeholder="Sub-task text"
+                              />
+                              <ErrorMessage
+                                className="kanbn-task-editor-field-errors"
+                                component="div"
+                                name={`subTasks.${index}.text`}
+                              />
+                            </div>
+                            <div className="kanbn-task-editor-column kanbn-task-editor-column-buttons">
+                              <button
+                                type="button"
+                                className="kanbn-task-editor-button kanbn-task-editor-button-delete"
+                                title="Remove sub-task"
+                                onClick={() => remove(index)}
+                              >
+                                <i className="codicon codicon-trash"></i>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="kanbn-task-editor-buttons">
+                          <button
+                            type="button"
+                            className="kanbn-task-editor-button kanbn-task-editor-button-add"
+                            title="Add sub-task"
+                            onClick={() => push({ completed: false, text: '' })}
+                          >
+                            <i className="codicon codicon-tasklist"></i>Add sub-task
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </FieldArray>
+                </div>
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-relations">
+                  <h2 className="kanbn-task-editor-title">Relations</h2>
+                  <FieldArray name="relations">
+                    {({ insert, remove, push }) => (
+                      <div>
+                        {values.relations.length > 0 && values.relations.map((relation, index) => (
+                          <div className="kanbn-task-editor-row kanbn-task-editor-row-relation" key={index}>
+                            <div className="kanbn-task-editor-column kanbn-task-editor-field-relation-type">
+                              <Field
+                                className="kanbn-task-editor-field-input"
+                                name={`relations.${index}.type`}
+                                placeholder="Relation type"
+                              />
+                              <ErrorMessage
+                                className="kanbn-task-editor-field-errors"
+                                component="div"
+                                name={`relations.${index}.type`}
+                              />
+                            </div>
+                            <div className="kanbn-task-editor-column kanbn-task-editor-field-relation-task">
+                              <Field
+                                className="kanbn-task-editor-field-select"
+                                as="select"
+                                name={`relations.${index}.task`}
+                              >
+                                {Object.keys(tasks).map(t => <option value={t}>{t}</option>)}
+                              </Field>
+                              <ErrorMessage
+                                className="kanbn-task-editor-field-errors"
+                                component="div"
+                                name={`relations.${index}.task`}
+                              />
+                            </div>
+                            <div className="kanbn-task-editor-column kanbn-task-editor-column-buttons">
+                              <button
+                                type="button"
+                                className="kanbn-task-editor-button kanbn-task-editor-button-delete"
+                                title="Remove relation"
+                                onClick={() => remove(index)}
+                              >
+                                <i className="codicon codicon-trash"></i>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="kanbn-task-editor-buttons">
+                          <button
+                            type="button"
+                            className="kanbn-task-editor-button kanbn-task-editor-button-add"
+                            title="Add relation"
+                            onClick={() => push({ type: '', task: '' })}
+                          >
+                            <i className="codicon codicon-link"></i>Add relation
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </FieldArray>
+                </div>
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-comments">
+                  <h2 className="kanbn-task-editor-title">Comments</h2>
+                  <FieldArray name="comments">
+                    {({ insert, remove, push }) => (
+                      <div>
+                        {values.comments.length > 0 && values.comments.map((comment, index) => (
+                          <div className="kanbn-task-editor-row-comment" key={index}>
+                            <div className="kanbn-task-editor-row">
+                              <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-author">
+                                {
+                                  editingComment === index
+                                    ? <React.Fragment>
+                                      <Field
+                                        className="kanbn-task-editor-field-input"
+                                        name={`comments.${index}.author`}
+                                        placeholder="Comment author"
+                                      />
+                                      <ErrorMessage
+                                        className="kanbn-task-editor-field-errors"
+                                        component="div"
+                                        name={`comments.${index}.author`}
+                                      />
+                                    </React.Fragment>
+                                    : <div className="kanbn-task-editor-field-comment-author-value">
+                                      <i className="codicon codicon-account"></i>
+                                      {comment.author || 'Anonymous'}
+                                    </div>
+                                }
+                              </div>
+                              <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-date">
+                                {formatDate(comment.date, dateFormat)}
                               </div>
                               <div className="kanbn-task-editor-column kanbn-task-editor-column-buttons">
                                 <button
                                   type="button"
                                   className="kanbn-task-editor-button kanbn-task-editor-button-delete"
-                                  title="Remove tag"
+                                  title="Remove comment"
                                   onClick={() => remove(index)}
                                 >
                                   <i className="codicon codicon-trash"></i>
                                 </button>
+                                <button
+                                  type="button"
+                                  className="kanbn-task-editor-button kanbn-task-editor-button-edit"
+                                  title={editingComment === index ? "View comment" : "Edit comment"}
+                                  onClick={() => {
+                                    setEditingComment(editingComment !== index ? index : -1);
+                                  }}
+                                >
+                                  {
+                                    editingComment === index
+                                      ? <i className="codicon codicon-preview"></i>
+                                      : <i className="codicon codicon-edit"></i>
+                                  }
+                                </button>
                               </div>
                             </div>
-                          ))}
-                          <div className="kanbn-task-editor-buttons">
-                            <button
-                              type="button"
-                              className="kanbn-task-editor-button kanbn-task-editor-button-add"
-                              title="Add tag"
-                              onClick={() => push('')}
-                            >
-                              <i className="codicon codicon-tag"></i>Add tag
-                            </button>
+                            <div className="kanbn-task-editor-row">
+                              <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-text">
+                                {
+                                  editingComment === index
+                                    ? <React.Fragment>
+                                      <Field
+                                        className="kanbn-task-editor-field-textarea"
+                                        as={TextareaAutosize}
+                                        name={`comments.${index}.text`}
+                                      />
+                                      <ErrorMessage
+                                        className="kanbn-task-editor-field-errors"
+                                        component="div"
+                                        name={`comments.${index}.text`}
+                                      />
+                                    </React.Fragment>
+                                    : <Markdown className="kanbn-task-editor-comment-text" children={comment.text} />
+                                }
+                              </div>
+                            </div>
                           </div>
+                        ))}
+                        <div className="kanbn-task-editor-buttons">
+                          <button
+                            type="button"
+                            className="kanbn-task-editor-button kanbn-task-editor-button-add"
+                            title="Add comment"
+                            onClick={() => {
+                              push({ text: '', date: new Date(), author: gitUsername() || '' });
+                              setEditingComment(values.comments.length);
+                            }}
+                          >
+                            <i className="codicon codicon-comment"></i>Add comment
+                          </button>
                         </div>
-                      )}
-                    </FieldArray>
-                  </div>
+                      </div>
+                    )}
+                  </FieldArray>
                 </div>
               </div>
-            </Form>
-          </React.Fragment>
+              <div className="kanbn-task-editor-column-right">
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-column">
+                  <label className="kanbn-task-editor-field-label">
+                    <p>Column</p>
+                    <Field
+                      className="kanbn-task-editor-field-select"
+                      as="select"
+                      name="column"
+                    >
+                      {columnNames.map(c => <option value={c}>{c}</option>)}
+                    </Field>
+                  </label>
+                  <ErrorMessage
+                    className="kanbn-task-editor-field-errors"
+                    component="div"
+                    name="column"
+                  />
+                </div>
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-assigned">
+                  <label className="kanbn-task-editor-field-label">
+                    <p>Assigned to</p>
+                    <Field
+                      className="kanbn-task-editor-field-input"
+                      name="metadata.assigned"
+                      placeholder="Assigned to"
+                    />
+                  </label>
+                  <ErrorMessage
+                    className="kanbn-task-editor-field-errors"
+                    component="div"
+                    name="metadata.assigned"
+                  />
+                </div>
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-started">
+                  <label className="kanbn-task-editor-field-label">
+                    <p>Started date</p>
+                    <Field
+                      className="kanbn-task-editor-field-input"
+                      type="date"
+                      name="metadata.started"
+                    />
+                  </label>
+                  <ErrorMessage
+                    className="kanbn-task-editor-field-errors"
+                    component="div"
+                    name="metadata.started"
+                  />
+                </div>
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-due">
+                  <label className="kanbn-task-editor-field-label">
+                    <p>Due date</p>
+                    <Field
+                      className={[
+                        'kanbn-task-editor-field-input',
+                        checkOverdue(values) ? 'kanbn-task-overdue' : null
+                      ].filter(i => i).join(' ')}
+                      type="date"
+                      name="metadata.due"
+                    />
+                  </label>
+                  <ErrorMessage
+                    className="kanbn-task-editor-field-errors"
+                    component="div"
+                    name="metadata.due"
+                  />
+                </div>
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-completed">
+                  <label className="kanbn-task-editor-field-label">
+                    <p>Completed date</p>
+                    <Field
+                      className="kanbn-task-editor-field-input"
+                      type="date"
+                      name="metadata.completed"
+                    />
+                  </label>
+                  <ErrorMessage
+                    className="kanbn-task-editor-field-errors"
+                    component="div"
+                    name="metadata.completed"
+                  />
+                </div>
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-progress">
+                  <label className="kanbn-task-editor-field-label">
+                    <p>Progress</p>
+                    <Field
+                      className="kanbn-task-editor-field-input"
+                      type="number"
+                      name="progress"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                    />
+                    <div className="kanbn-task-progress" style={{
+                      width: `${Math.min(1, Math.max(0, values.progress || 0)) * 100}%`
+                    }}></div>
+                  </label>
+                  <ErrorMessage
+                    className="kanbn-task-editor-field-errors"
+                    component="div"
+                    name="progress"
+                  />
+                </div>
+                {
+                  customFields.map(customField => (
+                    <div className={[
+                      'kanbn-task-editor-field kanbn-task-editor-custom-field',
+                      `kanbn-task-editor-custom-field-${paramCase(customField.name)}`
+                    ].join(' ')}>
+                      <label className="kanbn-task-editor-field-label">
+                        {customField.type === 'boolean'
+                          ? (
+                            <>
+                              <Field
+                                className="kanbn-task-editor-field-input kanbn-task-editor-custom-checkbox"
+                                type="checkbox"
+                                name={`metadata.${customField.name}`}
+                              /><p>{customField.name}</p>
+                            </>
+                          ) : (
+                            <>
+                              <p>{customField.name}</p>
+                              <Field
+                                className="kanbn-task-editor-field-input"
+                                type={{
+                                  date: 'date',
+                                  number: 'number',
+                                  string: 'text',
+                                }[customField.type]}
+                                name={`metadata.${customField.name}`}
+                              />
+                            </>
+                          )}
+                      </label>
+                      <ErrorMessage
+                        className="kanbn-task-editor-field-errors"
+                        component="div"
+                        name={`metadata.${customField.name}`}
+                      />
+                    </div>
+                  ))
+                }
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-tags">
+                  <label className="kanbn-task-editor-field-label">
+                    <p>Tags</p>
+                  </label>
+                  <FieldArray name="metadata.tags">
+                    {({ insert, remove, push }) => (
+                      <div>
+                        {(
+                          'tags' in values.metadata &&
+                          values.metadata.tags!.length > 0
+                        ) && values.metadata.tags!.map((tag, index) => (
+                          <div className="kanbn-task-editor-row kanbn-task-editor-row-tag" key={index}>
+                            <div className="kanbn-task-editor-column kanbn-task-editor-field-tag">
+                              <Field
+                                className="kanbn-task-editor-field-input"
+                                name={`metadata.tags.${index}`}
+                                placeholder="Tag name"
+                              />
+                              <div
+                                className={[
+                                  'kanbn-task-editor-tag-highlight',
+                                  `kanbn-task-tag-${paramCase(values.metadata.tags![index])}`
+                                ].join(' ')}
+                              ></div>
+                              <ErrorMessage
+                                className="kanbn-task-editor-field-errors"
+                                component="div"
+                                name={`metadata.tags.${index}`}
+                              />
+                            </div>
+                            <div className="kanbn-task-editor-column kanbn-task-editor-column-buttons">
+                              <button
+                                type="button"
+                                className="kanbn-task-editor-button kanbn-task-editor-button-delete"
+                                title="Remove tag"
+                                onClick={() => remove(index)}
+                              >
+                                <i className="codicon codicon-trash"></i>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="kanbn-task-editor-buttons">
+                          <button
+                            type="button"
+                            className="kanbn-task-editor-button kanbn-task-editor-button-add"
+                            title="Add tag"
+                            onClick={() => push('')}
+                          >
+                            <i className="codicon codicon-tag"></i>Add tag
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </FieldArray>
+                </div>
+              </div>
+            </div>
+          </Form>
         )}
       </Formik>
     </div>

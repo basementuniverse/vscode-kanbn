@@ -351,10 +351,9 @@ Task editor styles
 -----------------------------------------------------------------------------*/
 
 .kanbn-task-editor-title {
+    display: inline-block;
     font-size: 1.5em;
     margin-top: 0;
-    padding-bottom: 0.5em;
-    border-bottom: 1px var(--vscode-activityBar-inactiveForeground) solid;
 }
 
 .kanbn-task-editor-dirty {
@@ -368,10 +367,12 @@ Task editor styles
     font-weight: normal;
     opacity: 0.8;
     float: right;
+    margin: 2px;
 }
 
 .kanbn-task-editor-form {
     display: flex;
+    border-top: 1px solid var(--vscode-activityBar-inactiveForeground);
 }
 
 .kanbn-task-editor-field .kanbn-task-editor-title,
@@ -437,6 +438,12 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
 
 .kanbn-task-editor-buttons {
     text-align: right;
+}
+
+.kanbn-task-editor-main-buttons {
+    float: right;
+    position: relative;
+    top: -0.5em;
 }
 
 .kanbn-task-editor-button {
@@ -600,6 +607,14 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
 
 .kanbn-task-editor-button-edit-description {
     float: right;
+}
+
+.kanbn-task-editor-custom-checkbox {
+    float: left;
+    width: auto;
+    position: relative;
+    top: -.2em;
+    margin: .5em 1em .5em 0;
 }
 
 /*-----------------------------------------------------------------------------

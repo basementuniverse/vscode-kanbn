@@ -3,7 +3,10 @@ import * as vscode from "vscode";
 import getNonce from "./getNonce";
 import { v4 as uuidv4 } from "uuid";
 
-function transformTaskData(taskData: any) {
+function transformTaskData(
+  taskData: any,
+  customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string'}[]
+) {
   const result = {
     id: taskData.id,
     name: taskData.name,
@@ -48,6 +51,17 @@ function transformTaskData(taskData: any) {
   }
   if (taskData.metadata.completed) {
     result.metadata["completed"] = new Date(Date.parse(taskData.metadata.completed));
+  }
+
+  // Add custom fields
+  for (let customField of customFields) {
+    if (customField.name in taskData.metadata && taskData.metadata[customField.name] !== null) {
+      if (customField.type === 'date') {
+        result.metadata[customField.name] = new Date(Date.parse(taskData.metadata[customField.name]));
+      } else {
+        result.metadata[customField.name] = taskData.metadata[customField.name];
+      }
+    }
   }
 
   return result;
@@ -162,7 +176,10 @@ export default class KanbnTaskPanel {
 
           // Create a task
           case "kanbn.create":
-            await this._kanbn.createTask(transformTaskData(message.taskData), message.taskData.column);
+            await this._kanbn.createTask(
+              transformTaskData(message.taskData, message.customFields),
+              message.taskData.column
+            );
             KanbnTaskPanel.panels[message.panelUuid]._taskId = message.taskData.id;
             KanbnTaskPanel.panels[message.panelUuid]._columnName = message.taskData.column;
             KanbnTaskPanel.panels[message.panelUuid].update();
@@ -173,7 +190,11 @@ export default class KanbnTaskPanel {
 
           // Update a task
           case "kanbn.update":
-            await this._kanbn.updateTask(message.taskId, transformTaskData(message.taskData), message.taskData.column);
+            await this._kanbn.updateTask(
+              message.taskId,
+              transformTaskData(message.taskData, message.customFields),
+              message.taskData.column
+            );
             KanbnTaskPanel.panels[message.panelUuid]._taskId = message.taskData.id;
             KanbnTaskPanel.panels[message.panelUuid]._columnName = message.taskData.column;
             KanbnTaskPanel.panels[message.panelUuid].update();
@@ -258,6 +279,7 @@ export default class KanbnTaskPanel {
       index,
       task,
       tasks,
+      customFields: index.options.customFields ?? [],
       columnName: this._columnName,
       dateFormat: this._kanbn.getDateFormat(index),
       panelUuid: this._panelUuid,

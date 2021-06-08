@@ -129,6 +129,9 @@ Here's an example of a task card style using some of the above features:
 - `kanbn-task-editor-field-label`
 - `kanbn-task-editor-field-label-description`
 - `kanbn-task-editor-field-input`
+- `kanbn-task-editor-custom-field`
+- `kanbn-task-editor-custom-field-{Custom field name in param-case}`
+- `kanbn-task-editor-custom-checkbox`
 - `kanbn-task-editor-id`
 - `kanbn-task-editor-description-preview`
 - `kanbn-task-editor-button-edit-description`
@@ -145,6 +148,7 @@ Here's an example of a task card style using some of the above features:
 - `kanbn-task-editor-button`
 - `kanbn-task-editor-button-delete`
 - `kanbn-task-editor-buttons`
+- `kanbn-task-editor-main-buttons`
 - `kanbn-task-editor-button-add`
 - `kanbn-task-editor-button-edit`
 - `kanbn-task-editor-field-relations`

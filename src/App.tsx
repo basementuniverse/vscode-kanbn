@@ -66,6 +66,7 @@ function App() {
         setTasks(tasks);
         setColumnName(event.data.columnName);
         setColumnNames(Object.keys(event.data.index.columns));
+        setCustomFields(event.data.customFields);
         setPanelUuid(event.data.panelUuid);
         break;
 
@@ -118,6 +119,7 @@ function App() {
           tasks={tasks}
           columnName={columnName}
           columnNames={columnNames}
+          customFields={customFields}
           dateFormat={dateFormat}
           panelUuid={panelUuid}
           vscode={vscode}
