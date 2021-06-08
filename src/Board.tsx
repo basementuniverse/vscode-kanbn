@@ -74,8 +74,17 @@ const filterProperties = [
 ];
 
 // Filter tasks according to the filter string
-const filterTask = (task: KanbnTask, taskFilter: string) => {
+const filterTask = (
+  task: KanbnTask,
+  taskFilter: string,
+  customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string' }[]
+) => {
   let result = true;
+  const customFieldMap = Object.fromEntries(customFields.map(customField => [
+    customField.name.toLowerCase(),
+    customField,
+  ]));
+  const customFieldNames = Object.keys(customFieldMap);
   taskFilter.split(' ').forEach(f => {
     const parts = f.split(':').map(p => p.toLowerCase());
 
@@ -85,6 +94,17 @@ const filterTask = (task: KanbnTask, taskFilter: string) => {
       // Filter for overdue tasks
       if (parts[0] === 'overdue') {
         if (!checkOverdue(task)) {
+          result = false;
+        }
+        return;
+      }
+
+      // Filter boolean custom fields
+      if (customFieldNames.includes(parts[0]) && customFieldMap[parts[0]].type === 'boolean') {
+        if (
+          !(customFieldMap[parts[0]].name in task.metadata) ||
+          !task.metadata[customFieldMap[parts[0]].name]
+        ) {
           result = false;
         }
         return;
@@ -101,9 +121,14 @@ const filterTask = (task: KanbnTask, taskFilter: string) => {
     }
 
     // If this filter section contains a property name and value, check the value against the property
-    if (parts.length === 2 && filterProperties.indexOf(parts[0]) !== -1) {
+    if (
+      parts.length === 2 && (
+        filterProperties.includes(parts[0]) ||
+        customFieldNames.includes(parts[0])
+      )
+    ) {
 
-      // Filter by property value
+      // Fetch the value to filter by
       let propertyValue = '';
       switch (parts[0]) {
         case 'description':
@@ -121,8 +146,24 @@ const filterTask = (task: KanbnTask, taskFilter: string) => {
         case 'relation':
           propertyValue = task.relations.map(relation => `${relation.type} ${relation.task}`).join(' ');
           break;
-        default: break;
+        case 'subtask':
+          propertyValue = task.subTasks.map(subTask => `${subTask.text}`).join(' ');
+          break;
+        case 'comment':
+          propertyValue = task.comments.map(comment => `${comment.author} ${comment.text}`).join(' ');
+          break;
+        default:
+          if (
+            customFieldNames.includes(parts[0]) &&
+            customFieldMap[parts[0]].type !== 'boolean' &&
+            customFieldMap[parts[0]].name in task.metadata
+          ) {
+            propertyValue = `${task.metadata[customFieldMap[parts[0]].name]}`;
+          }
+          break;
       }
+
+      // Check the search term against the value
       if (!propertyValue.toLowerCase().includes(parts[1])) {
         result = false;
       }
@@ -326,14 +367,16 @@ const Board = ({
                             snapshot.isDraggingOver ? 'drag-over' : null
                           ].filter(i => i).join(' ')}
                         >
-                          {column.filter(task => filterTask(task, taskFilter)).map((task, position) => <TaskItem
-                            task={task}
-                            columnName={columnName}
-                            customFields={customFields}
-                            position={position}
-                            dateFormat={dateFormat}
-                            vscode={vscode}
-                          />)}
+                          {column
+                            .filter(task => filterTask(task, taskFilter, customFields))
+                            .map((task, position) => <TaskItem
+                              task={task}
+                              columnName={columnName}
+                              customFields={customFields}
+                              position={position}
+                              dateFormat={dateFormat}
+                              vscode={vscode}
+                            />)}
                           {provided.placeholder}
                         </div>
                       );
