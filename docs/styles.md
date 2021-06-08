@@ -102,7 +102,7 @@ Here's an example of a task card style using some of the above features:
 - `kanbn-task-tag`
 - `kanbn-task-tag-{Tag name in param-case}`
 - `kanbn-task-data-custom-field`
-- `kanbn-task-data-{Custom field name in param-case}
+- `kanbn-task-data-{Custom field name in param-case}`
 - `kanbn-task-data-assigned`
 - `kanbn-task-data-created`
 - `kanbn-task-data-updated`
