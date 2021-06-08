@@ -70,7 +70,9 @@ const filterProperties = [
   'description',
   'assigned',
   'tag',
-  'relation'
+  'relation',
+  'subtask',
+  'comment',
 ];
 
 // Filter tasks according to the filter string

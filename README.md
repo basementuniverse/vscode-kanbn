@@ -32,20 +32,6 @@ Click on a task's title to open the task editor in a new tab. From here, you can
 
 You can also modify the index or task files directly, or by using Kanbn CLI commands, and the Kanbn board should update automatically to reflect these changes.
 
-## Filtering the Kanbn board
-
-At the top-right of the Kanbn board there is a filter input. To filter visible tasks, enter a filter string and click the filter button (or press Enter).
-
-### Filter string syntax
-
-Text entered into the filter string input will be tested against each task's `id` and `name` fields. To filter on other fields, try the following:
-
-- `overdue` will filter all tasks that have a due date in the past
-- `description:search-string` will filter for tasks that contain `search-string` in their description or sub-tasks
-- `assigned:search-string` will filter for tasks that contain `search-string` in their assigned user
-- `tag:search-string` will filter for tasks that contain `search-string` in one of their tags
-- `relation:search-string` will filter for tasks that contain `search-string` in one of their relations (either the relation type or related task id)
-
 ## Commands
 
 The following commands are available:
@@ -65,6 +51,40 @@ The following configuration settings are available:
 - `kanbn.showTaskNotifications` when set to `true`, notifications will be displayed when a task is created, updated or deleted.
 - `kanbn.showSprintButton` when set to `true`, a 'Start sprint` button will will appear above the Kanbn board. This button will show the current sprint name if a sprint is currently active, and can be used to start a new sprint.
 - `kanbn.showBurndownButton` when set to `true`, a 'Show burndown chart` button will appear above the Kanbn board.
+
+## Filtering the Kanbn board
+
+At the top-right of the Kanbn board there is a filter input. To filter visible tasks, enter a filter string and click the filter button (or press Enter).
+
+### Filter string syntax
+
+Text entered into the filter string input will be tested against each task's `id` and `name` fields. To filter on other fields, try the following:
+
+- `overdue` will filter all tasks that have a due date in the past
+- `description:search-string` will filter for tasks that contain `search-string` in their description or sub-tasks
+- `assigned:search-string` will filter for tasks that contain `search-string` in their assigned user
+- `tag:search-string` will filter for tasks that contain `search-string` in one of their tags
+- `relation:search-string` will filter for tasks that contain `search-string` in one of their relations (either the relation type or related task id)
+- `subtask:search-string` will filter for tasks that contain `search-string` in one of their sub-tasks
+- `comment:search-string` will filter for tasks that contain `search-string` in one of their comments (either the comment author or text)
+- `{custom field name}:search-string` will filter for tasks that have a custom field in their metadata that contains `search-string` in its value
+- `{boolean custom field name}` will filter for tasks that have a boolean custom field in their metadata set to true
+
+#### Examples
+
+For these examples, assume we have a string custom field 'MyCustomField' and a boolean custom field 'MyCustomFlag' defined in the project options, i.e. `index.md` will contain:
+```yaml
+customFields:
+  - name: MyCustomField
+    type: string
+  - name: MyCustomFlag
+    type: boolean
+```
+
+(See https://github.com/basementuniverse/kanbn/blob/master/docs/index-structure.md for more information on custom fields)
+
+- `assigned:testperson tag:large mycustomflag` will show tasks that are assigned to `testperson` and have a tag `Large` (search terms are case-insensitive) and have `MyCustomFlag` set to true
+- `mycustomfield:test123 some title` will show tasks that have both `some` and `title` in their name/id and have a `MyCustomField` field that contains `test123`
 
 ## Styling the Kanbn board
 
