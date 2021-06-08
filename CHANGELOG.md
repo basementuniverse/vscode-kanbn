@@ -1,11 +1,12 @@
 # 0.11.0
 
-* Added KaTeX support to task markdown (description and comments) using `$$...$$` for blocks and `$...$` for inline
-* Added syntax highlighting to code blocks in task markdown (description and comments)
-* Added column sorting
+* KaTeX support in task markdown (description and comments) using `$$...$$` for blocks and `$...$` for inline
+* Syntax highlighting for code blocks in task markdown (description and comments)
+* Columns can now be sorted, with the ability to optionally save sort settings per column
 * Added relations and custom fields to task cards
-* Added task card customisation using `board.css`
-* Added custom fields to task editor
+* Task cards can be customised using `board.css`
+* Custom fields can be modified using task editor
+* Board can be filtered by custom field values
 
 # 0.10.0
 
