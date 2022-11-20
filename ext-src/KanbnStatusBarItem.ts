@@ -1,13 +1,13 @@
-import { status } from '@basementuniverse/kanbn/src/main';
+import { Kanbn } from '@basementuniverse/kanbn/src/main';
 import * as vscode from 'vscode';
 
 export default class KanbnStatusBarItem {
   private readonly _statusBarItem: vscode.StatusBarItem;
-  private readonly _kanbn: typeof import('@basementuniverse/kanbn/src/main');
+  private readonly _kanbn: Kanbn;
 
   constructor(
     context: vscode.ExtensionContext,
-    kanbn: typeof import('@basementuniverse/kanbn/src/main')
+    kanbn: Kanbn
   ) {
     this._statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
     context.subscriptions.push(this._statusBarItem);
@@ -28,7 +28,7 @@ export default class KanbnStatusBarItem {
       const text = [
         `$(project) ${status.tasks}`
       ];
-      let tooltip = [];
+      let tooltip: string[] = [];
       if (status.tasks > 0) {
         tooltip = [
           `${status.tasks} task${status.tasks === 1 ? '' : 's'}`

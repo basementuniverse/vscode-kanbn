@@ -1,6 +1,7 @@
 import * as path from "path";
 import * as vscode from "vscode";
 import getNonce from "./getNonce";
+import {Kanbn} from "@basementuniverse/kanbn/src/main"
 
 export default class KanbnBurndownPanel {
   public static currentPanel: KanbnBurndownPanel | undefined;
@@ -10,7 +11,7 @@ export default class KanbnBurndownPanel {
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionPath: string;
   private readonly _workspacePath: string;
-  private readonly _kanbn: typeof import("@basementuniverse/kanbn/src/main");
+  private readonly _kanbn: Kanbn;
   private readonly _kanbnFolderName: string;
   private sprintMode: boolean = true;
   private sprint: string = '';
@@ -21,7 +22,7 @@ export default class KanbnBurndownPanel {
   public static async createOrShow(
     extensionPath: string,
     workspacePath: string,
-    kanbn: typeof import("@basementuniverse/kanbn/src/main"),
+    kanbn: Kanbn,
     kanbnFolderName: string
   ) {
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
@@ -79,7 +80,7 @@ export default class KanbnBurndownPanel {
     extensionPath: string,
     workspacePath: string,
     column: vscode.ViewColumn,
-    kanbn: typeof import("@basementuniverse/kanbn/src/main"),
+    kanbn: Kanbn,
     kanbnFolderName: string
   ) {
     this._extensionPath = extensionPath;

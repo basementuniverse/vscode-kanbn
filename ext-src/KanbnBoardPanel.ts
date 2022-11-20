@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import getNonce from "./getNonce";
 import KanbnTaskPanel from "./KanbnTaskPanel";
 import KanbnBurndownPanel from "./KanbnBurndownPanel";
+import {Kanbn} from "@basementuniverse/kanbn/src/main"
 
 const sortByFields: { [key: string]: string } = {
   'Name': 'name',
@@ -27,14 +28,14 @@ export default class KanbnBoardPanel {
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionPath: string;
   private readonly _workspacePath: string;
-  private readonly _kanbn: typeof import("@basementuniverse/kanbn/src/main");
+  private readonly _kanbn: Kanbn;
   private readonly _kanbnFolderName: string;
   private _disposables: vscode.Disposable[] = [];
 
   public static createOrShow(
     extensionPath: string,
     workspacePath: string,
-    kanbn: typeof import("@basementuniverse/kanbn/src/main"),
+    kanbn: Kanbn,
     kanbnFolderName: string
   ) {
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
@@ -91,7 +92,7 @@ export default class KanbnBoardPanel {
     extensionPath: string,
     workspacePath: string,
     column: vscode.ViewColumn,
-    kanbn: typeof import("@basementuniverse/kanbn/src/main"),
+    kanbn: Kanbn,
     kanbnFolderName: string
   ) {
     this._extensionPath = extensionPath;
@@ -185,7 +186,7 @@ export default class KanbnBoardPanel {
               );
             }
             // Prompt for a task property to sort by
-            const sortBy: string = await vscode.window.showQuickPick(
+            const sortBy: string | undefined = await vscode.window.showQuickPick(
               [
                 'None',
                 ...Object.keys(sortByFields),

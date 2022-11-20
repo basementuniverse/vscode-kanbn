@@ -3,6 +3,7 @@ import KanbnStatusBarItem from "./KanbnStatusBarItem";
 import KanbnBoardPanel from "./KanbnBoardPanel";
 import KanbnBurndownPanel from "./KanbnBurndownPanel";
 import KanbnTaskPanel from "./KanbnTaskPanel";
+import {Kanbn} from "@basementuniverse/kanbn/src/main"
 
 let kanbnStatusBarItem: KanbnStatusBarItem;
 
@@ -10,7 +11,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // Register a command to initialise Kanbn in the current workspace. This command will be invoked when the status
   // bar item is clicked in a workspace where Kanbn isn't already initialised.
   context.subscriptions.push(
-    vscode.commands.registerCommand("kanbn.init", async () => {
+    vscode.commands.registerCommand("kanbn.createBoard", async () => {
       // If no workspace folder is opened, we can't initialise kanbn
       if (vscode.workspace.workspaceFolders === undefined) {
         vscode.window.showErrorMessage("You need to open a workspace before initialising Kanbn.");
@@ -19,7 +20,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // Set the node process directory and import kanbn
       process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-      const kanbn = await import("@basementuniverse/kanbn/src/main");
+      const kanbn = new Kanbn();
 
       // If kanbn is already initialised, get the project name
       let projectName = "";
@@ -51,7 +52,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // Register a command to open the kanbn board. This command will be invoked when the status bar item is clicked
   // in a workspace where kanbn has already been initialised.
   context.subscriptions.push(
-    vscode.commands.registerCommand("kanbn.board", async () => {
+    vscode.commands.registerCommand("kanbn.openBoard", async () => {
       // If no workspace folder is opened, we can't open the kanbn board
       if (vscode.workspace.workspaceFolders === undefined) {
         vscode.window.showErrorMessage("You need to open a workspace before viewing the Kanbn board.");
@@ -60,7 +61,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // Set the node process directory and import kanbn
       process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-      const kanbn = await import("@basementuniverse/kanbn/src/main");
+      const kanbn = new Kanbn();
 
       // If kanbn is initialised, view the kanbn board
       if (await kanbn.initialised()) {
@@ -89,7 +90,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // Set the node process directory and import kanbn
       process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-      const kanbn = await import("@basementuniverse/kanbn/src/main");
+      const kanbn = new Kanbn();
 
       // If kanbn is initialised, open the task webview
       if (await kanbn.initialised()) {
@@ -118,7 +119,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // Set the node process directory and import kanbn
       process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-      const kanbn = await import("@basementuniverse/kanbn/src/main");
+      const kanbn = new Kanbn();
 
       // If kanbn is initialised, view the burndown chart
       if (await kanbn.initialised()) {
@@ -147,7 +148,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // Set the node process directory and import kanbn
       process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-      const kanbn = await import("@basementuniverse/kanbn/src/main");
+      const kanbn = new Kanbn();
 
       // Get a list of tracked tasks
       let tasks: string[] = [];
@@ -193,7 +194,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // Set the node process directory and import kanbn
       process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-      const kanbn = await import("@basementuniverse/kanbn/src/main");
+      const kanbn = new Kanbn();
 
       // Get a list of archived tasks
       let archivedTasks: string[] = [];
@@ -248,7 +249,7 @@ export async function activate(context: vscode.ExtensionContext) {
   if (vscode.workspace.workspaceFolders !== undefined) {
     // Set the node process directory and import kanbn
     process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-    const kanbn = await import("@basementuniverse/kanbn/src/main");
+    const kanbn = new Kanbn();
 
     // Create status bar item
     kanbnStatusBarItem = new KanbnStatusBarItem(context, kanbn);

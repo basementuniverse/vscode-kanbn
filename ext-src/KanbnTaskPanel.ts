@@ -2,6 +2,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import getNonce from "./getNonce";
 import { v4 as uuidv4 } from "uuid";
+import {Kanbn} from "@basementuniverse/kanbn/src/main"
 
 function transformTaskData(
   taskData: any,
@@ -74,7 +75,7 @@ export default class KanbnTaskPanel {
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionPath: string;
   private readonly _workspacePath: string;
-  private readonly _kanbn: typeof import("@basementuniverse/kanbn/src/main");
+  private readonly _kanbn: Kanbn;
   private readonly _kanbnFolderName: string;
   private readonly _panelUuid: string;
   private _taskId: string | null;
@@ -84,7 +85,7 @@ export default class KanbnTaskPanel {
   public static async show(
     extensionPath: string,
     workspacePath: string,
-    kanbn: typeof import("@basementuniverse/kanbn/src/main"),
+    kanbn: Kanbn,
     kanbnFolderName: string,
     taskId: string | null,
     columnName: string | null
@@ -111,7 +112,7 @@ export default class KanbnTaskPanel {
     extensionPath: string,
     workspacePath: string,
     column: vscode.ViewColumn,
-    kanbn: typeof import("@basementuniverse/kanbn/src/main"),
+    kanbn: Kanbn,
     kanbnFolderName: string,
     taskId: string | null,
     columnName: string | null,
