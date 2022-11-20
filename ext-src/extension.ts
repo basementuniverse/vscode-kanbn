@@ -19,8 +19,7 @@ export async function activate(context: vscode.ExtensionContext) {
       }
 
       // Set the node process directory and import kanbn
-      process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-      const kanbn = new Kanbn();
+      const kanbn = new Kanbn(vscode.workspace.workspaceFolders[0].uri.fsPath);
 
       // If kanbn is already initialised, get the project name
       let projectName = "";
@@ -60,8 +59,7 @@ export async function activate(context: vscode.ExtensionContext) {
       }
 
       // Set the node process directory and import kanbn
-      process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-      const kanbn = new Kanbn();
+      const kanbn = new Kanbn(vscode.workspace.workspaceFolders[0].uri.fsPath);
 
       // If kanbn is initialised, view the kanbn board
       if (await kanbn.initialised()) {
@@ -89,8 +87,7 @@ export async function activate(context: vscode.ExtensionContext) {
       }
 
       // Set the node process directory and import kanbn
-      process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-      const kanbn = new Kanbn();
+      const kanbn = new Kanbn(vscode.workspace.workspaceFolders[0].uri.fsPath);
 
       // If kanbn is initialised, open the task webview
       if (await kanbn.initialised()) {
@@ -118,8 +115,7 @@ export async function activate(context: vscode.ExtensionContext) {
       }
 
       // Set the node process directory and import kanbn
-      process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-      const kanbn = new Kanbn();
+      const kanbn = new Kanbn(vscode.workspace.workspaceFolders[0].uri.fsPath);
 
       // If kanbn is initialised, view the burndown chart
       if (await kanbn.initialised()) {
@@ -147,8 +143,7 @@ export async function activate(context: vscode.ExtensionContext) {
       }
 
       // Set the node process directory and import kanbn
-      process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-      const kanbn = new Kanbn();
+      const kanbn = new Kanbn(vscode.workspace.workspaceFolders[0].uri.fsPath);
 
       // Get a list of tracked tasks
       let tasks: string[] = [];
@@ -193,8 +188,7 @@ export async function activate(context: vscode.ExtensionContext) {
       }
 
       // Set the node process directory and import kanbn
-      process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-      const kanbn = new Kanbn();
+      const kanbn = new Kanbn(vscode.workspace.workspaceFolders[0].uri.fsPath);
 
       // Get a list of archived tasks
       let archivedTasks: string[] = [];
@@ -248,8 +242,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // If a workspace folder is open, add a status bar item and start watching for file changes
   if (vscode.workspace.workspaceFolders !== undefined) {
     // Set the node process directory and import kanbn
-    process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-    const kanbn = new Kanbn();
+    const kanbn = new Kanbn(vscode.workspace.workspaceFolders[0].uri.fsPath);
 
     // Create status bar item
     kanbnStatusBarItem = new KanbnStatusBarItem(context, kanbn);
