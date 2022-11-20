@@ -41,12 +41,12 @@
   "contributes": {
     "commands": [
       {
-        "command": "kanbn.init",
-        "title": "Initialise Kanbn",
+        "command": "kanbn.createBoard",
+        "title": "Create board",
         "category": "Kanbn"
       },
       {
-        "command": "kanbn.board",
+        "command": "kanbn.openBoard",
         "title": "Open board",
         "category": "Kanbn"
       },
@@ -98,7 +98,7 @@
     }
   },
   "dependencies": {
-    "@basementuniverse/kanbn": "^0.10.0",
+    "@basementuniverse/kanbn": "git@github.com:samgiz/kanbn.git#31a80a1c4f04a11808d4e952e0c41ae01e48bd22",
     "dateformat": "^4.5.1",
     "formik": "^2.2.6",
     "git-user-name": "^2.0.0",
