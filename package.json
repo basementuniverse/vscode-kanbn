@@ -98,7 +98,7 @@
     }
   },
   "dependencies": {
-    "@basementuniverse/kanbn": "git@github.com:samgiz/kanbn.git#31a80a1c4f04a11808d4e952e0c41ae01e48bd22",
+    "@basementuniverse/kanbn": "git@github.com:samgiz/kanbn.git#1536b686f8b530c5eca1cd997347f250d767951c",
     "dateformat": "^4.5.1",
     "formik": "^2.2.6",
     "git-user-name": "^2.0.0",
