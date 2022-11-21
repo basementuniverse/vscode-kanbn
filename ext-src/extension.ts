@@ -4,10 +4,38 @@ import KanbnBoardPanel from "./KanbnBoardPanel";
 import KanbnBurndownPanel from "./KanbnBurndownPanel";
 import KanbnTaskPanel from "./KanbnTaskPanel";
 import {Kanbn} from "@basementuniverse/kanbn/src/main"
+import * as fs from 'fs';
 
-let kanbnStatusBarItem: KanbnStatusBarItem;
 
 export async function activate(context: vscode.ExtensionContext) {
+  let kanbnStatusBarItem: KanbnStatusBarItem = new KanbnStatusBarItem(context, null);
+  let currentBoard: string | null = null;
+  let boardCache = new Map<string, Kanbn>();
+  
+  function populateBoardCache() {
+    boardCache.clear();
+    for (const workspaceFolder of vscode.workspace.workspaceFolders || []) {
+      const kanbnPath = `${workspaceFolder.uri.fsPath}/.kanbnBoards`;
+      if (fs.existsSync(kanbnPath)) {
+        for(const kanbnBoardPath of fs.readdirSync(kanbnPath)) {
+          const kanbn = new Kanbn(`${kanbnPath}/${kanbnBoardPath}`);
+          boardCache.set(kanbnBoardPath, kanbn);
+
+          // Initialise file watcher
+          const fileWatcher = vscode.workspace.createFileSystemWatcher(
+            new vscode.RelativePattern(workspaceFolder, `.kanbnBoards/${kanbnBoardPath}/**.*`)
+          );
+          fileWatcher.onDidChange(() => {
+            kanbnStatusBarItem.update(kanbn!);
+            KanbnBoardPanel.update(kanbn!);
+            KanbnBurndownPanel.update(kanbn!);
+          });
+          }
+      }
+    }
+  }
+  populateBoardCache()
+
   // Register a command to initialise Kanbn in the current workspace. This command will be invoked when the status
   // bar item is clicked in a workspace where Kanbn isn't already initialised.
   context.subscriptions.push(
@@ -17,34 +45,52 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.window.showErrorMessage("You need to open a workspace before initialising Kanbn.");
         return;
       }
+      console.log("Creating Kanbn Board");
 
-      // Set the node process directory and import kanbn
-      const kanbn = new Kanbn(vscode.workspace.workspaceFolders[0].uri.fsPath);
-
-      // If kanbn is already initialised, get the project name
-      let projectName = "";
-      if (await kanbn.initialised()) {
-        projectName = (await kanbn.getIndex()).name;
-      }
-
+      const a = 100
+      const b = 200
       // Prompt for a new project name
-      const newProjectName = await vscode.window.showInputBox({
-        value: projectName,
-        placeHolder: "The project name.",
-        validateInput: (text) => {
-          return text.length < 1 ? "The project name cannot be empty." : null;
-        },
-      });
-
-      // If the input prompt wasn't cancelled, initialise kanbn
-      if (newProjectName !== undefined) {
-        await kanbn.initialise({
-          name: newProjectName,
+      const getNewBoardName = () => {
+        const newBoardName = vscode.window.showInputBox({
+          placeHolder: "The project name.",
+          validateInput: (text) => {
+            return text.length < 1 ? "The project name cannot be empty." : null;
+          },
         });
-        vscode.window.showInformationMessage(`Initialised Kanbn project '${newProjectName}'.`);
-        KanbnBoardPanel.update();
+        return newBoardName;
+
       }
-      kanbnStatusBarItem.update();
+      let boardName = await getNewBoardName()
+      let kanbn: Kanbn | null = null;
+      // If the input prompt wasn't cancelled, initialise kanbn
+      while (boardName) {
+        let boardLocation: string = `${vscode.workspace.workspaceFolders[0].uri.fsPath}/.kanbnBoards/${boardName}`
+        console.log("this is the board location", boardLocation)
+        if(fs.existsSync(boardLocation)) {
+          vscode.window.showErrorMessage("A board with that name already exists. Pick a different name.");
+          boardName = await getNewBoardName()
+          continue;
+        }
+        fs.mkdirSync(boardLocation, { recursive: true })
+        kanbn = new Kanbn(boardLocation);
+        kanbn.initialise({
+          name: boardName,
+        });
+        // Initialise file watcher
+        const fileWatcher = vscode.workspace.createFileSystemWatcher(
+          new vscode.RelativePattern(vscode.workspace.workspaceFolders[0].uri.fsPath, `.kanbnBoards/${boardName}/**.*`)
+        );
+        fileWatcher.onDidChange(() => {
+          kanbnStatusBarItem.update(kanbn!);
+          KanbnBoardPanel.update(kanbn!);
+          KanbnBurndownPanel.update(kanbn!);
+        });
+        boardCache.set(boardName, kanbn);
+        vscode.window.showInformationMessage(`Created Kanbn board '${boardLocation}'.`);
+        break;
+      }
+      KanbnBoardPanel.update(kanbn!);
+      kanbnStatusBarItem.update(kanbn!);
     })
   );
 
@@ -58,8 +104,17 @@ export async function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      // Set the node process directory and import kanbn
-      const kanbn = new Kanbn(vscode.workspace.workspaceFolders[0].uri.fsPath);
+      let boardNames: string[] = [...boardCache.keys()]
+      let options: vscode.QuickPickOptions = {placeHolder: "Select a board to open", canPickMany: false}
+      const item: string | undefined = await vscode.window.showQuickPick(
+        boardNames,
+        options
+      );
+      if(!item)
+        return;
+      
+      currentBoard = item;
+      const kanbn = boardCache.get(currentBoard!)!;
 
       // If kanbn is initialised, view the kanbn board
       if (await kanbn.initialised()) {
@@ -69,11 +124,11 @@ export async function activate(context: vscode.ExtensionContext) {
           kanbn,
           await kanbn.getFolderName()
         );
-        KanbnBoardPanel.update();
+        KanbnBoardPanel.update(kanbn);
       } else {
         vscode.window.showErrorMessage("You need to initialise Kanbn before viewing the Kanbn board.");
       }
-      kanbnStatusBarItem.update();
+      kanbnStatusBarItem.update(kanbn);
     })
   );
 
@@ -86,8 +141,10 @@ export async function activate(context: vscode.ExtensionContext) {
         return;
       }
 
+      if(!currentBoard) return;
+
       // Set the node process directory and import kanbn
-      const kanbn = new Kanbn(vscode.workspace.workspaceFolders[0].uri.fsPath);
+      const kanbn = boardCache.get(currentBoard!)!;
 
       // If kanbn is initialised, open the task webview
       if (await kanbn.initialised()) {
@@ -114,8 +171,8 @@ export async function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      // Set the node process directory and import kanbn
-      const kanbn = new Kanbn(vscode.workspace.workspaceFolders[0].uri.fsPath);
+      if(!currentBoard) return;
+      const kanbn = boardCache.get(currentBoard!)!;
 
       // If kanbn is initialised, view the burndown chart
       if (await kanbn.initialised()) {
@@ -125,11 +182,11 @@ export async function activate(context: vscode.ExtensionContext) {
           kanbn,
           await kanbn.getFolderName()
         );
-        KanbnBurndownPanel.update();
+        KanbnBurndownPanel.update(kanbn);
       } else {
         vscode.window.showErrorMessage("You need to initialise Kanbn before viewing the burndown chart.");
       }
-      kanbnStatusBarItem.update();
+      kanbnStatusBarItem.update(kanbn);
     })
   );
 
@@ -142,8 +199,8 @@ export async function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      // Set the node process directory and import kanbn
-      const kanbn = new Kanbn(vscode.workspace.workspaceFolders[0].uri.fsPath);
+      if(!currentBoard) return;
+      const kanbn = boardCache.get(currentBoard!)!;
 
       // Get a list of tracked tasks
       let tasks: string[] = [];
@@ -165,10 +222,10 @@ export async function activate(context: vscode.ExtensionContext) {
       );
       if (archiveTaskIds !== undefined && archiveTaskIds.length > 0) {
         for (let archiveTaskId of archiveTaskIds) {
-          await kanbn.archiveTask(archiveTaskId);
+          kanbn.archiveTask(archiveTaskId);
         }
-        KanbnBoardPanel.update();
-        kanbnStatusBarItem.update();
+        KanbnBoardPanel.update(kanbn);
+        kanbnStatusBarItem.update(kanbn);
         if (vscode.workspace.getConfiguration("kanbn").get("showTaskNotifications")) {
           vscode.window.showInformationMessage(
             `Archived ${archiveTaskIds.length} task${archiveTaskIds.length === 1 ? '' : 's'}.`
@@ -187,8 +244,8 @@ export async function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      // Set the node process directory and import kanbn
-      const kanbn = new Kanbn(vscode.workspace.workspaceFolders[0].uri.fsPath);
+      if(!currentBoard) return;
+      const kanbn = boardCache.get(currentBoard!)!;
 
       // Get a list of archived tasks
       let archivedTasks: string[] = [];
@@ -227,8 +284,8 @@ export async function activate(context: vscode.ExtensionContext) {
           for (let restoreTaskId of restoreTaskIds) {
             await kanbn.restoreTask(restoreTaskId, restoreColumn === 'None (use original)' ? null : restoreColumn);
           }
-          KanbnBoardPanel.update();
-          kanbnStatusBarItem.update();
+          KanbnBoardPanel.update(kanbn);
+          kanbnStatusBarItem.update(kanbn);
           if (vscode.workspace.getConfiguration("kanbn").get("showTaskNotifications")) {
             vscode.window.showInformationMessage(
               `Restored ${restoreTaskIds.length} task${restoreTaskIds.length === 1 ? '' : 's'}.`
@@ -242,29 +299,21 @@ export async function activate(context: vscode.ExtensionContext) {
   // If a workspace folder is open, add a status bar item and start watching for file changes
   if (vscode.workspace.workspaceFolders !== undefined) {
     // Set the node process directory and import kanbn
-    const kanbn = new Kanbn(vscode.workspace.workspaceFolders[0].uri.fsPath);
+    if(currentBoard) {
+      const kanbn = boardCache.get(currentBoard!)!;
 
-    // Create status bar item
-    kanbnStatusBarItem = new KanbnStatusBarItem(context, kanbn);
-    kanbnStatusBarItem.update();
-    KanbnBoardPanel.update();
-
-    // Initialise file watcher
-    const uri = vscode.workspace.workspaceFolders[0].uri.fsPath;
-    const kanbnFolderName = await kanbn.getFolderName();
-    const fileWatcher = vscode.workspace.createFileSystemWatcher(
-      new vscode.RelativePattern(uri, `${kanbnFolderName}/**.*`)
-    );
-    fileWatcher.onDidChange(() => {
-      kanbnStatusBarItem.update();
-      KanbnBoardPanel.update();
-      KanbnBurndownPanel.update();
-    });
+      // Create status bar item
+      kanbnStatusBarItem.update(kanbn);
+      KanbnBoardPanel.update(kanbn);
+    }
   }
 
   // Handle configuration changes
   vscode.workspace.onDidChangeConfiguration((e) => {
-    kanbnStatusBarItem.update();
-    KanbnBoardPanel.update();
+    if(currentBoard) {
+      const kanbn = boardCache.get(currentBoard!)!;
+      kanbnStatusBarItem.update(kanbn);
+      KanbnBoardPanel.update(kanbn);
+    }
   });
 }

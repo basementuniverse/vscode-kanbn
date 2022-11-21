@@ -3,21 +3,22 @@ import * as vscode from 'vscode';
 
 export default class KanbnStatusBarItem {
   private readonly _statusBarItem: vscode.StatusBarItem;
-  private readonly _kanbn: Kanbn;
+  private _kanbn: Kanbn | null;
 
   constructor(
     context: vscode.ExtensionContext,
-    kanbn: Kanbn
+    kanbn: Kanbn | null
   ) {
     this._statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
     context.subscriptions.push(this._statusBarItem);
     this._kanbn = kanbn;
   }
 
-  async update(): Promise<void> {
+  async update(kanbn: Kanbn): Promise<void> {
     if (this._statusBarItem === undefined) {
       return;
     }
+    this._kanbn = kanbn;
     if (await this._kanbn.initialised()) {
       const status = (await this._kanbn.status(true)) as {
         tasks: number,

@@ -28,7 +28,7 @@ export default class KanbnBoardPanel {
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionPath: string;
   private readonly _workspacePath: string;
-  private readonly _kanbn: Kanbn;
+  private _kanbn: Kanbn;
   private readonly _kanbnFolderName: string;
   private _disposables: vscode.Disposable[] = [];
 
@@ -54,8 +54,9 @@ export default class KanbnBoardPanel {
     }
   }
 
-  public static async update() {
+  public static async update(kanbn: Kanbn) {
     if (KanbnBoardPanel.currentPanel) {
+      KanbnBoardPanel.currentPanel._kanbn = kanbn;
       let index: any;
       try {
         index = await KanbnBoardPanel.currentPanel._kanbn.getIndex();
@@ -237,7 +238,7 @@ export default class KanbnBoardPanel {
                     ],
                     saveSort === 'Yes'
                   );
-                  KanbnBoardPanel.update();
+                  KanbnBoardPanel.update(this._kanbn);
                 }
               }
             }
@@ -251,7 +252,7 @@ export default class KanbnBoardPanel {
               this._kanbn,
               this._kanbnFolderName
             );
-            KanbnBurndownPanel.update();
+            KanbnBurndownPanel.update(this._kanbn);
             return;
 
           // Start a new sprint
@@ -269,7 +270,7 @@ export default class KanbnBoardPanel {
                 vscode.window.showErrorMessage(e.message);
               }
             }
-            KanbnBurndownPanel.update();
+            KanbnBurndownPanel.update(this._kanbn);
             return;
         }
       },
