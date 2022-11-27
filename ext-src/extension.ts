@@ -23,7 +23,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
           // Initialise file watcher
           const fileWatcher = vscode.workspace.createFileSystemWatcher(
-            new vscode.RelativePattern(workspaceFolder, `.kanbnBoards/${kanbnBoardPath}/**.*`)
+            new vscode.RelativePattern(workspaceFolder, `.kanbnBoards/${kanbnBoardPath}/**`)
           );
           fileWatcher.onDidChange(() => {
             kanbnStatusBarItem.update(kanbn!);
@@ -78,7 +78,7 @@ export async function activate(context: vscode.ExtensionContext) {
         });
         // Initialise file watcher
         const fileWatcher = vscode.workspace.createFileSystemWatcher(
-          new vscode.RelativePattern(vscode.workspace.workspaceFolders[0].uri.fsPath, `.kanbnBoards/${boardName}/**.*`)
+          new vscode.RelativePattern(vscode.workspace.workspaceFolders[0], `.kanbnBoards/${boardName}/**.*`)
         );
         fileWatcher.onDidChange(() => {
           kanbnStatusBarItem.update(kanbn!);
