@@ -36,8 +36,8 @@ You can also modify the index or task files directly, or by using Kanbn CLI comm
 
 The following commands are available:
 
-- `Kanbn: Initialise Kanbn` will initialise Kanbn in the open workspace.
-- `Kanbn: Open board` will open open the Kanbn board.
+- `Kanbn: Create board` will create a Kanbn board in the current workspace.
+- `Kanbn: Open board` will open open a Kanbn board.
 - `Kanbn: Open burndown chart` will open a burndown chart.
 - `Kanbn: Add task` will open the task editor.
 - `Kanbn: Archive tasks` will send tasks to the archive.
