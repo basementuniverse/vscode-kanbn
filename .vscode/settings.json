@@ -21,5 +21,6 @@
     "programatically",
     "Uninitialised",
     "uuidv"
-  ] // Turn off tsc task auto detection since we have the necessary task as npm scripts
+  ], // Turn off tsc task auto detection since we have the necessary task as npm scripts
+  "eslint.validate": ["typescript", "typescriptreact"]
 }

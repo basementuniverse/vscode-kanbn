@@ -134,9 +134,16 @@
     "@types/react-syntax-highlighter": "^13.5.0",
     "@types/recharts": "^1.8.19",
     "@types/uuid": "^8.3.0",
+    "@typescript-eslint/eslint-plugin": "^5.44.0",
+    "eslint": "^8.28.0",
+    "eslint-config-standard-with-typescript": "^23.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-n": "^15.5.1",
+    "eslint-plugin-promise": "^6.1.1",
+    "eslint-plugin-react": "^7.31.11",
     "react-scripts": "^2.1.8",
     "rewire": "^4.0.1",
-    "typescript": "^4.0.2",
+    "typescript": "^4.9.3",
     "vscode": "^1.1.37"
   },
   "browserslist": [
