@@ -48,7 +48,9 @@ export async function activate (context: vscode.ExtensionContext): Promise<void>
     if (vscode.workspace.workspaceFolders == null) {
       return
     }
+    // Populate globally accessible boards.
     for (const workspaceFolder of vscode.workspace.workspaceFolders) {
+      // Populate boards in the standard workspace location.
       const kanbnPath = `${workspaceFolder.uri.fsPath}/.kanbnBoards`
       if (fs.existsSync(kanbnPath)) {
         for (const kanbnBoardPath of fs.readdirSync(kanbnPath)) {
@@ -66,6 +68,9 @@ export async function activate (context: vscode.ExtensionContext): Promise<void>
           })
         }
       }
+      // // Populate boards in additional workspace locations.
+      // const boardLocations: string[] = vscode.workspace.getConfiguration('kanbn').get('additionalBoards')
+      // for (const location of boardLocations) {
     }
   }
   populateBoardCache()
@@ -293,7 +298,7 @@ export async function activate (context: vscode.ExtensionContext): Promise<void>
           }
           kanbnTuple.kanbnBoardPanel.update()
           kanbnStatusBarItem.update(kanbnTuple.kanbn)
-          if (vscode.workspace.getConfiguration('kanbn').get<boolean>('showTaskNotifications') === true) {
+          if (vscode.workspace.getConfiguration('kanbn').get('showTaskNotifications') === true) {
             vscode.window.showInformationMessage(
               `Restored ${restoreTaskIds.length} task${restoreTaskIds.length === 1 ? '' : 's'}.`
             )

@@ -1,175 +1,193 @@
-import React, { useState } from 'react';
-import { Formik, Form, Field, ErrorMessage, FieldArray } from 'formik';
-import formatDate from 'dateformat';
-import VSCodeApi from './VSCodeApi';
-import { paramCase } from '@basementuniverse/kanbn/src/utility';
-import gitUsername from 'git-user-name';
-import ReactMarkdown from 'react-markdown';
-import TextareaAutosize from 'react-textarea-autosize';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import 'katex/dist/katex.min.css';
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable react/jsx-key */
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable react/no-children-prop */
+import React, { useState } from 'react'
+import { Formik, Form, Field, ErrorMessage, FieldArray } from 'formik'
+import formatDate from 'dateformat'
+import VSCodeApi from './VSCodeApi'
+import { paramCase } from '@basementuniverse/kanbn/src/utility'
+import ReactMarkdown from 'react-markdown'
+import TextareaAutosize from 'react-textarea-autosize'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import 'katex/dist/katex.min.css'
 
 interface KanbnTaskValidationOutput {
-  name: string,
+  name: string
   metadata: {
     tags: string[]
-  },
+    created?: string | Date | undefined
+    updated?: string | null | undefined
+    started?: string
+    due?: string
+    completed?: string
+    assigned?: string | undefined
+  }
   subTasks: Array<{
     text: string
-  }>,
+  }>
   comments: Array<{
+    author?: string
+    date?: string
     text: string
   }>
 }
 
 interface KanbnTaskValidationInput extends KanbnTaskValidationOutput {
+  description: any
+  relations: any
+  progress: number | undefined
   id: string
+  column: string
 }
 
 const components = {
-  code({ node, inline, className, children, ...props }) {
-    const match = /language-(\w+)/.exec(className || '');
-    return !inline && match ? (
+  code ({ node, inline, className, children, ...props }) {
+    const match = /language-(\w+)/.exec(className ?? '')
+    return inline !== false && (match != null)
+      ? (
       <SyntaxHighlighter
-        style=""
+        style={{}}
         useInlineStyles={false}
         language={match[1]}
         PreTag="div"
         children={String(children).replace(/\n$/, '')}
         {...props}
       />
-    ) : (
+        )
+      : (
       <code className={className} children={children} {...props} />
-    );
+        )
   }
-};
+}
 
 const Markdown = props => (<ReactMarkdown {...{
   remarkPlugins: [remarkMath],
   rehypePlugins: [rehypeKatex],
   components,
-  ...props,
-}} />);
+  ...props
+}} />)
 
 const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFormat, panelUuid, vscode }: {
-  task: KanbnTask | null,
-  tasks: Record<string, KanbnTask>,
-  columnName: string,
-  columnNames: string[],
-  customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string' }[],
-  dateFormat: string,
-  panelUuid: string,
+  task: KanbnTask | null
+  tasks: Record<string, KanbnTask>
+  columnName: string
+  columnNames: string[]
+  customFields: Array<{ name: string, type: 'boolean' | 'date' | 'number' | 'string' }>
+  dateFormat: string
+  panelUuid: string
   vscode: VSCodeApi
 }) => {
-  const editing = task !== null;
+  const editing = task !== null
   const [taskData, setTaskData] = useState({
-    id: task ? task.id : '',
-    name: task ? task.name : '',
-    description: task ? task.description : '',
+    id: (task != null) ? task.id : '',
+    name: (task != null) ? task.name : '',
+    description: (task != null) ? task.description : '',
     column: columnName,
-    progress: task ? task.progress : 0,
+    progress: (task != null) ? task.progress : 0,
     metadata: {
-      created: (task && 'created' in task.metadata) ? task.metadata.created : new Date(),
-      updated: (task && 'updated' in task.metadata) ? task.metadata.updated : null,
-      started: (task && 'started' in task.metadata) ? formatDate(task.metadata.started!, 'yyyy-mm-dd') : '',
-      due: (task && 'due' in task.metadata) ? formatDate(task.metadata.due!, 'yyyy-mm-dd') : '',
-      completed: (task && 'completed' in task.metadata) ? formatDate(task.metadata.completed!, 'yyyy-mm-dd') : '',
-      assigned: (task && 'assigned' in task.metadata) ? task.metadata.assigned : (gitUsername() || ''),
-      tags: (task && 'tags' in task.metadata) ? (task.metadata.tags || []) : [],
+      created: ((task != null) && 'created' in task.metadata) ? task.metadata.created : new Date(),
+      updated: ((task != null) && 'updated' in task.metadata) ? task.metadata.updated : null,
+      started: ((task != null) && 'started' in task.metadata) ? formatDate(task.metadata.started, 'yyyy-mm-dd') : '',
+      due: ((task != null) && 'due' in task.metadata) ? formatDate(task.metadata.due, 'yyyy-mm-dd') : '',
+      completed: ((task != null) && 'completed' in task.metadata) ? formatDate(task.metadata.completed, 'yyyy-mm-dd') : '',
+      assigned: ((task != null) && 'assigned' in task.metadata) ? task.metadata.assigned : '',
+      tags: ((task != null) && 'tags' in task.metadata) ? (task.metadata.tags ?? []) : [],
       ...Object.fromEntries(
         customFields.map(customField => [
           customField.name,
-          (task && customField.name in task.metadata)
+          ((task != null) && customField.name in task.metadata)
             ? (customField.type === 'date'
-              ? formatDate(task.metadata[customField.name], 'yyyy-mm-dd')
-              : task.metadata[customField.name]
-            ) : null,
-        ]),
+                ? formatDate(task.metadata[customField.name], 'yyyy-mm-dd')
+                : task.metadata[customField.name]
+              )
+            : null
+        ])
       )
     },
-    relations: task ? task.relations : [],
-    subTasks: task ? task.subTasks : [],
-    comments: task ? task.comments : []
-  });
-  const [editingDescription, setEditingDescription] = useState(!editing);
-  const [editingComment, setEditingComment] = useState(-1);
+    relations: (task != null) ? task.relations : [],
+    subTasks: (task != null) ? task.subTasks : [],
+    comments: (task != null) ? task.comments : []
+  })
+  const [editingDescription, setEditingDescription] = useState(!editing)
+  const [editingComment, setEditingComment] = useState(-1)
 
   // Called when the name field is changed
   const handleUpdateName = ({ target: { value } }, values) => {
-    const id = paramCase(value);
+    const id = paramCase(value)
 
     // Update the id preview
     setTaskData({
       ...taskData,
       id
-    });
+    })
 
     // Update values
-    values.id = id;
+    values.id = id
 
     // Update the webview panel title
     vscode.postMessage({
       command: 'kanbn.updatePanelTitle',
-      title: value || 'Untitled task'
-    });
-  };
+      title: value ?? 'Untitled task'
+    })
+  }
 
   // Called when the form is submitted
   const handleSubmit = (values, setSubmitting, resetForm) => {
     if (editing) {
       vscode.postMessage({
         command: 'kanbn.update',
-        taskId: task!.id,
+        taskId: task.id,
         taskData: values,
         customFields,
         panelUuid
-      });
+      })
     } else {
       vscode.postMessage({
         command: 'kanbn.create',
         taskData: values,
         customFields,
         panelUuid
-      });
+      })
     }
-    setTaskData(values);
-    resetForm({ values });
-    setSubmitting(false);
-  };
+    setTaskData(values)
+    resetForm({ values })
+    setSubmitting(false)
+  }
 
   // Called when the delete task button is clicked
   const handleRemoveTask = values => {
     vscode.postMessage({
       command: 'kanbn.delete',
-      taskId: task!.id,
+      taskId: task?.id,
       taskData: values,
       panelUuid
-    });
-  };
+    })
+  }
 
   // Called when the archive task button is clicked
   const handleArchiveTask = values => {
     vscode.postMessage({
       command: 'kanbn.archive',
-      taskId: task!.id,
+      taskId: task?.id,
       taskData: values,
       panelUuid
-    });
+    })
   }
 
   // Check if a task's due date is in the past
   const checkOverdue = (values: { metadata: { due?: string } }) => {
     if ('due' in values.metadata && values.metadata.due !== undefined) {
-      return Date.parse(values.metadata.due) < (new Date()).getTime();
+      return Date.parse(values.metadata.due) < (new Date()).getTime()
     }
-    return false;
-  };
+    return false
+  }
 
   // Validate form data
   const validate = (values: KanbnTaskValidationInput): KanbnTaskValidationOutput | {} => {
-    let hasErrors = false;
+    let hasErrors = false
     const errors: KanbnTaskValidationOutput = {
       name: '',
       metadata: {
@@ -177,50 +195,50 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
       },
       subTasks: [],
       comments: []
-    };
+    }
 
     // Task name cannot be empty
-    if (!values.name) {
-      errors.name = 'Task name is required.';
-      hasErrors = true;
+    if (values.name === '') {
+      errors.name = 'Task name is required.'
+      hasErrors = true
     }
 
     // Check if the id is already in use
-    if (taskData.id in tasks && tasks[taskData.id].uuid !== (task ? task.uuid : '')) {
-      errors.name = 'There is already a task with the same name or id.';
-      hasErrors = true;
+    if (taskData.id in tasks && tasks[taskData.id].uuid !== ((task != null) ? task.uuid : '')) {
+      errors.name = 'There is already a task with the same name or id.'
+      hasErrors = true
     }
 
     // Tag names cannot be empty
     for (let i = 0; i < values.metadata.tags.length; i++) {
-      if (!values.metadata.tags[i]) {
-        errors.metadata.tags[i] = 'Tag cannot be empty.';
-        hasErrors = true;
+      if (values.metadata.tags[i] === '') {
+        errors.metadata.tags[i] = 'Tag cannot be empty.'
+        hasErrors = true
       }
     }
 
     // Sub-tasks text cannot be empty
     for (let i = 0; i < values.subTasks.length; i++) {
-      if (!values.subTasks[i].text) {
+      if (values.subTasks[i].text === '') {
         errors.subTasks[i] = {
           text: 'Sub-task text cannot be empty.'
-        };
-        hasErrors = true;
+        }
+        hasErrors = true
       }
     }
 
     // Comments text cannot be empty
     for (let i = 0; i < values.comments.length; i++) {
-      if (!values.comments[i].text) {
+      if (values.comments[i].text === '') {
         errors.comments[i] = {
           text: 'Comment text cannot be empty.'
-        };
-        hasErrors = true;
+        }
+        hasErrors = true
       }
     }
 
-    return hasErrors ? errors : {};
-  };
+    return hasErrors ? errors : {}
+  }
 
   return (
     <div className="kanbn-task-editor">
@@ -228,7 +246,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
         initialValues={taskData}
         validate={validate}
         onSubmit={(values, { setSubmitting, resetForm }) => {
-          handleSubmit(values, setSubmitting, resetForm);
+          handleSubmit(values, setSubmitting, resetForm)
         }}
       >
         {({
@@ -248,7 +266,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                 className="kanbn-task-editor-button kanbn-task-editor-button-delete"
                 title="Delete task"
                 onClick={() => {
-                  handleRemoveTask(values);
+                  handleRemoveTask(values)
                 }}
               >
                 <i className="codicon codicon-trash"></i>Delete
@@ -258,7 +276,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                 className="kanbn-task-editor-button kanbn-task-editor-button-archive"
                 title="Archive task"
                 onClick={() => {
-                  handleArchiveTask(values);
+                  handleArchiveTask(values)
                 }}
               >
                 <i className="codicon codicon-archive"></i>Archive
@@ -275,8 +293,8 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
             {editing && <span className="kanbn-task-editor-dates">
               {
                 [
-                  'created' in task!.metadata ? `Created ${formatDate(task!.metadata.created, dateFormat)}` : null,
-                  'updated' in task!.metadata ? `Updated ${formatDate(task!.metadata.updated, dateFormat)}` : null
+                  'created' in task.metadata ? `Created ${formatDate(task.metadata.created, dateFormat)}` : null,
+                  'updated' in task.metadata ? `Updated ${formatDate(task.metadata.updated, dateFormat)}` : null
                 ].filter(i => i).join(', ')
               }
             </span>}
@@ -290,8 +308,8 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                       name="name"
                       placeholder="Name"
                       onChange={e => {
-                        handleChange(e);
-                        handleUpdateName(e, values);
+                        handleChange(e)
+                        handleUpdateName(e, values)
                       }}
                     />
                   </label>
@@ -314,7 +332,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                     className="kanbn-task-editor-button kanbn-task-editor-button-edit-description"
                     title="Edit description"
                     onClick={() => {
-                      setEditingDescription(!editingDescription);
+                      setEditingDescription(!editingDescription)
                     }}
                   >
                     {
@@ -480,7 +498,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                                     </React.Fragment>
                                     : <div className="kanbn-task-editor-field-comment-author-value">
                                       <i className="codicon codicon-account"></i>
-                                      {comment.author || 'Anonymous'}
+                                      {comment.author ?? 'Anonymous'}
                                     </div>
                                 }
                               </div>
@@ -499,9 +517,9 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                                 <button
                                   type="button"
                                   className="kanbn-task-editor-button kanbn-task-editor-button-edit"
-                                  title={editingComment === index ? "View comment" : "Edit comment"}
+                                  title={editingComment === index ? 'View comment' : 'Edit comment'}
                                   onClick={() => {
-                                    setEditingComment(editingComment !== index ? index : -1);
+                                    setEditingComment(editingComment !== index ? index : -1)
                                   }}
                                 >
                                   {
@@ -540,8 +558,8 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                             className="kanbn-task-editor-button kanbn-task-editor-button-add"
                             title="Add comment"
                             onClick={() => {
-                              push({ text: '', date: new Date(), author: gitUsername() || '' });
-                              setEditingComment(values.comments.length);
+                              push({ text: '', date: new Date(), author: '' })
+                              setEditingComment(values.comments.length)
                             }}
                           >
                             <i className="codicon codicon-comment"></i>Add comment
@@ -645,7 +663,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                       step="0.05"
                     />
                     <div className="kanbn-task-progress" style={{
-                      width: `${Math.min(1, Math.max(0, values.progress || 0)) * 100}%`
+                      width: `${Math.min(1, Math.max(0, values.progress ?? 0)) * 100}%`
                     }}></div>
                   </label>
                   <ErrorMessage
@@ -670,7 +688,8 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                                 name={`metadata.${customField.name}`}
                               /><p>{customField.name}</p>
                             </>
-                          ) : (
+                            )
+                          : (
                             <>
                               <p>{customField.name}</p>
                               <Field
@@ -678,12 +697,12 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                                 type={{
                                   date: 'date',
                                   number: 'number',
-                                  string: 'text',
+                                  string: 'text'
                                 }[customField.type]}
                                 name={`metadata.${customField.name}`}
                               />
                             </>
-                          )}
+                            )}
                       </label>
                       <ErrorMessage
                         className="kanbn-task-editor-field-errors"
@@ -702,8 +721,8 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                       <div>
                         {(
                           'tags' in values.metadata &&
-                          values.metadata.tags!.length > 0
-                        ) && values.metadata.tags!.map((tag, index) => (
+                          values.metadata.tags.length > 0
+                        ) && values.metadata.tags.map((tag, index) => (
                           <div className="kanbn-task-editor-row kanbn-task-editor-row-tag" key={index}>
                             <div className="kanbn-task-editor-column kanbn-task-editor-field-tag">
                               <Field
@@ -714,7 +733,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                               <div
                                 className={[
                                   'kanbn-task-editor-tag-highlight',
-                                  `kanbn-task-tag-${paramCase(values.metadata.tags![index])}`
+                                  `kanbn-task-tag-${paramCase(values.metadata.tags[index])}`
                                 ].join(' ')}
                               ></div>
                               <ErrorMessage
@@ -755,7 +774,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
         )}
       </Formik>
     </div>
-  );
-};
+  )
+}
 
-export default TaskEditor;
+export default TaskEditor

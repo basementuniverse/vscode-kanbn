@@ -300,20 +300,22 @@ export default class KanbnTaskPanel {
   private _getHtmlForWebview (): string {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const manifest = require(path.join(this._extensionPath, 'build', 'asset-manifest.json'))
-    const mainScript = manifest['main.js']
-    const mainStyle = manifest['main.css']
-    const scriptUri = vscode.Uri.file(path.join(this._extensionPath, 'build', mainScript)).with({
-      scheme: 'vscode-resource'
-    })
-    const styleUri = vscode.Uri.file(path.join(this._extensionPath, 'build', mainStyle)).with({
-      scheme: 'vscode-resource'
-    })
-    const customStyleUri = vscode.Uri.file(
+    const mainScript = manifest.files['main.js']
+    const mainStyle = manifest.files['main.css']
+    if (this._panel === null) {
+      throw new Error('Panel is not defined')
+    }
+    const webview = this._panel.webview
+    const scriptUri = webview.asWebviewUri(vscode.Uri.file(path.join(this._extensionPath, 'build', mainScript)))
+
+    const styleUri = webview.asWebviewUri(vscode.Uri.file(path.join(this._extensionPath, 'build', mainStyle)))
+
+    const customStyleUri = webview.asWebviewUri(vscode.Uri.file(
       path.join(this._workspacePath, this._kanbnFolderName, 'board.css')
-    ).with({ scheme: 'vscode-resource' })
-    const codiconsUri = vscode.Uri.file(
+    ))
+    const codiconsUri = webview.asWebviewUri(vscode.Uri.file(
       path.join(this._extensionPath, 'node_modules', 'vscode-codicons', 'dist', 'codicon.css')
-    ).with({ scheme: 'vscode-resource' })
+    ))
 
     // Use a nonce to whitelist which scripts can be run
     const nonce = getNonce()
@@ -328,8 +330,8 @@ export default class KanbnTaskPanel {
 <link rel="stylesheet" type="text/css" href="${styleUri}">
 <link rel="stylesheet" type="text/css" href="${customStyleUri}">
 <link rel="stylesheet" type="text/css" href="${codiconsUri}">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src vscode-resource: https:; script-src 'nonce-${nonce}'; font-src vscode-resource:; style-src vscode-resource: 'unsafe-inline' http: https: data:;">
-<base href="${vscode.Uri.file(path.join(this._extensionPath, 'build')).with({ scheme: 'vscode-resource' })}/">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src vscode-webview-resource: https:; script-src 'nonce-${nonce}'; font-src vscode-webview-resource:; style-src vscode-webview-resource: 'unsafe-inline' http: https: data:;">
+<base href="${webview.asWebviewUri(vscode.Uri.file(path.join(this._extensionPath, 'build')))}/">
 </head>
 <body>
 <noscript>You need to enable JavaScript to run this app.</noscript>

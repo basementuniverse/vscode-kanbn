@@ -1,54 +1,56 @@
-import React, { useState, useRef } from 'react';
-import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
-import VSCodeApi from "./VSCodeApi";
-import formatDate from 'dateformat';
-import { debounce } from 'throttle-debounce';
+/* eslint-disable react/jsx-key */
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+import React, { useState, useRef } from 'react'
+import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts'
+import VSCodeApi from './VSCodeApi'
+import formatDate from 'dateformat'
+import { debounce } from 'throttle-debounce'
 
 const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
-  name: string,
-  sprints: KanbnSprint[],
+  name: string
+  sprints: KanbnSprint[]
   burndownData: {
     series: Array<{
-      sprint: KanbnSprint,
-      from: string,
-      to: string,
+      sprint: KanbnSprint
+      from: string
+      to: string
       dataPoints: Array<{
-        x: string,
-        y: number,
-        count: number,
+        x: string
+        y: number
+        count: number
         tasks: Array<{
-          eventType: string,
+          eventType: string
           taskId: string
         }>
       }>
     }>
-  },
-  dateFormat: string,
+  }
+  dateFormat: string
   vscode: VSCodeApi
-}) => {
-  const hasSprints = sprints.length > 0;
-  const [sprintMode, setSprintMode] = useState(hasSprints);
-  const [sprint, setSprint] = useState((sprintMode && hasSprints) ? sprints[sprints.length - 1].name : '');
+}): JSX.Element => {
+  const hasSprints = sprints.length > 0
+  const [sprintMode, setSprintMode] = useState(hasSprints)
+  const [sprint, setSprint] = useState((sprintMode && hasSprints) ? sprints[sprints.length - 1].name : '')
   const [startDate, setStartDate] = useState(
     (sprintMode && burndownData.series.length > 0)
       ? ''
       : formatDate(burndownData.series[0].from, 'yyyy-mm-dd')
-  );
+  )
   const [endDate, setEndDate] = useState(
     (sprintMode && burndownData.series.length > 0)
       ? ''
       : formatDate(burndownData.series[0].to, 'yyyy-mm-dd')
-  );
+  )
 
   const refreshBurndownData = useRef(debounce(500, settings => {
     vscode.postMessage({
       command: 'kanbn.refreshBurndownData',
       ...settings
-    });
-  })).current;
+    })
+  })).current
 
-  const handleChangeSprint = ({ target: { value }}) => {
-    setSprint(value);
+  const handleChangeSprint = ({ target: { value } }) => {
+    setSprint(value)
     refreshBurndownData(
       Object.assign(
         {
@@ -61,11 +63,11 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
           sprint: value
         }
       )
-    );
-  };
+    )
+  }
 
-  const handleChangeStartDate = ({ target: { value }}) => {
-    setStartDate(value);
+  const handleChangeStartDate = ({ target: { value } }) => {
+    setStartDate(value)
     refreshBurndownData(
       Object.assign(
         {
@@ -78,11 +80,11 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
           startDate: value
         }
       )
-    );
-  };
+    )
+  }
 
-  const handleChangeEndDate = ({ target: { value }}) => {
-    setEndDate(value);
+  const handleChangeEndDate = ({ target: { value } }) => {
+    setEndDate(value)
     refreshBurndownData(
       Object.assign(
         {
@@ -95,11 +97,11 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
           endDate: value
         }
       )
-    );
-  };
+    )
+  }
 
   const handleClickSprintMode = () => {
-    setSprintMode(true);
+    setSprintMode(true)
     refreshBurndownData(
       Object.assign(
         {
@@ -112,11 +114,11 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
           sprintMode: true
         }
       )
-    );
-  };
+    )
+  }
 
   const handleClickDateMode = () => {
-    setSprintMode(false);
+    setSprintMode(false)
     refreshBurndownData(
       Object.assign(
         {
@@ -129,23 +131,23 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
           sprintMode: false
         }
       )
-    );
-  };
+    )
+  }
 
   const chartData = burndownData.series.length > 0
     ? burndownData.series[0].dataPoints.map(dataPoint => ({
-        x: Date.parse(dataPoint.x),
-        y: dataPoint.y,
-        count: dataPoint.count,
-        tasks: dataPoint.tasks,
-      }))
-    : [];
+      x: Date.parse(dataPoint.x),
+      y: dataPoint.y,
+      count: dataPoint.count,
+      tasks: dataPoint.tasks
+    }))
+    : []
 
-  const formatXAxis = date => formatDate(date, dateFormat);
+  const formatXAxis = date => formatDate(date, dateFormat)
 
   const renderTooltip = e => {
-    if (e.active && e.payload && e.payload.length) {
-      const data = e.payload[0].payload;
+    if (e.active === true && e.payload !== undefined && e.payload.length > 0) {
+      const data = e.payload[0].payload
       return (
         <div className="kanbn-burndown-tooltip">
           <p className="kanbn-burndown-tooltip-date">{formatDate(data.x, dateFormat)}</p>
@@ -159,8 +161,8 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
         </div>
       )
     }
-    return null;
-  };
+    return null
+  }
 
   return (
     <React.Fragment>
@@ -179,10 +181,10 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
                     {
                       sprints.length > 0
                         ? sprints.map(sprint => {
-                            return (
+                          return (
                               <option value={sprint.name}>{sprint.name}</option>
-                            );
-                          })
+                          )
+                        })
                         : <option disabled>No sprints</option>
                     }
                     </select>
@@ -254,7 +256,7 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
         </ResponsiveContainer>
       </div>
     </React.Fragment>
-  );
-};
+  )
+}
 
-export default Burndown;
+export default Burndown
