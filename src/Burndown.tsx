@@ -1,5 +1,3 @@
-/* eslint-disable react/jsx-key */
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import React, { useState, useRef } from 'react'
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts'
 import VSCodeApi from './VSCodeApi'
@@ -49,7 +47,7 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
     })
   })).current
 
-  const handleChangeSprint = ({ target: { value } }) => {
+  const handleChangeSprint = ({ target: { value } }): void => {
     setSprint(value)
     refreshBurndownData(
       Object.assign(
@@ -66,7 +64,7 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
     )
   }
 
-  const handleChangeStartDate = ({ target: { value } }) => {
+  const handleChangeStartDate = ({ target: { value } }): void => {
     setStartDate(value)
     refreshBurndownData(
       Object.assign(
@@ -83,7 +81,7 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
     )
   }
 
-  const handleChangeEndDate = ({ target: { value } }) => {
+  const handleChangeEndDate = ({ target: { value } }): void => {
     setEndDate(value)
     refreshBurndownData(
       Object.assign(
@@ -100,7 +98,7 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
     )
   }
 
-  const handleClickSprintMode = () => {
+  const handleClickSprintMode = (): void => {
     setSprintMode(true)
     refreshBurndownData(
       Object.assign(
@@ -117,7 +115,7 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
     )
   }
 
-  const handleClickDateMode = () => {
+  const handleClickDateMode = (): void => {
     setSprintMode(false)
     refreshBurndownData(
       Object.assign(
@@ -143,9 +141,9 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
     }))
     : []
 
-  const formatXAxis = date => formatDate(date, dateFormat)
+  const formatXAxis = (date): string => formatDate(date, dateFormat)
 
-  const renderTooltip = e => {
+  const renderTooltip = (e): JSX.Element | null => {
     if (e.active === true && e.payload !== undefined && e.payload.length > 0) {
       const data = e.payload[0].payload
       return (
@@ -154,7 +152,7 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
           <p className="kanbn-burndown-tooltip-workload">Total workload: {data.y}</p>
           <p className="kanbn-burndown-tooltip-count">Active tasks: {data.count}</p>
           {data.tasks.map(task => (
-            <p className="kanbn-burndown-tooltip-task">
+            <p className="kanbn-burndown-tooltip-task" key={task.id}>
               {{ created: 'Created', started: 'Started', completed: 'Completed' }[task.eventType]} {task.task.name}
             </p>
           ))}
@@ -182,7 +180,7 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
                       sprints.length > 0
                         ? sprints.map(sprint => {
                           return (
-                              <option value={sprint.name}>{sprint.name}</option>
+                              <option key={sprint.start} value={sprint.name}>{sprint.name}</option>
                           )
                         })
                         : <option disabled>No sprints</option>
