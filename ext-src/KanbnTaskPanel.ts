@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-dynamic-delete */
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
-/* eslint-disable @typescript-eslint/no-floating-promises */
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import * as path from 'path'
 import * as vscode from 'vscode'
 import getNonce from './getNonce'
@@ -17,7 +13,7 @@ function transformTaskData (
     name: taskData.name,
     description: taskData.description,
     metadata: {
-      created: taskData.metadata.created ? new Date(taskData.metadata.created) : new Date(),
+      created: taskData.metadata.created !== undefined ? new Date(taskData.metadata.created) : new Date(),
       updated: new Date(),
       assigned: taskData.metadata.assigned,
       progress: taskData.progress,
@@ -33,7 +29,7 @@ function transformTaskData (
   } as any
 
   // Add assigned
-  if (taskData.metadata.assigned) {
+  if (taskData.metadata.assigned !== undefined) {
     result.metadata.assigned = taskData.metadata.assigned
   }
 
@@ -43,18 +39,18 @@ function transformTaskData (
   }
 
   // Add tags
-  if (taskData.metadata.tags.length) {
+  if (taskData.metadata.tags.length > 0) {
     result.metadata.tags = taskData.metadata.tags
   }
 
   // Add due, started and completed dates if present
-  if (taskData.metadata.due) {
+  if (taskData.metadata.due !== undefined) {
     result.metadata.due = new Date(Date.parse(taskData.metadata.due))
   }
-  if (taskData.metadata.started) {
+  if (taskData.metadata.started !== undefined) {
     result.metadata.started = new Date(Date.parse(taskData.metadata.started))
   }
-  if (taskData.metadata.completed) {
+  if (taskData.metadata.completed !== undefined) {
     result.metadata.completed = new Date(Date.parse(taskData.metadata.completed))
   }
 
@@ -74,7 +70,7 @@ function transformTaskData (
 
 export default class KanbnTaskPanel {
   private static readonly viewType = 'react'
-  private static panels: Record<string, KanbnTaskPanel> = {}
+  private static panels: Map<string, KanbnTaskPanel> = new Map()
 
   private readonly _panel: vscode.WebviewPanel
   private readonly _extensionPath: string
@@ -82,7 +78,7 @@ export default class KanbnTaskPanel {
   private readonly _kanbn: Kanbn
   private readonly _kanbnFolderName: string
   private readonly _panelUuid: string
-  private _taskId: string | null
+  private readonly _taskId: string | null
   private _columnName: string | null
   private readonly _disposables: vscode.Disposable[] = []
 
@@ -109,7 +105,7 @@ export default class KanbnTaskPanel {
       panelUuid
     )
     KanbnTaskPanel.panels[panelUuid] = taskPanel
-    taskPanel.update()
+    void taskPanel.update()
   }
 
   private constructor (
@@ -152,7 +148,7 @@ export default class KanbnTaskPanel {
 
     // Set the webview's title to the kanbn task name
     if (this._taskId !== null) {
-      this._kanbn.getTask(this._taskId).then((task) => {
+      void this._kanbn.getTask(this._taskId).then((task) => {
         this._panel.title = task.name
       })
     }
@@ -170,7 +166,7 @@ export default class KanbnTaskPanel {
         switch (message.command) {
           // Display error message
           case 'error':
-            vscode.window.showErrorMessage(message.text)
+            void vscode.window.showErrorMessage(message.text)
             return
 
           // Update the task webview panel title
@@ -187,8 +183,9 @@ export default class KanbnTaskPanel {
             KanbnTaskPanel.panels[message.panelUuid]._taskId = message.taskData.id
             KanbnTaskPanel.panels[message.panelUuid]._columnName = message.taskData.column
             KanbnTaskPanel.panels[message.panelUuid].update()
-            if (vscode.workspace.getConfiguration('kanbn').get('showTaskNotifications')) {
-              vscode.window.showInformationMessage(`Created task '${message.taskData.name}'.`)
+            if (vscode.workspace.getConfiguration('kanbn').get<boolean>('showTaskNotifications') ?? true) {
+              // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
+              void vscode.window.showInformationMessage(`Created task '${String(message.taskData.name)}'.`)
             }
             return
 
@@ -202,22 +199,25 @@ export default class KanbnTaskPanel {
             KanbnTaskPanel.panels[message.panelUuid]._taskId = message.taskData.id
             KanbnTaskPanel.panels[message.panelUuid]._columnName = message.taskData.column
             KanbnTaskPanel.panels[message.panelUuid].update()
-            if (vscode.workspace.getConfiguration('kanbn').get('showTaskNotifications')) {
-              vscode.window.showInformationMessage(`Updated task '${message.taskData.name}'.`)
+            if (vscode.workspace.getConfiguration('kanbn').get<boolean>('showTaskNotifications') ?? true) {
+              // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
+              void vscode.window.showInformationMessage(`Updated task '${String(message.taskData.name)}'.`)
             }
             return
 
           // Delete a task and close the webview panel
           case 'kanbn.delete':
-            vscode.window
-              .showInformationMessage(`Delete task '${message.taskData.name}'?`, 'Yes', 'No')
+            void vscode.window
+              // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
+              .showInformationMessage(`Delete task '${String(message.taskData.name)}'?`, 'Yes', 'No')
               .then(async (value) => {
                 if (value === 'Yes') {
                   await this._kanbn.deleteTask(message.taskId, true)
                   KanbnTaskPanel.panels[message.panelUuid].dispose()
-                  delete KanbnTaskPanel.panels[message.panelUuid]
-                  if (vscode.workspace.getConfiguration('kanbn').get('showTaskNotifications')) {
-                    vscode.window.showInformationMessage(`Deleted task '${message.taskData.name}'.`)
+                  KanbnTaskPanel.panels.delete(message.panelUuid)
+                  if (vscode.workspace.getConfiguration('kanbn').get<boolean>('showTaskNotifications') ?? true) {
+                    // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
+                    void vscode.window.showInformationMessage(`Deleted task '${String(message.taskData.name)}'.`)
                   }
                 }
               })
@@ -227,9 +227,10 @@ export default class KanbnTaskPanel {
           case 'kanbn.archive':
             await this._kanbn.archiveTask(message.taskId)
             KanbnTaskPanel.panels[message.panelUuid].dispose()
-            delete KanbnTaskPanel.panels[message.panelUuid]
-            if (vscode.workspace.getConfiguration('kanbn').get('showTaskNotifications')) {
-              vscode.window.showInformationMessage(`Archived task '${message.taskData.name}'.`)
+            KanbnTaskPanel.panels.delete(message.panelUuid)
+            if (vscode.workspace.getConfiguration('kanbn').get<boolean>('showTaskNotifications') ?? true) {
+              // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
+              void vscode.window.showInformationMessage(`Archived task '${String(message.taskData.name)}'.`)
             }
         }
       },
@@ -254,7 +255,7 @@ export default class KanbnTaskPanel {
       index = await this._kanbn.getIndex()
     } catch (error) {
       if (error instanceof Error) {
-        vscode.window.showErrorMessage(error.message)
+        void vscode.window.showErrorMessage(error.message)
       } else {
         throw error
       }
@@ -268,24 +269,24 @@ export default class KanbnTaskPanel {
       }))
     } catch (error) {
       if (error instanceof Error) {
-        vscode.window.showErrorMessage(error.message)
+        void vscode.window.showErrorMessage(error.message)
       } else {
         throw error
       }
       return
     }
     let task = null
-    if (this._taskId) {
+    if (this._taskId !== null) {
       task = tasks.find((t) => t.id === this._taskId) ?? null
     }
 
     // If no columnName is specified, use the first column
-    if (!this._columnName) {
+    if (this._columnName === null) {
       this._columnName = Object.keys(index.columns)[0]
     }
 
     // Send task data to the webview
-    this._panel.webview.postMessage({
+    void this._panel.webview.postMessage({
       type: 'task',
       index,
       task,
@@ -327,16 +328,16 @@ export default class KanbnTaskPanel {
 <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
 <meta name="theme-color" content="#000000">
 <title>Kanbn Board</title>
-<link rel="stylesheet" type="text/css" href="${styleUri}">
-<link rel="stylesheet" type="text/css" href="${customStyleUri}">
-<link rel="stylesheet" type="text/css" href="${codiconsUri}">
+<link rel="stylesheet" type="text/css" href="${styleUri.toString()}">
+<link rel="stylesheet" type="text/css" href="${customStyleUri.toString()}">
+<link rel="stylesheet" type="text/css" href="${codiconsUri.toString()}">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src vscode-webview-resource: https:; script-src 'nonce-${nonce}'; font-src vscode-webview-resource:; style-src vscode-webview-resource: 'unsafe-inline' http: https: data:;">
-<base href="${webview.asWebviewUri(vscode.Uri.file(path.join(this._extensionPath, 'build')))}/">
+<base href="${webview.asWebviewUri(vscode.Uri.file(path.join(this._extensionPath, 'build'))).toString()}/">
 </head>
 <body>
 <noscript>You need to enable JavaScript to run this app.</noscript>
 <div id="root"></div>
-<script nonce="${nonce}" src="${scriptUri}"></script>
+<script nonce="${nonce}" src="${scriptUri.toString()}"></script>
 </body>
 </html>`
   }
