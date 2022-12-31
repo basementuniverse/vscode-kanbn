@@ -299,13 +299,11 @@ export default class KanbnBoardPanel {
     const manifest = require(path.join(this._extensionPath, 'build', 'asset-manifest.json'))
     const mainScript = manifest.files['main.js']
     const mainStyle = manifest.files['main.css']
-    console.log(`here's the manifest stuff: ${JSON.stringify(manifest)}`)
     if (this._panel === null) {
       throw new Error('panel is undefined')
     }
     const webview = this._panel.webview
     const scriptUri = webview.asWebviewUri(vscode.Uri.file(path.join(this._extensionPath, 'build', mainScript)))
-    console.log(`here's the scriptUri: ${JSON.stringify(scriptUri)}`)
     const styleUri = webview.asWebviewUri(vscode.Uri.file(path.join(this._extensionPath, 'build', mainStyle)))
     const customStyleUri = webview.asWebviewUri(vscode.Uri.file(
       path.join(this._workspacePath, this._kanbnFolderName, 'board.css')

@@ -33,7 +33,6 @@ function App (): JSX.Element {
 
   const processMessage = useCallback(event => {
     const tasks = Object.fromEntries((event.data.tasks ?? []).map(task => [task.id, task]))
-    console.log('Received message in processMessage in App.tsx', JSON.stringify(event.data))
     switch (event.data.type) {
       case 'index': {
         setName(event.data.index.name)
@@ -91,7 +90,6 @@ function App (): JSX.Element {
       window.removeEventListener('message', processMessage)
     }
   })
-  console.log('Rendering App.tsx with type', type)
   return (
     <React.Fragment>
       {
