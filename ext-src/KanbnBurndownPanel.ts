@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
-/* eslint-disable @typescript-eslint/no-floating-promises */
 import * as path from 'path'
 import * as vscode from 'vscode'
 import getNonce from './getNonce'
@@ -24,7 +22,7 @@ export default class KanbnBurndownPanel {
       this.setUpPanel()
     }
     this._panel?.reveal()
-    this.update()
+    void this.update()
   }
 
   private setUpPanel (): void {
@@ -49,7 +47,7 @@ export default class KanbnBurndownPanel {
     }
 
     // Set the webview's title to the kanbn project name
-    this._kanbn.getIndex().then((index) => {
+    void this._kanbn.getIndex().then((index) => {
       if (this._panel !== null) this._panel.title = index.name
     })
 
@@ -66,7 +64,7 @@ export default class KanbnBurndownPanel {
         switch (message.command) {
           // Display error message
           case 'error':
-            vscode.window.showErrorMessage(message.text)
+            void vscode.window.showErrorMessage(message.text)
             return
 
           // Refresh the kanbn chart
@@ -75,7 +73,7 @@ export default class KanbnBurndownPanel {
             this.sprint = message.sprint
             this.startDate = message.startDate
             this.endDate = message.endDate
-            this.update()
+            void this.update()
         }
       })
   }
@@ -102,14 +100,14 @@ export default class KanbnBurndownPanel {
       index = await this._kanbn.getIndex()
     } catch (error) {
       if (error instanceof Error) {
-        vscode.window.showErrorMessage(error.message)
+        void vscode.window.showErrorMessage(error.message)
       } else {
         throw error
       }
       return
     }
     if (this._panel != null) {
-      this._panel.webview.postMessage({
+      void this._panel.webview.postMessage({
         type: 'burndown',
         index,
         dateFormat: this._kanbn.getDateFormat(index),
@@ -179,16 +177,16 @@ export default class KanbnBurndownPanel {
 <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
 <meta name="theme-color" content="#000000">
 <title>Kanbn Board</title>
-<link rel="stylesheet" type="text/css" href="${styleUri}">
-<link rel="stylesheet" type="text/css" href="${customStyleUri}">
-<link rel="stylesheet" type="text/css" href="${codiconsUri}">
+<link rel="stylesheet" type="text/css" href="${styleUri.toString()}">
+<link rel="stylesheet" type="text/css" href="${customStyleUri.toString()}">
+<link rel="stylesheet" type="text/css" href="${codiconsUri.toString()}">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src vscode-webview-resource: https:; script-src 'nonce-${nonce}'; font-src vscode-webview-resource:; style-src vscode-webview-resource: 'unsafe-inline' http: https: data:;">
-<base href="${webview.asWebviewUri(vscode.Uri.file(path.join(this._extensionPath, 'build')))}/">
+<base href="${webview.asWebviewUri(vscode.Uri.file(path.join(this._extensionPath, 'build'))).toString()}/">
 </head>
 <body>
 <noscript>You need to enable JavaScript to run this app.</noscript>
 <div id="root"></div>
-<script nonce="${nonce}" src="${scriptUri}"></script>
+<script nonce="${nonce}" src="${scriptUri.toString()}"></script>
 </body>
 </html>`
   }
