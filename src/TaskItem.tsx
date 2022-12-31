@@ -1,6 +1,3 @@
-/* eslint-disable react/jsx-key */
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
 import React from 'react'
 import { Draggable } from 'react-beautiful-dnd'
 import formatDate from 'dateformat'
@@ -44,7 +41,8 @@ const TaskItem = ({ task, columnName, customFields, position, dateFormat, vscode
             {...provided.dragHandleProps}
             className={[
               'kanbn-task',
-              `kanbn-task-column-${paramCase(columnName)}`,
+              // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
+              `kanbn-task-column-${String(paramCase(columnName))}`,
               checkOverdue(task) ? 'kanbn-task-overdue' : null,
               completedDate ?? 'kanbn-task-completed',
               isDragging ? 'drag' : null
@@ -70,14 +68,15 @@ const TaskItem = ({ task, columnName, customFields, position, dateFormat, vscode
               </button>
             </div>
             {
-              'tags' in task.metadata &&
-              task.metadata.tags!.length > 0 &&
+              task.metadata.tags !== undefined &&
+              task.metadata.tags.length > 0 &&
               <div className="kanbn-task-data kanbn-task-data-tags">
-                {task.metadata.tags!.map(tag => {
+                {task.metadata.tags.map(tag => {
                   return (
-                    <span className={[
+                    <span key={tag} className={[
                       'kanbn-task-tag',
-                      `kanbn-task-tag-${paramCase(tag)}`
+                      // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
+                      `kanbn-task-tag-${String(paramCase(tag))}`
                     ].join(' ')}>
                       {tag}
                     </span>
@@ -89,9 +88,10 @@ const TaskItem = ({ task, columnName, customFields, position, dateFormat, vscode
               customFields.map(customField => {
                 if (customField.name in task.metadata) {
                   return (
-                    <div className={[
+                    <div key={customField.name} className={[
                       'kanbn-task-data kanbn-task-data-custom-field',
-                      `kanbn-task-data-${paramCase(customField.name)}`
+                      // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
+                      `kanbn-task-data-${String(paramCase(customField.name))}`
                     ].join(' ')}>
                       {
                         customField.type === 'boolean'
@@ -179,7 +179,7 @@ const TaskItem = ({ task, columnName, customFields, position, dateFormat, vscode
             {
               task.relations.length > 0 &&
               task.relations.map(relation => (
-                <div className={[
+                <div key={relation.task} className={[
                   'kanbn-task-data kanbn-task-data-relation',
                   relation.type !== '' ? `kanbn-task-data-relation-${relation.type}` : null
                 ].join(' ')}>
