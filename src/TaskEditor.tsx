@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
-/* eslint-disable react/jsx-key */
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-/* eslint-disable react/no-children-prop */
 import React, { useState } from 'react'
 import { Formik, Form, Field, ErrorMessage, FieldArray } from 'formik'
 import formatDate from 'dateformat'
@@ -53,17 +49,19 @@ const components = {
         useInlineStyles={false}
         language={match[1]}
         PreTag="div"
-        children={String(children).replace(/\n$/, '')}
-        {...props}
-      />
+        {...props}>
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
         )
       : (
-      <code className={className} children={children} {...props} />
+      <code className={className} {...props}>
+        {children}
+      </code>
         )
   }
 }
 
-const Markdown = props => (<ReactMarkdown {...{
+const Markdown = (props): JSX.Element => (<ReactMarkdown {...{
   remarkPlugins: [remarkMath],
   rehypePlugins: [rehypeKatex],
   components,
@@ -79,7 +77,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
   dateFormat: string
   panelUuid: string
   vscode: VSCodeApi
-}) => {
+}): JSX.Element => {
   const editing = task !== null
   const [taskData, setTaskData] = useState({
     id: (task != null) ? task.id : '',
@@ -115,7 +113,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
   const [editingComment, setEditingComment] = useState(-1)
 
   // Called when the name field is changed
-  const handleUpdateName = ({ target: { value } }, values) => {
+  const handleUpdateName = ({ target: { value } }, values): void => {
     const id = paramCase(value)
 
     // Update the id preview
@@ -135,7 +133,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
   }
 
   // Called when the form is submitted
-  const handleSubmit = (values, setSubmitting, resetForm) => {
+  const handleSubmit = (values, setSubmitting, resetForm): void => {
     if (editing) {
       vscode.postMessage({
         command: 'kanbn.update',
@@ -158,7 +156,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
   }
 
   // Called when the delete task button is clicked
-  const handleRemoveTask = values => {
+  const handleRemoveTask = (values): void => {
     vscode.postMessage({
       command: 'kanbn.delete',
       taskId: task?.id,
@@ -168,7 +166,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
   }
 
   // Called when the archive task button is clicked
-  const handleArchiveTask = values => {
+  const handleArchiveTask = (values): void => {
     vscode.postMessage({
       command: 'kanbn.archive',
       taskId: task?.id,
@@ -178,7 +176,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
   }
 
   // Check if a task's due date is in the past
-  const checkOverdue = (values: { metadata: { due?: string } }) => {
+  const checkOverdue = (values: { metadata: { due?: string } }): boolean => {
     if ('due' in values.metadata && values.metadata.due !== undefined) {
       return Date.parse(values.metadata.due) < (new Date()).getTime()
     }
@@ -349,7 +347,9 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                         as={TextareaAutosize}
                         name="description"
                       />
-                      : <Markdown className="kanbn-task-editor-description-preview" children={values.description} />
+                      : <Markdown className="kanbn-task-editor-description-preview">
+                        {values.description}
+                      </Markdown>
                   }
                   <ErrorMessage
                     className="kanbn-task-editor-field-errors"
@@ -439,7 +439,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                                 as="select"
                                 name={`relations.${index}.task`}
                               >
-                                {Object.keys(tasks).map(t => <option value={t}>{t}</option>)}
+                                {Object.keys(tasks).map(t => <option key={tasks[t].id} value={t}>{t}</option>)}
                               </Field>
                               <ErrorMessage
                                 className="kanbn-task-editor-field-errors"
@@ -546,7 +546,9 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                                         name={`comments.${index}.text`}
                                       />
                                     </React.Fragment>
-                                    : <Markdown className="kanbn-task-editor-comment-text" children={comment.text} />
+                                    : <Markdown className="kanbn-task-editor-comment-text">
+                                      {comment.text}
+                                    </Markdown>
                                 }
                               </div>
                             </div>
@@ -579,7 +581,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                       as="select"
                       name="column"
                     >
-                      {columnNames.map(c => <option value={c}>{c}</option>)}
+                      {columnNames.map(c => <option key={c} value={c}>{c}</option>)}
                     </Field>
                   </label>
                   <ErrorMessage
@@ -674,9 +676,10 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                 </div>
                 {
                   customFields.map(customField => (
-                    <div className={[
+                    <div key={customField.name} className={[
                       'kanbn-task-editor-field kanbn-task-editor-custom-field',
-                      `kanbn-task-editor-custom-field-${paramCase(customField.name)}`
+                      // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
+                      `kanbn-task-editor-custom-field-${String(paramCase(customField.name))}`
                     ].join(' ')}>
                       <label className="kanbn-task-editor-field-label">
                         {customField.type === 'boolean'
@@ -733,7 +736,8 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                               <div
                                 className={[
                                   'kanbn-task-editor-tag-highlight',
-                                  `kanbn-task-tag-${paramCase(values.metadata.tags[index])}`
+                                  // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
+                                  `kanbn-task-tag-${String(paramCase(values.metadata.tags[index]))}`
                                 ].join(' ')}
                               ></div>
                               <ErrorMessage
