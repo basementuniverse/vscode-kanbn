@@ -1,5 +1,3 @@
-/* eslint-disable react/jsx-key */
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 import { DragDropContext, Droppable } from 'react-beautiful-dnd'
 import React, { useState } from 'react'
@@ -59,7 +57,7 @@ const onDragEnd = (result, columns, setColumns, vscode: VSCodeApi): void => {
 }
 
 // Check if a task's due date is in the past
-const checkOverdue = (task: KanbnTask) => {
+const checkOverdue = (task: KanbnTask): boolean => {
   if ('due' in task.metadata && task.metadata.due !== undefined) {
     return Date.parse(task.metadata.due) < (new Date()).getTime()
   }
@@ -81,7 +79,7 @@ const filterTask = (
   task: KanbnTask,
   taskFilter: string,
   customFields: Array<{ name: string, type: 'boolean' | 'date' | 'number' | 'string' }>
-) => {
+): boolean => {
   let result = true
   const customFieldMap = Object.fromEntries(customFields.map(customField => [
     customField.name.toLowerCase(),
@@ -206,13 +204,13 @@ const Board = ({
   const [taskFilter, setTaskFilter] = useState('')
 
   // Called when the clear filter button is clicked
-  const clearFilters = e => {
+  const clearFilters = (e: React.UIEvent<HTMLElement>): void => {
     (document.querySelector('.kanbn-filter-input') as HTMLInputElement).value = ''
     filterTasks(e)
   }
 
   // Called when the filter form is submitted
-  const filterTasks = e => {
+  const filterTasks = (e: React.UIEvent<HTMLElement>): void => {
     e.preventDefault()
     setTaskFilter((document.querySelector('.kanbn-filter-input') as HTMLInputElement).value)
   }
@@ -371,6 +369,7 @@ const Board = ({
                           {column
                             .filter(task => filterTask(task, taskFilter, customFields))
                             .map((task, position) => <TaskItem
+                              key={task.id}
                               task={task}
                               columnName={columnName}
                               customFields={customFields}
