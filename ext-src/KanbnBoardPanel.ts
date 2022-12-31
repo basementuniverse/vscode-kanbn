@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-floating-promises */
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
 import * as path from 'path'
 import * as vscode from 'vscode'
 import getNonce from './getNonce'
@@ -37,7 +35,7 @@ export default class KanbnBoardPanel {
       this.setUpPanel()
     }
     this._panel?.reveal(this.column)
-    this.update()
+    void this.update()
   }
 
   public static create (
@@ -64,7 +62,7 @@ export default class KanbnBoardPanel {
       index = await this._kanbn.getIndex()
     } catch (error) {
       if (error instanceof Error) {
-        vscode.window.showErrorMessage(error.message)
+        void vscode.window.showErrorMessage(error.message)
       } else {
         throw error
       }
@@ -77,13 +75,13 @@ export default class KanbnBoardPanel {
       )
     } catch (error) {
       if (error instanceof Error) {
-        vscode.window.showErrorMessage(error.message)
+        void vscode.window.showErrorMessage(error.message)
       } else {
         throw error
       }
       return
     }
-    this._panel?.webview.postMessage({
+    void this._panel?.webview.postMessage({
       type: 'index',
       index,
       tasks,
@@ -120,7 +118,7 @@ export default class KanbnBoardPanel {
     }
 
     // Set the webview's title to the kanbn project name
-    this._kanbn.getIndex().then((index) => {
+    void this._kanbn.getIndex().then((index) => {
       if (this._panel != null) {
         this._panel.title = index.name
       }
@@ -139,12 +137,12 @@ export default class KanbnBoardPanel {
         switch (message.command) {
           // Display error message
           case 'error':
-            vscode.window.showErrorMessage(message.text)
+            void vscode.window.showErrorMessage(message.text)
             return
 
             // Open a task in the editor
           case 'kanbn.task':
-            KanbnTaskPanel.show(
+            void KanbnTaskPanel.show(
               this._extensionPath,
               this._workspacePath,
               this._kanbn,
@@ -160,7 +158,7 @@ export default class KanbnBoardPanel {
               await this._kanbn.moveTask(message.task, message.columnName, message.position)
             } catch (e) {
               if (e instanceof Error) {
-                vscode.window.showErrorMessage(e.message)
+                void vscode.window.showErrorMessage(e.message)
               } else {
                 throw e
               }
@@ -169,7 +167,7 @@ export default class KanbnBoardPanel {
 
             // Create a task
           case 'kanbn.addTask':
-            KanbnTaskPanel.show(
+            void KanbnTaskPanel.show(
               this._extensionPath,
               this._workspacePath,
               this._kanbn,
@@ -241,7 +239,7 @@ export default class KanbnBoardPanel {
                     ],
                     saveSort === 'Yes'
                   )
-                  this.update()
+                  void this.update()
                 }
               }
             }
@@ -250,7 +248,7 @@ export default class KanbnBoardPanel {
           // Open a burndown chart
           case 'kanbn.burndown':
             this._kanbnBurndownPanel.show()
-            this.update()
+            void this.update()
             return
 
             // Start a new sprint
@@ -266,13 +264,13 @@ export default class KanbnBoardPanel {
                 await this._kanbn.sprint(newSprintName, '', new Date())
               } catch (e) {
                 if (e instanceof Error) {
-                  vscode.window.showErrorMessage(e.message)
+                  void vscode.window.showErrorMessage(e.message)
                 } else {
                   throw e
                 }
               }
             }
-            this._kanbnBurndownPanel.update()
+            void this._kanbnBurndownPanel.update()
           }
         }
       })
@@ -322,16 +320,16 @@ export default class KanbnBoardPanel {
 <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
 <meta name="theme-color" content="#000000">
 <title>Kanbn Board</title>
-<link rel="stylesheet" type="text/css" href="${styleUri}">
-<link rel="stylesheet" type="text/css" href="${customStyleUri}">
-<link rel="stylesheet" type="text/css" href="${codiconsUri}">
+<link rel="stylesheet" type="text/css" href="${styleUri.toString()}">
+<link rel="stylesheet" type="text/css" href="${customStyleUri.toString()}">
+<link rel="stylesheet" type="text/css" href="${codiconsUri.toString()}">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src vscode-webview-resource: https:; script-src 'nonce-${nonce}'; font-src vscode-webview-resource:; style-src vscode-webview-resource: 'unsafe-inline' http: https: data:;">
-<base href="${webview.asWebviewUri(vscode.Uri.file(path.join(this._extensionPath, 'build')))})}/">
+<base href="${webview.asWebviewUri(vscode.Uri.file(path.join(this._extensionPath, 'build'))).toString()})}/">
 </head>
 <body>
 <noscript>You need to enable JavaScript to run this app.</noscript>
 <div id="root"></div>
-<script nonce="${nonce}" src="${scriptUri}"></script>
+<script nonce="${nonce}" src="${scriptUri.toString()}"></script>
 </body>
 </html>`
   }
