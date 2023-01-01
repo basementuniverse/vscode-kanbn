@@ -1,51 +1,50 @@
-import { DragDropContext, Droppable } from "react-beautiful-dnd";
-import React, { useState } from "react";
-import TaskItem from './TaskItem';
-import { paramCase } from '@basementuniverse/kanbn/src/utility';
-import VSCodeApi from "./VSCodeApi";
-import formatDate from 'dateformat';
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+import { DragDropContext, Droppable } from 'react-beautiful-dnd'
+import React, { useState } from 'react'
+import TaskItem from './TaskItem'
+import { paramCase } from '@basementuniverse/kanbn/src/utility'
+import VSCodeApi from './VSCodeApi'
+import formatDate from 'dateformat'
 
 // Called when a task item has finished being dragged
-const onDragEnd = (result, columns, setColumns, vscode: VSCodeApi) => {
-
+const onDragEnd = (result, columns, setColumns, vscode: VSCodeApi): void => {
   // No destination means the item was dragged to an invalid location
-  if (!result.destination) {
-    return;
+  if (result.destination === undefined || result.destination === null) {
+    return
   }
 
   // Get the source and destination columns
-  const { source, destination } = result;
+  const { source, destination } = result
 
   // The item that was moved
-  let removed: KanbnTask;
+  let removed: KanbnTask
 
   // The task was dragged from one column to another
   if (source.droppableId !== destination.droppableId) {
-    const sourceItems = columns[source.droppableId];
+    const sourceItems = columns[source.droppableId]
     const destItems = columns[destination.droppableId];
-    [removed] = sourceItems.splice(source.index, 1);
-    destItems.splice(destination.index, 0, removed);
+    [removed] = sourceItems.splice(source.index, 1)
+    destItems.splice(destination.index, 0, removed)
     setColumns({
       ...columns,
       [source.droppableId]: sourceItems,
       [destination.droppableId]: destItems
-    });
+    })
 
   // The task was dragged into the same column
   } else {
-
     // If the task was dragged to the same position that it currently occupies, don't move it (this will
     // prevent unnecessarily setting the task's updated date)
     if (source.index === destination.index) {
-      return;
+      return
     }
     const copiedItems = columns[source.droppableId];
-    [removed] = copiedItems.splice(source.index, 1);
-    copiedItems.splice(destination.index, 0, removed);
+    [removed] = copiedItems.splice(source.index, 1)
+    copiedItems.splice(destination.index, 0, removed)
     setColumns({
       ...columns,
       [source.droppableId]: copiedItems
-    });
+    })
   }
 
   // Post a message back to the extension so we can move the task in the index
@@ -54,16 +53,16 @@ const onDragEnd = (result, columns, setColumns, vscode: VSCodeApi) => {
     task: removed.id,
     columnName: destination.droppableId,
     position: destination.index
-  });
-};
+  })
+}
 
 // Check if a task's due date is in the past
-const checkOverdue = (task: KanbnTask) => {
-  if ('due' in task.metadata && task.metadata.due !== undefined) {
-    return Date.parse(task.metadata.due) < (new Date()).getTime();
+const checkOverdue = (task: KanbnTask): boolean => {
+  if (task.metadata.due !== undefined) {
+    return Date.parse(task.metadata.due) < (new Date()).getTime()
   }
-  return false;
-};
+  return false
+}
 
 // A list of property names that can be filtered
 const filterProperties = [
@@ -72,44 +71,43 @@ const filterProperties = [
   'tag',
   'relation',
   'subtask',
-  'comment',
-];
+  'comment'
+]
 
 // Filter tasks according to the filter string
 const filterTask = (
   task: KanbnTask,
   taskFilter: string,
-  customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string' }[]
-) => {
-  let result = true;
+  customFields: Array<{ name: string, type: 'boolean' | 'date' | 'number' | 'string' }>
+): boolean => {
+  let result = true
   const customFieldMap = Object.fromEntries(customFields.map(customField => [
     customField.name.toLowerCase(),
-    customField,
-  ]));
-  const customFieldNames = Object.keys(customFieldMap);
+    customField
+  ]))
+  const customFieldNames = Object.keys(customFieldMap)
   taskFilter.split(' ').forEach(f => {
-    const parts = f.split(':').map(p => p.toLowerCase());
+    const parts = f.split(':').map(p => p.toLowerCase())
 
     // This filter section doesn't contain a property name
     if (parts.length === 1) {
-
       // Filter for overdue tasks
       if (parts[0] === 'overdue') {
         if (!checkOverdue(task)) {
-          result = false;
+          result = false
         }
-        return;
+        return
       }
 
       // Filter boolean custom fields
       if (customFieldNames.includes(parts[0]) && customFieldMap[parts[0]].type === 'boolean') {
         if (
           !(customFieldMap[parts[0]].name in task.metadata) ||
-          !task.metadata[customFieldMap[parts[0]].name]
+          !(task.metadata[customFieldMap[parts[0]].name] === null || task.metadata[customFieldMap[parts[0]].name] === undefined)
         ) {
-          result = false;
+          result = false
         }
-        return;
+        return
       }
 
       // Filter task id or name
@@ -117,9 +115,9 @@ const filterTask = (
         !task.id.toLowerCase().includes(parts[0]) &&
         !task.name.toLowerCase().includes(parts[0])
       ) {
-        result = false;
+        result = false
       }
-      return;
+      return
     }
 
     // If this filter section contains a property name and value, check the value against the property
@@ -129,51 +127,49 @@ const filterTask = (
         customFieldNames.includes(parts[0])
       )
     ) {
-
       // Fetch the value to filter by
-      let propertyValue = '';
+      let propertyValue = ''
       switch (parts[0]) {
         case 'description':
           propertyValue = [
             task.description,
             ...task.subTasks.map(subTask => subTask.text)
-          ].join(' ');
-          break;
+          ].join(' ')
+          break
         case 'assigned':
-          propertyValue = task.metadata.assigned || '';
-          break;
+          propertyValue = task.metadata.assigned ?? ''
+          break
         case 'tag':
-          propertyValue = (task.metadata.tags || []).join(' ');
-          break;
+          propertyValue = (task.metadata.tags ?? []).join(' ')
+          break
         case 'relation':
-          propertyValue = task.relations.map(relation => `${relation.type} ${relation.task}`).join(' ');
-          break;
+          propertyValue = task.relations.map(relation => `${relation.type} ${relation.task}`).join(' ')
+          break
         case 'subtask':
-          propertyValue = task.subTasks.map(subTask => `${subTask.text}`).join(' ');
-          break;
+          propertyValue = task.subTasks.map(subTask => `${subTask.text}`).join(' ')
+          break
         case 'comment':
-          propertyValue = task.comments.map(comment => `${comment.author} ${comment.text}`).join(' ');
-          break;
+          propertyValue = task.comments.map(comment => `${comment.author} ${comment.text}`).join(' ')
+          break
         default:
           if (
             customFieldNames.includes(parts[0]) &&
             customFieldMap[parts[0]].type !== 'boolean' &&
             customFieldMap[parts[0]].name in task.metadata
           ) {
-            propertyValue = `${task.metadata[customFieldMap[parts[0]].name]}`;
+            propertyValue = `${task.metadata[customFieldMap[parts[0]].name]}`
           }
-          break;
+          break
       }
 
       // Check the search term against the value
       if (!propertyValue.toLowerCase().includes(parts[1])) {
-        result = false;
+        result = false
       }
-      return;
     }
-  });
-  return result;
-};
+  })
+  return result
+}
 
 const Board = ({
   name,
@@ -190,34 +186,34 @@ const Board = ({
   currentSprint,
   vscode
 }: {
-  name: string,
-  description: string,
-  columns: Record<string, KanbnTask[]>,
-  hiddenColumns: string[],
-  startedColumns: string[],
-  completedColumns: string[],
-  columnSorting: { [columnName: string]: { field: string, order: 'ascending' | 'descending' }[] },
-  customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string' }[],
-  dateFormat: string,
-  showBurndownButton: boolean,
-  showSprintButton: boolean,
-  currentSprint: KanbnSprint|null,
+  name: string
+  description: string
+  columns: Record<string, KanbnTask[]>
+  hiddenColumns: string[]
+  startedColumns: string[]
+  completedColumns: string[]
+  columnSorting: Record<string, Array<{ field: string, order: 'ascending' | 'descending' }>>
+  customFields: Array<{ name: string, type: 'boolean' | 'date' | 'number' | 'string' }>
+  dateFormat: string
+  showBurndownButton: boolean
+  showSprintButton: boolean
+  currentSprint: KanbnSprint | null
   vscode: VSCodeApi
-}) => {
-  const [, setColumns] = useState(columns);
-  const [taskFilter, setTaskFilter] = useState('');
+}): JSX.Element => {
+  const [, setColumns] = useState(columns)
+  const [taskFilter, setTaskFilter] = useState('')
 
   // Called when the clear filter button is clicked
-  const clearFilters = e => {
-    (document.querySelector('.kanbn-filter-input') as HTMLInputElement).value = '';
-    filterTasks(e);
-  };
+  const clearFilters = (e: React.UIEvent<HTMLElement>): void => {
+    (document.querySelector('.kanbn-filter-input') as HTMLInputElement).value = ''
+    filterTasks(e)
+  }
 
   // Called when the filter form is submitted
-  const filterTasks = e => {
-    e.preventDefault();
-    setTaskFilter((document.querySelector('.kanbn-filter-input') as HTMLInputElement).value);
-  };
+  const filterTasks = (e: React.UIEvent<HTMLElement>): void => {
+    e.preventDefault()
+    setTaskFilter((document.querySelector('.kanbn-filter-input') as HTMLInputElement).value)
+  }
 
   return (
     <React.Fragment>
@@ -239,7 +235,7 @@ const Board = ({
                 <i className="codicon codicon-filter"></i>
               </button>
               {
-                taskFilter &&
+                taskFilter !== '' &&
                 <button
                   type="button"
                   className="kanbn-header-button kanbn-header-button-clear-filter"
@@ -257,17 +253,17 @@ const Board = ({
                   onClick={() => {
                     vscode.postMessage({
                       command: 'kanbn.sprint'
-                    });
+                    })
                   }}
                   title={[
                     'Start a new sprint',
-                    currentSprint
+                    (currentSprint != null)
                       ? `Current sprint:\n  ${currentSprint.name}\n  Started ${formatDate(currentSprint.start, dateFormat)}`
-                      : '',
+                      : ''
                   ].join('\n')}
                 >
                   <i className="codicon codicon-rocket"></i>
-                  {currentSprint ? currentSprint.name : 'No sprint'}
+                  {(currentSprint != null) ? currentSprint.name : 'No sprint'}
                 </button>
               }
               {
@@ -278,7 +274,7 @@ const Board = ({
                   onClick={() => {
                     vscode.postMessage({
                       command: 'kanbn.burndown'
-                    });
+                    })
                   }}
                   title="Open burndown chart"
                 >
@@ -297,8 +293,8 @@ const Board = ({
           onDragEnd={result => onDragEnd(result, columns, setColumns, vscode)}
         >
           {Object.entries(columns).map(([columnName, column]) => {
-            if (hiddenColumns.indexOf(columnName) !== -1) {
-              return false;
+            if (hiddenColumns.includes(columnName)) {
+              return false
             }
             return (
               <div
@@ -310,15 +306,15 @@ const Board = ({
               >
                 <h2 className="kanbn-column-name">
                   {
-                    startedColumns.indexOf(columnName) > -1 &&
+                    startedColumns.includes(columnName) &&
                     <i className="codicon codicon-play"></i>
                   }
                   {
-                    completedColumns.indexOf(columnName) > -1 &&
+                    completedColumns.includes(columnName) &&
                     <i className="codicon codicon-check"></i>
                   }
                   {columnName}
-                  <span className="kanbn-column-count">{column.length || ''}</span>
+                  <span className="kanbn-column-count">{(column.length > 0) || ''}</span>
                   <button
                     type="button"
                     className="kanbn-column-button kanbn-create-task-button"
@@ -327,7 +323,7 @@ const Board = ({
                       vscode.postMessage({
                         command: 'kanbn.addTask',
                         columnName
-                      });
+                      })
                     }}
                   >
                     <i className="codicon codicon-add"></i>
@@ -350,28 +346,30 @@ const Board = ({
                         vscode.postMessage({
                           command: 'kanbn.sortColumn',
                           columnName
-                        });
+                        })
                       }}
                     >
                       <i className="codicon codicon-list-filter"></i>
                     </button>
-                  ))(columnName in columnSorting, columnSorting[columnName] || [])}
+                  ))(columnName in columnSorting, columnSorting[columnName] ?? [])}
                 </h2>
                 <div className="kanbn-column-task-list-container">
                   <Droppable droppableId={columnName} key={columnName}>
                     {(provided, snapshot) => {
+                      const isDraggingOver: boolean = snapshot.isDraggingOver
                       return (
                         <div
                           {...provided.droppableProps}
                           ref={provided.innerRef}
                           className={[
                             'kanbn-column-task-list',
-                            snapshot.isDraggingOver ? 'drag-over' : null
+                            isDraggingOver ? 'drag-over' : null
                           ].filter(i => i).join(' ')}
                         >
                           {column
                             .filter(task => filterTask(task, taskFilter, customFields))
                             .map((task, position) => <TaskItem
+                              key={task.id}
                               task={task}
                               columnName={columnName}
                               customFields={customFields}
@@ -381,17 +379,17 @@ const Board = ({
                             />)}
                           {provided.placeholder}
                         </div>
-                      );
+                      )
                     }}
                   </Droppable>
                 </div>
               </div>
-            );
+            )
           })}
         </DragDropContext>
       </div>
     </React.Fragment>
-  );
-};
+  )
+}
 
-export default Board;
+export default Board
