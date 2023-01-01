@@ -58,7 +58,7 @@ const onDragEnd = (result, columns, setColumns, vscode: VSCodeApi): void => {
 
 // Check if a task's due date is in the past
 const checkOverdue = (task: KanbnTask): boolean => {
-  if ('due' in task.metadata && task.metadata.due !== undefined) {
+  if (task.metadata.due !== undefined) {
     return Date.parse(task.metadata.due) < (new Date()).getTime()
   }
   return false

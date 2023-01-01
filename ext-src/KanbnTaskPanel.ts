@@ -13,7 +13,7 @@ function transformTaskData (
     name: taskData.name,
     description: taskData.description,
     metadata: {
-      created: taskData.metadata.created !== undefined ? new Date(taskData.metadata.created) : new Date(),
+      created: taskData.metadata.created !== '' ? new Date(taskData.metadata.created) : new Date(),
       updated: new Date(),
       assigned: taskData.metadata.assigned,
       progress: taskData.progress,
@@ -29,7 +29,7 @@ function transformTaskData (
   } as any
 
   // Add assigned
-  if (taskData.metadata.assigned !== undefined) {
+  if (taskData.metadata.assigned !== '') {
     result.metadata.assigned = taskData.metadata.assigned
   }
 
@@ -44,13 +44,13 @@ function transformTaskData (
   }
 
   // Add due, started and completed dates if present
-  if (taskData.metadata.due !== undefined) {
+  if (taskData.metadata.due !== '') {
     result.metadata.due = new Date(Date.parse(taskData.metadata.due))
   }
-  if (taskData.metadata.started !== undefined) {
+  if (taskData.metadata.started !== '') {
     result.metadata.started = new Date(Date.parse(taskData.metadata.started))
   }
-  if (taskData.metadata.completed !== undefined) {
+  if (taskData.metadata.completed !== '') {
     result.metadata.completed = new Date(Date.parse(taskData.metadata.completed))
   }
 
