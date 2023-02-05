@@ -2,7 +2,6 @@ import * as vscode from 'vscode'
 import KanbnStatusBarItem from './KanbnStatusBarItem'
 import KanbnBoardPanel from './KanbnBoardPanel'
 import KanbnBurndownPanel from './KanbnBurndownPanel'
-import KanbnTaskPanel from './KanbnTaskPanel'
 import { Kanbn } from '@basementuniverse/kanbn/src/main'
 import * as fs from 'fs'
 
@@ -23,7 +22,7 @@ export async function activate (context: vscode.ExtensionContext): Promise<void>
         vscode.workspace.workspaceFolders[0].uri.fsPath,
         this.kanbn,
         boardLocation)
-      this.kanbnBoardPanel = KanbnBoardPanel.create(
+      this.kanbnBoardPanel = new KanbnBoardPanel(
         context.extensionPath,
         vscode.workspace.workspaceFolders[0].uri.fsPath,
         this.kanbn,
@@ -163,15 +162,8 @@ export async function activate (context: vscode.ExtensionContext): Promise<void>
       const kanbnTuple = boardCache.get(board)
       if (kanbnTuple === undefined) { return }
 
-      // If kanbn is initialised, open the task webview
-      void KanbnTaskPanel.show(
-        context.extensionPath,
-        vscode.workspace.workspaceFolders[0].uri.fsPath,
-        kanbnTuple.kanbn,
-        await kanbnTuple.kanbn.getFolderName(),
-        null,
-        null
-      )
+      // Open the task webview
+      kanbnTuple.kanbnBoardPanel.showTaskPanel(null)
     })
   )
 

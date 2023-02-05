@@ -22,6 +22,8 @@ const sortByFields: Record<string, string> = {
 
 export default class KanbnBoardPanel {
   private static readonly viewType = 'react'
+  // Maps a kanbn task ID to the KanbnTaskPanel instance
+  private readonly openedTaskPanels = new Map<string, KanbnTaskPanel>()
   private readonly _extensionPath: string
   private readonly _workspacePath: string
   private readonly column: vscode.ViewColumn
@@ -38,22 +40,17 @@ export default class KanbnBoardPanel {
     void this.update()
   }
 
-  public static create (
-    extensionPath: string,
-    workspacePath: string,
-    kanbn: Kanbn,
-    kanbnFolderName: string,
-    kanbnBurndownPanel: KanbnBurndownPanel
-  ): KanbnBoardPanel {
-    const column = (vscode.window.activeTextEditor != null) ? vscode.window.activeTextEditor.viewColumn : undefined
-    return new KanbnBoardPanel(
-      extensionPath,
-      workspacePath,
-      column ?? vscode.ViewColumn.One,
-      kanbn,
-      kanbnFolderName,
-      kanbnBurndownPanel
-    )
+  public showTaskPanel (taskId: string | null, column: string | null = null): void {
+    let panel: KanbnTaskPanel
+    if (taskId == null || !this.openedTaskPanels.has(taskId)) {
+      panel = new KanbnTaskPanel(this._extensionPath, this._workspacePath, this._kanbn, this._kanbnFolderName, taskId, column, this.openedTaskPanels)
+      if (taskId != null) {
+        this.openedTaskPanels.set(taskId, panel)
+      }
+    } else {
+      panel = this.openedTaskPanels.get(taskId) as KanbnTaskPanel
+    }
+    void panel.show()
   }
 
   public async update (): Promise<void> {
@@ -140,19 +137,12 @@ export default class KanbnBoardPanel {
             void vscode.window.showErrorMessage(message.text)
             return
 
-            // Open a task in the editor
+          // Open an already existing task in the editor
           case 'kanbn.task':
-            void KanbnTaskPanel.show(
-              this._extensionPath,
-              this._workspacePath,
-              this._kanbn,
-              this._kanbnFolderName,
-              message.taskId,
-              message.columnName
-            )
+            this.showTaskPanel(message.taskId, message.columnName)
             return
 
-            // Move a task
+          // Move a task
           case 'kanbn.move':
             try {
               await this._kanbn.moveTask(message.task, message.columnName, message.position)
@@ -165,19 +155,12 @@ export default class KanbnBoardPanel {
             }
             return
 
-            // Create a task
+          // Open a webview for a new task (with no ID)
           case 'kanbn.addTask':
-            void KanbnTaskPanel.show(
-              this._extensionPath,
-              this._workspacePath,
-              this._kanbn,
-              this._kanbnFolderName,
-              null,
-              message.columnName
-            )
+            this.showTaskPanel(null, message.columnName)
             return
 
-            // Sort a column
+          // Sort a column
           case 'kanbn.sortColumn': {
             // Load the index
             const index = await this._kanbn.getIndex()
@@ -276,10 +259,9 @@ export default class KanbnBoardPanel {
       })
   }
 
-  private constructor (
+  constructor (
     extensionPath: string,
     workspacePath: string,
-    column: vscode.ViewColumn,
     kanbn: Kanbn,
     kanbnFolderName: string,
     kanbnBurndownPanel: KanbnBurndownPanel
@@ -287,7 +269,7 @@ export default class KanbnBoardPanel {
     this._extensionPath = extensionPath
     this._workspacePath = workspacePath
     this._kanbn = kanbn
-    this.column = column
+    this.column = vscode.window.activeTextEditor?.viewColumn ?? vscode.ViewColumn.One
     this._kanbnFolderName = kanbnFolderName
     this._kanbnBurndownPanel = kanbnBurndownPanel
   }
