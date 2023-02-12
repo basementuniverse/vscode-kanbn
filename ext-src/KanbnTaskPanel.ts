@@ -109,9 +109,6 @@ export default class KanbnTaskPanel {
       // Enable javascript in the webview
       enableScripts: true,
 
-      // Retain state even when hidden
-      retainContextWhenHidden: true,
-
       // Restrict the webview to only loading content from allowed paths
       localResourceRoots: [
         vscode.Uri.file(path.join(this._extensionPath, 'build')),
