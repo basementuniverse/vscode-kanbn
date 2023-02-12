@@ -10,7 +10,7 @@ const vscode: VSCodeApi = acquireVsCodeApi()
 const zip = (a: any[], b: any[]): Array<[any, any]> => a.map((v: any, i: number): [any, any] => [v, b[i]])
 
 function App (): JSX.Element {
-  const state = vscode.getState() ?? {
+  const vscodeState = vscode.getState() ?? {
     type: '',
     name: '',
     description: '',
@@ -32,104 +32,61 @@ function App (): JSX.Element {
     currentSprint: null,
     burndownData: { series: [] }
   }
-  const [type, setType] = useState(state.type)
-  const [name, setName] = useState(state.name)
-  const [description, setDescription] = useState(state.description)
-  const [columns, setColumns] = useState(state.columns)
-  const [hiddenColumns, setHiddenColumns] = useState(state.hiddenColumns)
-  const [startedColumns, setStartedColumns] = useState(state.startedColumns)
-  const [completedColumns, setCompletedColumns] = useState(state.completedColumns)
-  const [columnSorting, setColumnSorting] = useState(state.columnSorting)
-  const [customFields, setCustomFields] = useState(state.customFields)
-  const [dateFormat, setDateFormat] = useState(state.dateFormat)
-  const [task, setTask] = useState(state.task)
-  const [tasks, setTasks] = useState(state.tasks)
-  const [columnName, setColumnName] = useState(state.columnName)
-  const [columnNames, setColumnNames] = useState(state.columnNames)
-  const [panelUuid, setPanelUuid] = useState(state.panelUuid)
-  const [showBurndownButton, setShowBurndownButton] = useState(state.showBurndownButton)
-  const [showSprintButton, setShowSprintButton] = useState(state.showSprintButton)
-  const [sprints, setSprints] = useState(state.sprints)
-  const [currentSprint, setCurrentSprint] = useState(state.currentSprint)
-  const [burndownData, setBurndownData] = useState(state.burndownData)
+  const [state, setState] = useState(vscodeState)
   const processMessage = useCallback(event => {
+    const newState: any = {}
     const tasks = Object.fromEntries((event.data.tasks ?? []).map(task => [task.id, task]))
+    console.log('received message', event.data.type, event.data)
     switch (event.data.type) {
       case 'index': {
-        setName(event.data.index.name)
-        state.name = event.data.index.name
-        setDescription(event.data.index.description)
-        state.description = event.data.index.description
+        newState.name = event.data.index.name
+        newState.description = event.data.index.description
         const columns = Object.fromEntries(
           zip(
             Object.keys(event.data.index.columns),
             Object.values(event.data.index.columns).map(column => (column as string[]).map(taskId => tasks[taskId]))
           )
         )
-        setColumns(columns)
-        state.columns = columns
-        setHiddenColumns(event.data.hiddenColumns)
-        state.hiddenColumns = event.data.hiddenColumns
-        setStartedColumns(event.data.startedColumns)
-        state.startedColumns = event.data.startedColumns
-        setCompletedColumns(event.data.completedColumns)
-        state.completedColumns = event.data.completedColumns
-        setColumnSorting(event.data.columnSorting)
-        state.columnSorting = event.data.columnSorting
-        setCustomFields(event.data.customFields)
-        state.customFields = event.data.customFields
-        setShowBurndownButton(event.data.showBurndownButton)
-        state.showBurndownButton = event.data.showBurndownButton
-        setShowSprintButton(event.data.showSprintButton)
-        state.showSprintButton = event.data.showSprintButton
+        newState.columns = columns
+        newState.hiddenColumns = event.data.hiddenColumns
+        newState.startedColumns = event.data.startedColumns
+        newState.completedColumns = event.data.completedColumns
+        newState.columnSorting = event.data.columnSorting
+        newState.customFields = event.data.customFields
+        newState.showBurndownButton = event.data.showBurndownButton
+        newState.showSprintButton = event.data.showSprintButton
 
         // Get current sprint
         let sprint = null
         if ('sprints' in event.data.index.options && event.data.index.options.sprints.length > 0) {
           sprint = event.data.index.options.sprints[event.data.index.options.sprints.length - 1]
         }
-        setCurrentSprint(sprint)
-        state.currentSprint = sprint
+        newState.currentSprint = sprint
         break
       }
 
       case 'task':
-        setTask(event.data.task)
-        state.task = event.data.task
-        setTasks(tasks)
-        state.tasks = tasks
-        setColumnName(event.data.columnName)
-        state.columnName = event.data.columnName
-        setColumnNames(Object.keys(event.data.index.columns))
-        state.columnNames = Object.keys(event.data.index.columns)
-        setCustomFields(event.data.customFields)
-        state.customFields = event.data.customFields
-        setPanelUuid(event.data.panelUuid)
-        state.panelUuid = event.data.panelUuid
+        newState.task = event.data.task
+        newState.tasks = tasks
+        newState.columnName = event.data.columnName
+        newState.columnNames = Object.keys(event.data.index.columns)
+        newState.customFields = event.data.customFields
+        newState.panelUuid = event.data.panelUuid
         break
 
       case 'burndown':
-        setName(event.data.index.name)
-        state.name = event.data.index.name
-        setTasks(tasks)
-        state.tasks = tasks
-        setSprints(
-          'sprints' in event.data.index.options
-            ? event.data.index.options.sprints
-            : []
-        )
-        state.sprints = 'sprints' in event.data.index.options
+        newState.name = event.data.index.name
+        newState.tasks = tasks
+        newState.sprints = 'sprints' in event.data.index.options
           ? event.data.index.options.sprints
           : []
-        setBurndownData(event.data.burndownData)
-        state.burndownData = event.data.burndownData
+        newState.burndownData = event.data.burndownData
         break
     }
-    setType(event.data.type)
-    state.type = event.data.type
-    setDateFormat(event.data.dateFormat)
-    state.dateFormat = event.data.dateFormat
-    vscode.setState(state)
+    newState.type = event.data.type
+    newState.dateFormat = event.data.dateFormat
+    vscode.setState(newState)
+    setState(newState)
   }, [])
 
   useEffect(() => {
@@ -141,43 +98,43 @@ function App (): JSX.Element {
   return (
     <React.Fragment>
       {
-        type === 'index' &&
+        state.type === 'index' &&
         <Board
-          name={name}
-          description={description}
-          columns={columns}
-          hiddenColumns={hiddenColumns}
-          startedColumns={startedColumns}
-          completedColumns={completedColumns}
-          columnSorting={columnSorting}
-          customFields={customFields}
-          dateFormat={dateFormat}
-          showBurndownButton={showBurndownButton}
-          showSprintButton={showSprintButton}
-          currentSprint={currentSprint}
+          name={state.name}
+          description={state.description}
+          columns={state.columns}
+          hiddenColumns={state.hiddenColumns}
+          startedColumns={state.startedColumns}
+          completedColumns={state.completedColumns}
+          columnSorting={state.columnSorting}
+          customFields={state.customFields}
+          dateFormat={state.dateFormat}
+          showBurndownButton={state.showBurndownButton}
+          showSprintButton={state.showSprintButton}
+          currentSprint={state.currentSprint}
           vscode={vscode}
         />
       }
       {
-        type === 'task' &&
+        state.type === 'task' &&
         <TaskEditor
-          task={task as KanbnTask | null}
-          tasks={tasks}
-          columnName={columnName}
-          columnNames={columnNames}
-          customFields={customFields}
-          dateFormat={dateFormat}
-          panelUuid={panelUuid}
+          task={state.task as KanbnTask | null}
+          tasks={state.tasks}
+          columnName={state.columnName}
+          columnNames={state.columnNames}
+          customFields={state.customFields}
+          dateFormat={state.dateFormat}
+          panelUuid={state.panelUuid}
           vscode={vscode}
         />
       }
       {
-        type === 'burndown' &&
+        state.type === 'burndown' &&
         <Burndown
-          name={name}
-          sprints={sprints}
-          burndownData={burndownData}
-          dateFormat={dateFormat}
+          name={state.name}
+          sprints={state.sprints}
+          burndownData={state.burndownData}
+          dateFormat={state.dateFormat}
           vscode={vscode}
         />
       }
