@@ -177,7 +177,7 @@ export default class KanbnTaskPanel {
               transformTaskData(message.taskData, message.customFields),
               message.taskData.column
             )
-            if (this._taskId !== message.taskId) {
+            if (this._taskId !== message.taskData.id) {
               taskCache.set(message.taskData.id, this)
               taskCache.delete(this._taskId ?? '')
               this._taskId = message.taskData.id
