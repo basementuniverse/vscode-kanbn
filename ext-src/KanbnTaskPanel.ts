@@ -183,7 +183,6 @@ export default class KanbnTaskPanel {
               this._taskId = message.taskData.id
             }
             // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
-            console.log('task id: ' + this._taskId)
             void this.update()
             if (vscode.workspace.getConfiguration('kanbn').get<boolean>('showTaskNotifications') ?? true) {
               // TODO: remove the explicit String cast once typescript bindings for kanbn are updated

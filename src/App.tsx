@@ -36,7 +36,6 @@ function App (): JSX.Element {
   const processMessage = useCallback(event => {
     const newState: any = {}
     const tasks = Object.fromEntries((event.data.tasks ?? []).map(task => [task.id, task]))
-    console.log('received message', event.data.type, event.data)
     switch (event.data.type) {
       case 'index': {
         newState.name = event.data.index.name
