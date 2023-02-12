@@ -124,6 +124,8 @@ export default class KanbnBoardPanel {
     // Listen for when the panel is disposed
     // This happens when the user closes the panel or when the panel is closed programatically
     this._panel.onDidDispose(() => { this._panel = null })
+    // Need to update the panel when it is shown again
+    this._panel.onDidChangeViewState(() => { void this.update() })
 
     // Handle messages from the webview
     this._panel.webview.onDidReceiveMessage(
