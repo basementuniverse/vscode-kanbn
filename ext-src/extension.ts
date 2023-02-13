@@ -155,7 +155,7 @@ export async function activate (context: vscode.ExtensionContext): Promise<void>
       if (kanbnTuple === undefined) { return }
 
       // If kanbn is initialised, view the kanbn board
-      kanbnTuple.kanbnBoardPanel.show()
+      void kanbnTuple.kanbnBoardPanel.show()
       void kanbnStatusBarItem.update(kanbnTuple.kanbn)
     })
   )

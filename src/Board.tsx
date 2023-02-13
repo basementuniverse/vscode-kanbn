@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 import { DragDropContext, Droppable } from 'react-beautiful-dnd'
-import React, { useState } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import TaskItem from './TaskItem'
 import { paramCase } from '@basementuniverse/kanbn/src/utility'
 import vscode from './vscode'
 import formatDate from 'dateformat'
+
+const zip = (a: any[], b: any[]): Array<[any, any]> => a.map((v: any, i: number): [any, any] => [v, b[i]])
 
 // Called when a task item has finished being dragged
 const onDragEnd = (result, columns, setColumns): void => {
@@ -171,35 +173,73 @@ const filterTask = (
   return result
 }
 
-const Board = ({
-  name,
-  description,
-  columns,
-  hiddenColumns,
-  startedColumns,
-  completedColumns,
-  columnSorting,
-  customFields,
-  dateFormat,
-  showBurndownButton,
-  showSprintButton,
-  currentSprint
-}: {
-  name: string
-  description: string
-  columns: Record<string, KanbnTask[]>
-  hiddenColumns: string[]
-  startedColumns: string[]
-  completedColumns: string[]
-  columnSorting: Record<string, Array<{ field: string, order: 'ascending' | 'descending' }>>
-  customFields: Array<{ name: string, type: 'boolean' | 'date' | 'number' | 'string' }>
-  dateFormat: string
-  showBurndownButton: boolean
-  showSprintButton: boolean
-  currentSprint: KanbnSprint | null
-}): JSX.Element => {
-  const [, setColumns] = useState(columns)
-  const [taskFilter, setTaskFilter] = useState('')
+function Board (): JSX.Element {
+  const [state, setState] = useState(vscode.getState() ?? {
+    name: '',
+    description: '',
+    columns: {},
+    hiddenColumns: [],
+    startedColumns: [],
+    completedColumns: [],
+    columnSorting: {},
+    customFields: [],
+    dateFormat: '',
+    showBurndownButton: false,
+    showSprintButton: false,
+    currentSprint: null,
+    taskFilter: ''
+  })
+
+  const processMessage = useCallback(event => {
+    const newState: any = {}
+    const tasks = Object.fromEntries((event.data.tasks ?? []).map(task => [task.id, task]))
+
+    newState.name = event.data.index.name
+    newState.description = event.data.index.description
+    const columns = Object.fromEntries(
+      zip(
+        Object.keys(event.data.index.columns),
+        Object.values(event.data.index.columns).map(column => (column as string[]).map(taskId => tasks[taskId]))
+      )
+    )
+    newState.columns = columns
+    newState.hiddenColumns = event.data.hiddenColumns
+    newState.startedColumns = event.data.startedColumns
+    newState.completedColumns = event.data.completedColumns
+    newState.columnSorting = event.data.columnSorting
+    newState.customFields = event.data.customFields
+    newState.showBurndownButton = event.data.showBurndownButton
+    newState.showSprintButton = event.data.showSprintButton
+
+    // Get current sprint
+    let sprint = null
+    if ('sprints' in event.data.index.options && event.data.index.options.sprints.length > 0) {
+      sprint = event.data.index.options.sprints[event.data.index.options.sprints.length - 1]
+    }
+    newState.currentSprint = sprint
+    newState.dateFormat = event.data.dateFormat
+    newState.taskFilter = state.taskFilter
+    vscode.setState(newState)
+    setState(newState)
+  }, [])
+
+  useEffect(() => {
+    window.addEventListener('message', processMessage)
+    return () => {
+      window.removeEventListener('message', processMessage)
+    }
+  }, [])
+
+  const setColumns = (columns): void => {
+    const newState = { ...state }
+    newState.columns = columns
+    setState(newState)
+  }
+  const setTaskFilter = (taskFilter): void => {
+    const newState = { ...state }
+    newState.taskFilter = taskFilter
+    setState(newState)
+  }
 
   // Called when the clear filter button is clicked
   const clearFilters = (e: React.UIEvent<HTMLElement>): void => {
@@ -213,11 +253,15 @@ const Board = ({
     setTaskFilter((document.querySelector('.kanbn-filter-input') as HTMLInputElement).value)
   }
 
+  const taskFilter = state.taskFilter
+
+  // Indicate that the board is ready to receive messages and should be updated
+  useEffect(() => vscode.postMessage({ command: 'kanbn.updateMe' }), [])
   return (
-    <React.Fragment>
+    <>
       <div className="kanbn-header">
         <h1 className="kanbn-header-name">
-          <p>{name}</p>
+          <p>{state.name}</p>
           <div className="kanbn-filter">
             <form>
               <input
@@ -244,7 +288,7 @@ const Board = ({
                 </button>
               }
               {
-                showSprintButton &&
+                state.showSprintButton as boolean &&
                 <button
                   type="button"
                   className="kanbn-header-button kanbn-header-button-sprint"
@@ -255,17 +299,17 @@ const Board = ({
                   }}
                   title={[
                     'Start a new sprint',
-                    (currentSprint != null)
-                      ? `Current sprint:\n  ${currentSprint.name}\n  Started ${formatDate(currentSprint.start, dateFormat)}`
+                    (state.currentSprint != null)
+                      ? `Current sprint:\n  ${state.currentSprint.name}\n  Started ${formatDate(state.currentSprint.start, state.dateFormat)}`
                       : ''
                   ].join('\n')}
                 >
                   <i className="codicon codicon-rocket"></i>
-                  {(currentSprint != null) ? currentSprint.name : 'No sprint'}
+                  {(state.currentSprint != null) ? state.currentSprint.name : 'No sprint'}
                 </button>
               }
               {
-                showBurndownButton &&
+                state.showBurndownButton as boolean &&
                 <button
                   type="button"
                   className="kanbn-header-button kanbn-header-button-burndown"
@@ -283,15 +327,15 @@ const Board = ({
           </div>
         </h1>
         <p className="kanbn-header-description">
-          {description}
+          {state.description}
         </p>
       </div>
       <div className="kanbn-board">
         <DragDropContext
-          onDragEnd={result => onDragEnd(result, columns, setColumns)}
+          onDragEnd={result => onDragEnd(result, state.columns, setColumns)}
         >
-          {Object.entries(columns).map(([columnName, column]) => {
-            if (hiddenColumns.includes(columnName)) {
+          {Object.entries(state.columns).map(([columnName, column]) => {
+            if (state.hiddenColumns.includes(columnName) as boolean) {
               return false
             }
             return (
@@ -304,15 +348,15 @@ const Board = ({
               >
                 <h2 className="kanbn-column-name">
                   {
-                    startedColumns.includes(columnName) &&
+                    state.startedColumns.includes(columnName) as boolean &&
                     <i className="codicon codicon-play"></i>
                   }
                   {
-                    completedColumns.includes(columnName) &&
+                    state.completedColumns.includes(columnName) as boolean &&
                     <i className="codicon codicon-check"></i>
                   }
                   {columnName}
-                  <span className="kanbn-column-count">{(column.length > 0) || ''}</span>
+                  <span className="kanbn-column-count">{((column as any).length > 0) || ''}</span>
                   <button
                     type="button"
                     className="kanbn-column-button kanbn-create-task-button"
@@ -349,7 +393,7 @@ const Board = ({
                     >
                       <i className="codicon codicon-list-filter"></i>
                     </button>
-                  ))(columnName in columnSorting, columnSorting[columnName] ?? [])}
+                  ))(columnName in state.columnSorting, state.columnSorting[columnName] ?? [])}
                 </h2>
                 <div className="kanbn-column-task-list-container">
                   <Droppable droppableId={columnName} key={columnName}>
@@ -364,15 +408,15 @@ const Board = ({
                             isDraggingOver ? 'drag-over' : null
                           ].filter(i => i).join(' ')}
                         >
-                          {column
-                            .filter(task => filterTask(task, taskFilter, customFields))
+                          {(column as any)
+                            .filter(task => filterTask(task, taskFilter, state.customFields))
                             .map((task, position) => <TaskItem
                               key={task.id}
                               task={task}
                               columnName={columnName}
-                              customFields={customFields}
+                              customFields={state.customFields}
                               position={position}
-                              dateFormat={dateFormat}
+                              dateFormat={state.dateFormat}
                             />)}
                           {provided.placeholder}
                         </div>
@@ -385,7 +429,7 @@ const Board = ({
           })}
         </DragDropContext>
       </div>
-    </React.Fragment>
+    </>
   )
 }
 

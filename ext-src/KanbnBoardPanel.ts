@@ -32,12 +32,11 @@ export default class KanbnBoardPanel {
   private readonly _kanbnBurndownPanel: KanbnBurndownPanel
   private _panel: vscode.WebviewPanel | null = null
 
-  public show (): void {
+  public async show (): Promise<void> {
     if (this._panel == null) {
-      this.setUpPanel()
+      await this.setUpPanel()
     }
     this._panel?.reveal(this.column)
-    void this.update()
   }
 
   public showTaskPanel (taskId: string | null, column: string | null = null): void {
@@ -93,7 +92,7 @@ export default class KanbnBoardPanel {
     })
   }
 
-  private setUpPanel (): void {
+  private async setUpPanel (): Promise<void> {
     // Create and show a new webview panel
     this._panel = vscode.window.createWebviewPanel(KanbnBoardPanel.viewType, 'Kanbn Board', this.column, {
       // Enable javascript in the webview
@@ -112,7 +111,7 @@ export default class KanbnBoardPanel {
     }
 
     // Set the webview's title to the kanbn project name
-    void this._kanbn.getIndex().then((index) => {
+    await this._kanbn.getIndex().then((index) => {
       if (this._panel != null) {
         this._panel.title = index.name
       }
@@ -124,9 +123,6 @@ export default class KanbnBoardPanel {
     // Listen for when the panel is disposed
     // This happens when the user closes the panel or when the panel is closed programatically
     this._panel.onDidDispose(() => { this._panel = null })
-    // Need to update the panel when it is shown again
-    this._panel.onDidChangeViewState(() => { void this.update() })
-
     // Handle messages from the webview
     this._panel.webview.onDidReceiveMessage(
       async (message) => {
@@ -134,6 +130,11 @@ export default class KanbnBoardPanel {
           // Display error message
           case 'error':
             void vscode.window.showErrorMessage(message.text)
+            return
+
+          // Update webview. This is called when the webview first renders.
+          case 'kanbn.updateMe':
+            void this.update()
             return
 
           // Open an already existing task in the editor
