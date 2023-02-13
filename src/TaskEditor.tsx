@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Formik, Form, Field, ErrorMessage, FieldArray } from 'formik'
 import formatDate from 'dateformat'
-import VSCodeApi from './VSCodeApi'
+import vscode from './vscode'
 import { paramCase } from '@basementuniverse/kanbn/src/utility'
 import ReactMarkdown from 'react-markdown'
 import TextareaAutosize from 'react-textarea-autosize'
@@ -68,7 +68,7 @@ const Markdown = (props): JSX.Element => (<ReactMarkdown {...{
   ...props
 }} />)
 
-const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFormat, panelUuid, vscode }: {
+const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFormat, panelUuid }: {
   task: KanbnTask | null
   tasks: Record<string, KanbnTask>
   columnName: string
@@ -76,7 +76,6 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
   customFields: Array<{ name: string, type: 'boolean' | 'date' | 'number' | 'string' }>
   dateFormat: string
   panelUuid: string
-  vscode: VSCodeApi
 }): JSX.Element => {
   const editing = task !== null
   const [taskData, setTaskData] = useState({

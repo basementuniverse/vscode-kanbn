@@ -3,11 +3,11 @@ import { DragDropContext, Droppable } from 'react-beautiful-dnd'
 import React, { useState } from 'react'
 import TaskItem from './TaskItem'
 import { paramCase } from '@basementuniverse/kanbn/src/utility'
-import VSCodeApi from './VSCodeApi'
+import vscode from './vscode'
 import formatDate from 'dateformat'
 
 // Called when a task item has finished being dragged
-const onDragEnd = (result, columns, setColumns, vscode: VSCodeApi): void => {
+const onDragEnd = (result, columns, setColumns): void => {
   // No destination means the item was dragged to an invalid location
   if (result.destination === undefined || result.destination === null) {
     return
@@ -183,8 +183,7 @@ const Board = ({
   dateFormat,
   showBurndownButton,
   showSprintButton,
-  currentSprint,
-  vscode
+  currentSprint
 }: {
   name: string
   description: string
@@ -198,7 +197,6 @@ const Board = ({
   showBurndownButton: boolean
   showSprintButton: boolean
   currentSprint: KanbnSprint | null
-  vscode: VSCodeApi
 }): JSX.Element => {
   const [, setColumns] = useState(columns)
   const [taskFilter, setTaskFilter] = useState('')
@@ -290,7 +288,7 @@ const Board = ({
       </div>
       <div className="kanbn-board">
         <DragDropContext
-          onDragEnd={result => onDragEnd(result, columns, setColumns, vscode)}
+          onDragEnd={result => onDragEnd(result, columns, setColumns)}
         >
           {Object.entries(columns).map(([columnName, column]) => {
             if (hiddenColumns.includes(columnName)) {
@@ -375,7 +373,6 @@ const Board = ({
                               customFields={customFields}
                               position={position}
                               dateFormat={dateFormat}
-                              vscode={vscode}
                             />)}
                           {provided.placeholder}
                         </div>

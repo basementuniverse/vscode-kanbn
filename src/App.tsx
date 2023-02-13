@@ -2,10 +2,7 @@ import Board from './Board'
 import Burndown from './Burndown'
 import TaskEditor from './TaskEditor'
 import React, { useState, useEffect, useCallback } from 'react'
-import VSCodeApi from './VSCodeApi'
-
-declare let acquireVsCodeApi: Function
-const vscode: VSCodeApi = acquireVsCodeApi()
+import vscode from './vscode'
 
 const zip = (a: any[], b: any[]): Array<[any, any]> => a.map((v: any, i: number): [any, any] => [v, b[i]])
 
@@ -111,7 +108,6 @@ function App (): JSX.Element {
           showBurndownButton={state.showBurndownButton}
           showSprintButton={state.showSprintButton}
           currentSprint={state.currentSprint}
-          vscode={vscode}
         />
       }
       {
@@ -124,7 +120,6 @@ function App (): JSX.Element {
           customFields={state.customFields}
           dateFormat={state.dateFormat}
           panelUuid={state.panelUuid}
-          vscode={vscode}
         />
       }
       {
@@ -134,7 +129,6 @@ function App (): JSX.Element {
           sprints={state.sprints}
           burndownData={state.burndownData}
           dateFormat={state.dateFormat}
-          vscode={vscode}
         />
       }
     </React.Fragment>

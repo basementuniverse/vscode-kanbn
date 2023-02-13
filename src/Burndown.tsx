@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react'
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts'
-import VSCodeApi from './VSCodeApi'
+import vscode from './vscode'
 import formatDate from 'dateformat'
 import { debounce } from 'throttle-debounce'
 
-const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
+const Burndown = ({ name, sprints, burndownData, dateFormat }: {
   name: string
   sprints: KanbnSprint[]
   burndownData: {
@@ -24,7 +24,6 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
     }>
   }
   dateFormat: string
-  vscode: VSCodeApi
 }): JSX.Element => {
   const hasSprints = sprints.length > 0
   const [sprintMode, setSprintMode] = useState(hasSprints)

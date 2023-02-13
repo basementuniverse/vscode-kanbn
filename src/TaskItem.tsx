@@ -2,15 +2,14 @@ import React from 'react'
 import { Draggable } from 'react-beautiful-dnd'
 import formatDate from 'dateformat'
 import { paramCase } from '@basementuniverse/kanbn/src/utility'
-import VSCodeApi from './VSCodeApi'
+import vscode from './vscode'
 
-const TaskItem = ({ task, columnName, customFields, position, dateFormat, vscode }: {
+const TaskItem = ({ task, columnName, customFields, position, dateFormat }: {
   task: KanbnTask
   columnName: string
   customFields: Array<{ name: string, type: 'boolean' | 'date' | 'number' | 'string' }>
   position: number
   dateFormat: string
-  vscode: VSCodeApi
 }): JSX.Element => {
   const createdDate = 'created' in task.metadata ? formatDate(task.metadata.created, dateFormat) : null
   const updatedDate = 'updated' in task.metadata ? formatDate(task.metadata.updated, dateFormat) : null
