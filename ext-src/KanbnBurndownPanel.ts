@@ -71,6 +71,9 @@ export default class KanbnBurndownPanel {
             this.startDate = message.startDate
             this.endDate = message.endDate
             void this.update()
+            break
+          case 'kanbn.updateMe':
+            void this.update()
         }
       })
   }

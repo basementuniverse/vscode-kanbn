@@ -1,4 +1,3 @@
-import Burndown from './Burndown'
 import TaskEditor from './TaskEditor'
 import React, { useState, useEffect, useCallback } from 'react'
 import vscode from './vscode'
@@ -14,8 +13,7 @@ function App (): JSX.Element {
     columnName: '',
     columnNames: [] as string[],
     panelUuid: '',
-    sprints: [],
-    burndownData: { series: [] }
+    sprints: []
   }
   const [state, setState] = useState(vscodeState)
   const processMessage = useCallback(event => {
@@ -29,15 +27,6 @@ function App (): JSX.Element {
         newState.columnNames = Object.keys(event.data.index.columns)
         newState.customFields = event.data.customFields
         newState.panelUuid = event.data.panelUuid
-        break
-
-      case 'burndown':
-        newState.name = event.data.index.name
-        newState.tasks = tasks
-        newState.sprints = 'sprints' in event.data.index.options
-          ? event.data.index.options.sprints
-          : []
-        newState.burndownData = event.data.burndownData
         break
     }
     newState.type = event.data.type
@@ -64,15 +53,6 @@ function App (): JSX.Element {
           customFields={state.customFields}
           dateFormat={state.dateFormat}
           panelUuid={state.panelUuid}
-        />
-      }
-      {
-        state.type === 'burndown' &&
-        <Burndown
-          name={state.name}
-          sprints={state.sprints}
-          burndownData={state.burndownData}
-          dateFormat={state.dateFormat}
         />
       }
     </React.Fragment>

@@ -1,7 +1,7 @@
 import * as React from 'react'
 import App from './App'
 import Board from './Board'
-// import Burndown from './Burndown'
+import Burndown from './Burndown'
 // import TaskEditor from './TaskEditor'
 import './index.css'
 
@@ -15,7 +15,7 @@ if (domNodeBoard !== null) {
   const domNodeBurndown = document.getElementById('root-burndown')
   if (domNodeBurndown !== null) {
     const rootBurndown = createRoot(domNodeBurndown)
-    rootBurndown.render(<App />)
+    rootBurndown.render(<Burndown />)
   } else {
     const domNodeTask = document.getElementById('root-task')
     if (domNodeTask !== null) {
