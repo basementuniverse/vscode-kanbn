@@ -154,6 +154,11 @@ export default class KanbnTaskPanel {
             this._panel.title = message.title
             return
 
+          // Update panel once it's loaded
+          case 'kanbn.updateMe':
+            void this.update()
+            return
+
           // Create a task
           case 'kanbn.create':
             await this._kanbn.createTask(
@@ -177,7 +182,12 @@ export default class KanbnTaskPanel {
               transformTaskData(message.taskData, message.customFields),
               message.taskData.column
             )
-            this._taskId = message.taskData.id
+            if (this._taskId !== message.taskData.id) {
+              taskCache.set(message.taskData.id, this)
+              taskCache.delete(this._taskId ?? '')
+              this._taskId = message.taskData.id
+            }
+            // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
             void this.update()
             if (vscode.workspace.getConfiguration('kanbn').get<boolean>('showTaskNotifications') ?? true) {
               // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
@@ -312,7 +322,7 @@ export default class KanbnTaskPanel {
 </head>
 <body>
 <noscript>You need to enable JavaScript to run this app.</noscript>
-<div id="root"></div>
+<div id="root-task"></div>
 <script nonce="${nonce}" src="${scriptUri.toString()}"></script>
 </body>
 </html>`

@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import * as path from 'path'
 import KanbnStatusBarItem from './KanbnStatusBarItem'
 import KanbnBoardPanel from './KanbnBoardPanel'
 import KanbnBurndownPanel from './KanbnBurndownPanel'
@@ -42,33 +43,47 @@ export async function activate (context: vscode.ExtensionContext): Promise<void>
   }
 
   function populateBoardCache (): void {
-    boardCache.clear()
-    if (vscode.workspace.workspaceFolders == null) {
-      return
-    }
-    // Populate globally accessible boards.
-    for (const workspaceFolder of vscode.workspace.workspaceFolders) {
+    const boardLocations = new Set<string>()
+
+    // Get globally accessible board locations.
+    vscode.workspace.getConfiguration('kanbn', null).get<string[]>('additionalBoards')?.forEach(boardLocation => {
+      boardLocations.add(path.resolve(boardLocation))
+    })
+
+    // Get standard board locations.
+    for (const workspaceFolder of vscode.workspace.workspaceFolders ?? []) {
+      // Get workspace specific board locations.
+      vscode.workspace.getConfiguration('kanbn', workspaceFolder.uri).get<string[]>('additionalBoards')?.forEach(boardLocation => {
+        boardLocations.add(path.resolve(boardLocation))
+      })
+
+      // For backwards compatibility, check the old kanbn directory (which is just the current workspace directory).
+      const oldKanbnPath = `${workspaceFolder.uri.fsPath}`
+      if (fs.existsSync(`${oldKanbnPath}/.kanbn`)) {
+        boardLocations.add(path.resolve(oldKanbnPath))
+      }
       // Populate boards in the standard workspace location.
-      const kanbnPath = `${workspaceFolder.uri.fsPath}/.kanbnBoards`
+      const kanbnPath = `${workspaceFolder.uri.fsPath}/.kanbn_boards`
       if (fs.existsSync(kanbnPath)) {
         for (const kanbnBoardPath of fs.readdirSync(kanbnPath)) {
-          const kanbnTuple = new KanbnTuple(`${kanbnPath}/${kanbnBoardPath}`)
-          boardCache.set(kanbnBoardPath, kanbnTuple)
-
-          // Initialise file watcher
-          const fileWatcher = vscode.workspace.createFileSystemWatcher(
-            new vscode.RelativePattern(workspaceFolder, `.kanbnBoards/${kanbnBoardPath}/**`)
-          )
-          fileWatcher.onDidChange(() => {
-            void kanbnStatusBarItem.update(kanbnTuple.kanbn)
-            void kanbnTuple.kanbnBoardPanel.update()
-            void kanbnTuple.kanbnBurnDownPanel.update()
-          })
+          boardLocations.add(path.resolve(`${kanbnPath}/${kanbnBoardPath}`))
         }
       }
-      // // Populate boards in additional workspace locations.
-      // const boardLocations: string[] = vscode.workspace.getConfiguration('kanbn').get('additionalBoards')
-      // for (const location of boardLocations) {
+    }
+    for (const boardLocation of boardLocations) {
+      const kanbnTuple = new KanbnTuple(boardLocation)
+      boardCache.set(boardLocation, kanbnTuple)
+
+      // Initialise file watcher
+      const fileWatcher = vscode.workspace.createFileSystemWatcher(
+        new vscode.RelativePattern(vscode.Uri.file(`${boardLocation}/.kanbn`), '**')
+      )
+
+      fileWatcher.onDidChange(() => {
+        void kanbnStatusBarItem.update(kanbnTuple.kanbn)
+        void kanbnTuple.kanbnBoardPanel.update()
+        void kanbnTuple.kanbnBurnDownPanel.update()
+      })
     }
   }
   populateBoardCache()
@@ -96,7 +111,7 @@ export async function activate (context: vscode.ExtensionContext): Promise<void>
       let kanbnTuple: KanbnTuple
       // If the input prompt wasn't cancelled, initialise kanbn
       while (boardName !== undefined) {
-        const boardLocation: string = `${vscode.workspace.workspaceFolders[0].uri.fsPath}/.kanbnBoards/${boardName}`
+        const boardLocation: string = `${vscode.workspace.workspaceFolders[0].uri.fsPath}/.kanbn_boards/${boardName}`
         if (fs.existsSync(boardLocation)) {
           void vscode.window.showErrorMessage('A board with that name already exists. Pick a different name.')
           boardName = await getNewBoardName()
@@ -109,7 +124,7 @@ export async function activate (context: vscode.ExtensionContext): Promise<void>
         })
         // Initialise file watcher
         const fileWatcher = vscode.workspace.createFileSystemWatcher(
-          new vscode.RelativePattern(vscode.workspace.workspaceFolders[0], `.kanbnBoards/${boardName}/**.*`)
+          new vscode.RelativePattern(vscode.workspace.workspaceFolders[0], `.kanbn_boards/${boardName}/**.*`)
         )
         fileWatcher.onDidChange(() => {
           void kanbnStatusBarItem.update(kanbnTuple.kanbn)
@@ -140,7 +155,7 @@ export async function activate (context: vscode.ExtensionContext): Promise<void>
       if (kanbnTuple === undefined) { return }
 
       // If kanbn is initialised, view the kanbn board
-      kanbnTuple.kanbnBoardPanel.show()
+      void kanbnTuple.kanbnBoardPanel.show()
       void kanbnStatusBarItem.update(kanbnTuple.kanbn)
     })
   )
@@ -301,6 +316,7 @@ export async function activate (context: vscode.ExtensionContext): Promise<void>
 
   // Handle configuration changes.
   vscode.workspace.onDidChangeConfiguration((e) => {
+    populateBoardCache()
     // Update all board panels in case we need to show/hide certain buttons.
     for (const [, kanbnTuple] of boardCache) {
       void kanbnTuple.kanbnBoardPanel.update()

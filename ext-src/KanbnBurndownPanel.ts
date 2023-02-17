@@ -71,6 +71,9 @@ export default class KanbnBurndownPanel {
             this.startDate = message.startDate
             this.endDate = message.endDate
             void this.update()
+            break
+          case 'kanbn.updateMe':
+            void this.update()
         }
       })
   }
@@ -182,7 +185,7 @@ export default class KanbnBurndownPanel {
 </head>
 <body>
 <noscript>You need to enable JavaScript to run this app.</noscript>
-<div id="root"></div>
+<div id="root-burndown"></div>
 <script nonce="${nonce}" src="${scriptUri.toString()}"></script>
 </body>
 </html>`
