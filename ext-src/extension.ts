@@ -316,6 +316,7 @@ export async function activate (context: vscode.ExtensionContext): Promise<void>
 
   // Handle configuration changes.
   vscode.workspace.onDidChangeConfiguration((e) => {
+    populateBoardCache()
     // Update all board panels in case we need to show/hide certain buttons.
     for (const [, kanbnTuple] of boardCache) {
       void kanbnTuple.kanbnBoardPanel.update()
