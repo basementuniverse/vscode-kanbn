@@ -46,14 +46,14 @@ export async function activate (context: vscode.ExtensionContext): Promise<void>
     const boardLocations = new Set<string>()
 
     // Get globally accessible board locations.
-    vscode.workspace.getConfiguration('kanbn', null).get<string[]>('boards')?.forEach(boardLocation => {
+    vscode.workspace.getConfiguration('kanbn', null).get<string[]>('additionalBoards')?.forEach(boardLocation => {
       boardLocations.add(path.resolve(boardLocation))
     })
 
     // Get standard board locations.
     for (const workspaceFolder of vscode.workspace.workspaceFolders ?? []) {
       // Get workspace specific board locations.
-      vscode.workspace.getConfiguration('kanbn', workspaceFolder.uri).get<string[]>('boards')?.forEach(boardLocation => {
+      vscode.workspace.getConfiguration('kanbn', workspaceFolder.uri).get<string[]>('additionalBoards')?.forEach(boardLocation => {
         boardLocations.add(path.resolve(boardLocation))
       })
 
