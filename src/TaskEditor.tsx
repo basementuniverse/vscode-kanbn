@@ -1,4 +1,6 @@
-import React, { useState } from 'react'
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
+import React, { useEffect, useState, useCallback } from 'react'
 import { Formik, Form, Field, ErrorMessage, FieldArray } from 'formik'
 import formatDate from 'dateformat'
 import vscode from './vscode'
@@ -68,48 +70,112 @@ const Markdown = (props): JSX.Element => (<ReactMarkdown {...{
   ...props
 }} />)
 
-const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFormat, panelUuid }: {
-  task: KanbnTask | null
-  tasks: Record<string, KanbnTask>
-  columnName: string
-  columnNames: string[]
-  customFields: Array<{ name: string, type: 'boolean' | 'date' | 'number' | 'string' }>
-  dateFormat: string
-  panelUuid: string
-}): JSX.Element => {
-  const editing = task !== null
-  const [taskData, setTaskData] = useState({
-    id: (task != null) ? task.id : '',
-    name: (task != null) ? task.name : '',
-    description: (task != null) ? task.description : '',
-    column: columnName,
-    progress: (task != null) ? task.progress : 0,
-    metadata: {
-      created: ((task != null) && 'created' in task.metadata) ? task.metadata.created : new Date(),
-      updated: ((task != null) && 'updated' in task.metadata) ? task.metadata.updated : null,
-      started: ((task != null) && 'started' in task.metadata) ? formatDate(task.metadata.started, 'yyyy-mm-dd') : '',
-      due: ((task != null) && 'due' in task.metadata) ? formatDate(task.metadata.due, 'yyyy-mm-dd') : '',
-      completed: ((task != null) && 'completed' in task.metadata) ? formatDate(task.metadata.completed, 'yyyy-mm-dd') : '',
-      assigned: ((task != null) && 'assigned' in task.metadata) ? task.metadata.assigned : '',
-      tags: ((task != null) && 'tags' in task.metadata) ? (task.metadata.tags ?? []) : [],
-      ...Object.fromEntries(
-        customFields.map(customField => [
-          customField.name,
-          ((task != null) && customField.name in task.metadata)
-            ? (customField.type === 'date'
-                ? formatDate(task.metadata[customField.name], 'yyyy-mm-dd')
-                : task.metadata[customField.name]
-              )
-            : null
-        ])
-      )
+const TaskEditor = (): JSX.Element => {
+  const [state, setState] = useState(vscode.getState() ?? {
+    type: '',
+    name: '',
+    customFields: [],
+    dateFormat: '',
+    task: null,
+    tasks: {},
+    columnName: '',
+    columnNames: [] as string[],
+    panelUuid: '',
+    sprints: [],
+    taskData: {
+      id: '',
+      name: '',
+      description: '',
+      column: '',
+      progress: 0,
+      metadata: {
+        created: new Date(),
+        updated: null,
+        started: '',
+        due: '',
+        completed: '',
+        assigned: '',
+        tags: []
+      },
+      relations: [],
+      subTasks: [],
+      comments: []
     },
-    relations: (task != null) ? task.relations : [],
-    subTasks: (task != null) ? task.subTasks : [],
-    comments: (task != null) ? task.comments : []
+    editingDescription: false,
+    editingComment: -1
   })
-  const [editingDescription, setEditingDescription] = useState(!editing)
-  const [editingComment, setEditingComment] = useState(-1)
+
+  const processMessage = useCallback(event => {
+    const newState: any = {}
+    const tasks = Object.fromEntries((event.data.tasks ?? []).map(task => [task.id, task]))
+    newState.task = event.data.task
+    newState.tasks = tasks
+    newState.columnName = event.data.columnName
+    newState.columnNames = Object.keys(event.data.index.columns)
+    newState.customFields = event.data.customFields
+    newState.panelUuid = event.data.panelUuid
+    newState.type = event.data.type
+    newState.dateFormat = event.data.dateFormat
+    newState.editingDescription = state.editingDescription
+    newState.editingComment = state.editingComment
+    const task = newState.task
+    newState.taskData = {
+      id: task?.id ?? '',
+      name: task?.name ?? '',
+      description: task?.description ?? '',
+      column: newState.columnName,
+      progress: task?.progress ?? 0,
+      metadata: {
+        created: task?.metadata?.created ?? new Date(),
+        updated: task?.metadata?.updated ?? null,
+        started: task?.metadata?.started !== undefined ? formatDate(task.metadata.started, 'yyyy-mm-dd') : '',
+        due: task?.metadata?.due !== undefined ? formatDate(task.metadata.due, 'yyyy-mm-dd') : '',
+        completed: task?.metadata?.completed !== undefined ? formatDate(task.metadata.completed, 'yyyy-mm-dd') : '',
+        assigned: task?.metadata?.assigned ?? '',
+        tags: task?.metadata?.tags ?? [],
+        ...Object.fromEntries(
+          newState.customFields.map(customField => [
+            customField.name,
+            ((task != null) && customField.name in task.metadata)
+              ? (customField.type === 'date'
+                  ? formatDate(task.metadata[customField.name], 'yyyy-mm-dd')
+                  : task.metadata[customField.name]
+                )
+              : null
+          ])
+        )
+      },
+      relations: task?.relations ?? [],
+      subTasks: task?.subTasks ?? [],
+      comments: task?.comments ?? []
+    }
+    vscode.setState(newState)
+    setState(newState)
+  }, [])
+
+  useEffect(() => {
+    window.addEventListener('message', processMessage)
+    return () => {
+      window.removeEventListener('message', processMessage)
+    }
+  }, [])
+
+  const setTaskData = (taskData): void => {
+    const newState = { ...state, taskData }
+    setState(newState)
+    vscode.setState(newState)
+  }
+  const editing = state.task !== null
+  const setEditingDescription = (editingDescription): void => {
+    const newState = { ...state, editingDescription }
+    setState(newState)
+    vscode.setState(newState)
+  }
+  const setEditingComment = (editingComment): void => {
+    const newState = { ...state, editingComment }
+    setState(newState)
+    vscode.setState(newState)
+  }
 
   // Called when the name field is changed
   const handleUpdateName = ({ target: { value } }, values): void => {
@@ -117,7 +183,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
 
     // Update the id preview
     setTaskData({
-      ...taskData,
+      ...state.taskData,
       id
     })
 
@@ -136,17 +202,17 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
     if (editing) {
       vscode.postMessage({
         command: 'kanbn.update',
-        taskId: task.id,
+        taskId: state.task?.id,
         taskData: values,
-        customFields,
-        panelUuid
+        customFields: state.customFields,
+        panelUuid: state.panelUuid
       })
     } else {
       vscode.postMessage({
         command: 'kanbn.create',
         taskData: values,
-        customFields,
-        panelUuid
+        customFields: state.customFields,
+        panelUuid: state.panelUuid
       })
     }
     setTaskData(values)
@@ -158,9 +224,9 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
   const handleRemoveTask = (values): void => {
     vscode.postMessage({
       command: 'kanbn.delete',
-      taskId: task?.id,
+      taskId: state.task?.id,
       taskData: values,
-      panelUuid
+      panelUuid: state.panelUuid
     })
   }
 
@@ -168,9 +234,9 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
   const handleArchiveTask = (values): void => {
     vscode.postMessage({
       command: 'kanbn.archive',
-      taskId: task?.id,
+      taskId: state.task?.id,
       taskData: values,
-      panelUuid
+      panelUuid: state.panelUuid
     })
   }
 
@@ -201,7 +267,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
     }
 
     // Check if the id is already in use
-    if (taskData.id in tasks && tasks[taskData.id].uuid !== ((task != null) ? task.uuid : '')) {
+    if (state.taskData.id in state.tasks && state.tasks[state.taskData.id].uuid !== ((state.task != null) ? state.task.uuid : '')) {
       errors.name = 'There is already a task with the same name or id.'
       hasErrors = true
     }
@@ -237,11 +303,19 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
     return hasErrors ? errors : {}
   }
 
+  useEffect(() => {
+    vscode.postMessage({
+      command: 'kanbn.updateMe'
+    })
+  }, [])
+
+  console.log('here is the task data', state.taskData)
   return (
     <div className="kanbn-task-editor">
       <Formik
-        initialValues={taskData}
+        initialValues={state.taskData}
         validate={validate}
+        enableReinitialize
         onSubmit={(values, { setSubmitting, resetForm }) => {
           handleSubmit(values, setSubmitting, resetForm)
         }}
@@ -290,8 +364,8 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
             {editing && <span className="kanbn-task-editor-dates">
               {
                 [
-                  'created' in task.metadata ? `Created ${formatDate(task.metadata.created, dateFormat)}` : null,
-                  'updated' in task.metadata ? `Updated ${formatDate(task.metadata.updated, dateFormat)}` : null
+                  'created' in state.task.metadata ? `Created ${formatDate(state.task.metadata.created, state.dateFormat)}` : null,
+                  'updated' in state.task.metadata ? `Updated ${formatDate(state.task.metadata.updated, state.dateFormat)}` : null
                 ].filter(i => i).join(', ')
               }
             </span>}
@@ -310,7 +384,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                       }}
                     />
                   </label>
-                  <div className="kanbn-task-editor-id">{taskData.id}</div>
+                  <div className="kanbn-task-editor-id">{state.taskData?.id ?? ''}</div>
                   <ErrorMessage
                     className="kanbn-task-editor-field-errors"
                     component="div"
@@ -329,17 +403,17 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                     className="kanbn-task-editor-button kanbn-task-editor-button-edit-description"
                     title="Edit description"
                     onClick={() => {
-                      setEditingDescription(!editingDescription)
+                      setEditingDescription(!state.editingDescription)
                     }}
                   >
                     {
-                      editingDescription
+                      state.editingDescription === true
                         ? <React.Fragment><i className="codicon codicon-preview"></i> Preview</React.Fragment>
                         : <React.Fragment><i className="codicon codicon-edit"></i> Edit</React.Fragment>
                     }
                   </button>
                   {
-                    editingDescription
+                    state.editingDescription
                       ? <Field
                         className="kanbn-task-editor-field-textarea"
                         id="description-input"
@@ -438,7 +512,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                                 as="select"
                                 name={`relations.${index}.task`}
                               >
-                                {Object.keys(tasks).map(t => <option key={tasks[t].id} value={t}>{t}</option>)}
+                                {Object.keys(state.tasks).map(t => <option key={state.tasks[t].id} value={t}>{t}</option>)}
                               </Field>
                               <ErrorMessage
                                 className="kanbn-task-editor-field-errors"
@@ -482,7 +556,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                             <div className="kanbn-task-editor-row">
                               <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-author">
                                 {
-                                  editingComment === index
+                                  state.editingComment === index
                                     ? <React.Fragment>
                                       <Field
                                         className="kanbn-task-editor-field-input"
@@ -502,7 +576,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                                 }
                               </div>
                               <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-date">
-                                {formatDate(comment.date, dateFormat)}
+                                {formatDate(comment.date, state.dateFormat)}
                               </div>
                               <div className="kanbn-task-editor-column kanbn-task-editor-column-buttons">
                                 <button
@@ -516,13 +590,13 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                                 <button
                                   type="button"
                                   className="kanbn-task-editor-button kanbn-task-editor-button-edit"
-                                  title={editingComment === index ? 'View comment' : 'Edit comment'}
+                                  title={state.editingComment === index ? 'View comment' : 'Edit comment'}
                                   onClick={() => {
-                                    setEditingComment(editingComment !== index ? index : -1)
+                                    setEditingComment(state.editingComment !== index ? index : -1)
                                   }}
                                 >
                                   {
-                                    editingComment === index
+                                    state.editingComment === index
                                       ? <i className="codicon codicon-preview"></i>
                                       : <i className="codicon codicon-edit"></i>
                                   }
@@ -532,7 +606,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                             <div className="kanbn-task-editor-row">
                               <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-text">
                                 {
-                                  editingComment === index
+                                  state.editingComment === index
                                     ? <React.Fragment>
                                       <Field
                                         className="kanbn-task-editor-field-textarea"
@@ -580,7 +654,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                       as="select"
                       name="column"
                     >
-                      {columnNames.map(c => <option key={c} value={c}>{c}</option>)}
+                      {state.columnNames.map(c => <option key={c} value={c}>{c}</option>)}
                     </Field>
                   </label>
                   <ErrorMessage
@@ -674,7 +748,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                   />
                 </div>
                 {
-                  customFields.map(customField => (
+                  state.customFields.map(customField => (
                     <div key={customField.name} className={[
                       'kanbn-task-editor-field kanbn-task-editor-custom-field',
                       // TODO: remove the explicit String cast once typescript bindings for kanbn are updated

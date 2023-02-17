@@ -1,8 +1,7 @@
 import * as React from 'react'
-import App from './App'
 import Board from './Board'
 import Burndown from './Burndown'
-// import TaskEditor from './TaskEditor'
+import TaskEditor from './TaskEditor'
 import './index.css'
 
 import { createRoot } from 'react-dom/client'
@@ -20,7 +19,7 @@ if (domNodeBoard !== null) {
     const domNodeTask = document.getElementById('root-task')
     if (domNodeTask !== null) {
       const rootTask = createRoot(domNodeTask)
-      rootTask.render(<App />)
+      rootTask.render(<TaskEditor />)
     }
   }
 }

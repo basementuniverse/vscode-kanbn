@@ -154,6 +154,11 @@ export default class KanbnTaskPanel {
             this._panel.title = message.title
             return
 
+          // Update panel once it's loaded
+          case 'kanbn.updateMe':
+            void this.update()
+            return
+
           // Create a task
           case 'kanbn.create':
             await this._kanbn.createTask(
