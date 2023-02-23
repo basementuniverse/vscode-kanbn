@@ -80,7 +80,6 @@ const TaskEditor = (): JSX.Element => {
     tasks: {},
     columnName: '',
     columnNames: [] as string[],
-    panelUuid: '',
     sprints: [],
     taskData: {
       id: '',
@@ -113,7 +112,6 @@ const TaskEditor = (): JSX.Element => {
     newState.columnName = event.data.columnName
     newState.columnNames = Object.keys(event.data.index.columns)
     newState.customFields = event.data.customFields
-    newState.panelUuid = event.data.panelUuid
     newState.type = event.data.type
     newState.dateFormat = event.data.dateFormat
     newState.editingDescription = state.editingDescription
@@ -199,15 +197,13 @@ const TaskEditor = (): JSX.Element => {
         command: 'kanbn.update',
         taskId: state.task?.id,
         taskData: values,
-        customFields: state.customFields,
-        panelUuid: state.panelUuid
+        customFields: state.customFields
       })
     } else {
       vscode.postMessage({
         command: 'kanbn.create',
         taskData: values,
-        customFields: state.customFields,
-        panelUuid: state.panelUuid
+        customFields: state.customFields
       })
     }
     setTaskData(values)
@@ -220,8 +216,7 @@ const TaskEditor = (): JSX.Element => {
     vscode.postMessage({
       command: 'kanbn.delete',
       taskId: state.task?.id,
-      taskData: values,
-      panelUuid: state.panelUuid
+      taskData: values
     })
   }
 
@@ -230,8 +225,7 @@ const TaskEditor = (): JSX.Element => {
     vscode.postMessage({
       command: 'kanbn.archive',
       taskId: state.task?.id,
-      taskData: values,
-      panelUuid: state.panelUuid
+      taskData: values
     })
   }
 

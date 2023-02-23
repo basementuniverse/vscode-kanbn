@@ -76,7 +76,6 @@ export default class KanbnTaskPanel {
   private readonly _workspacePath: string
   private readonly _kanbn: Kanbn
   private readonly _kanbnFolderName: string
-  private readonly _panelUuid: string
   private _taskId: string | null
   private readonly _defaultColumn: string | null
   private readonly _disposables: vscode.Disposable[] = []
@@ -102,7 +101,6 @@ export default class KanbnTaskPanel {
     this._kanbnFolderName = kanbnFolderName
     this._taskId = taskId
     this._defaultColumn = defaultColumn
-    this._panelUuid = uuidv4()
 
     // Create and show a new webview panel
     this._panel = vscode.window.createWebviewPanel(KanbnTaskPanel.viewType, 'New task', column, {
@@ -281,8 +279,7 @@ export default class KanbnTaskPanel {
       tasks,
       customFields: index.options.customFields ?? [],
       columnName,
-      dateFormat: this._kanbn.getDateFormat(index),
-      panelUuid: this._panelUuid
+      dateFormat: this._kanbn.getDateFormat(index)
     })
   }
 
