@@ -1,3 +1,10 @@
+# 0.12.0
+
+* Added support for multiple boards. New boards are stored under `.kanbn_boards/<board_name>/.kanbn`, though the legacy location `.kanbn` is still supported. Use the new `createBoard` and `openBoard` commands to choose which board you want to open at any given point, or even open all of them at once!
+* Added user and workspace options called `additionalBoards` that allow specifying non-standard board locations to be accessible from a workspace or globally.
+* The extension webview panels now take up much less memory when hidden.
+* Updated most of the dependencies.
+
 # 0.11.0
 
 * KaTeX support in task markdown (description and comments) using `$$...$$` for blocks and `$...$` for inline
