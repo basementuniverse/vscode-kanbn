@@ -184,17 +184,12 @@ const TaskEditor = (): JSX.Element => {
     // Update the id preview
     setTaskData({
       ...state.taskData,
-      id
+      id,
+      name: value
     })
 
     // Update values
     values.id = id
-
-    // Update the webview panel title
-    vscode.postMessage({
-      command: 'kanbn.updatePanelTitle',
-      title: value ?? 'Untitled task'
-    })
   }
 
   // Called when the form is submitted
@@ -261,7 +256,7 @@ const TaskEditor = (): JSX.Element => {
     }
 
     // Task name cannot be empty
-    if (values.name === '') {
+    if (values.id === '') {
       errors.name = 'Task name is required.'
       hasErrors = true
     }
@@ -309,7 +304,6 @@ const TaskEditor = (): JSX.Element => {
     })
   }, [])
 
-  console.log('here is the task data', state.taskData)
   return (
     <div className="kanbn-task-editor">
       <Formik

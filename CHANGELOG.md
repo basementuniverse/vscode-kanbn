@@ -1,3 +1,5 @@
+* Fixed an issue with not being able to update titles more than one letter at a time when writing titles.
+
 # 0.12.0
 
 * Added support for multiple boards. New boards are stored under `.kanbn_boards/<board_name>/.kanbn`, though the legacy location `.kanbn` is still supported. Use the new `createBoard` and `openBoard` commands to choose which board you want to open at any given point, or even open all of them at once!
