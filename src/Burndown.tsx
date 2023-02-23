@@ -197,7 +197,7 @@ const Burndown = (): JSX.Element => {
                         : <option disabled>No sprints</option>
                     }
                     </select>
-                  : <React.Fragment>
+                  : <>
                       <input
                         type="date"
                         value={state.startDate}
@@ -210,7 +210,7 @@ const Burndown = (): JSX.Element => {
                         className="kanbn-burndown-settings-input kanbn-burndown-settings-end-date"
                         onChange={handleChangeEndDate}
                       />
-                    </React.Fragment>
+                    </>
               }
               {hasSprints && <button
                 type="button"

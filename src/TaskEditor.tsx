@@ -396,8 +396,8 @@ const TaskEditor = (): JSX.Element => {
                   >
                     {
                       state.editingDescription === true
-                        ? <React.Fragment><i className="codicon codicon-preview"></i> Preview</React.Fragment>
-                        : <React.Fragment><i className="codicon codicon-edit"></i> Edit</React.Fragment>
+                        ? <><i className="codicon codicon-preview"></i> Preview</>
+                        : <><i className="codicon codicon-edit"></i> Edit</>
                     }
                   </button>
                   {
@@ -545,7 +545,7 @@ const TaskEditor = (): JSX.Element => {
                               <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-author">
                                 {
                                   state.editingComment === index
-                                    ? <React.Fragment>
+                                    ? <>
                                       <Field
                                         className="kanbn-task-editor-field-input"
                                         name={`comments.${index}.author`}
@@ -556,7 +556,7 @@ const TaskEditor = (): JSX.Element => {
                                         component="div"
                                         name={`comments.${index}.author`}
                                       />
-                                    </React.Fragment>
+                                    </>
                                     : <div className="kanbn-task-editor-field-comment-author-value">
                                       <i className="codicon codicon-account"></i>
                                       {comment.author ?? 'Anonymous'}
@@ -595,7 +595,7 @@ const TaskEditor = (): JSX.Element => {
                               <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-text">
                                 {
                                   state.editingComment === index
-                                    ? <React.Fragment>
+                                    ? <>
                                       <Field
                                         className="kanbn-task-editor-field-textarea"
                                         as={TextareaAutosize}
@@ -606,7 +606,7 @@ const TaskEditor = (): JSX.Element => {
                                         component="div"
                                         name={`comments.${index}.text`}
                                       />
-                                    </React.Fragment>
+                                    </>
                                     : <Markdown className="kanbn-task-editor-comment-text">
                                       {comment.text}
                                     </Markdown>
