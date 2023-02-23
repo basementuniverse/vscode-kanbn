@@ -12,8 +12,13 @@
     "vscode": "^1.73.1"
   },
   "author": "Gordon Larrigan",
+  "contributors": [
+    {
+      "name": "Zigmas Bitinas"
+    }
+  ],
   "license": "MIT",
-  "publisher": "gordonlarrigan",
+  "publisher": "samgiz",
   "keywords": [
     "kanbn",
     "kanban",
@@ -32,7 +37,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/basementuniverse/vscode-kanbn.git"
+    "url": "https://github.com/samgiz/vscode-kanbn.git"
   },
   "activationEvents": [
     "onStartupFinished"
