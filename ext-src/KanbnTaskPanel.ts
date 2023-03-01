@@ -199,14 +199,14 @@ export default class KanbnTaskPanel {
           case 'kanbn.delete':
             void vscode.window
               // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
-              .showInformationMessage(`Delete task '${String(message.taskData.name)}'?`, 'Yes', 'No')
+              .showInformationMessage(`Delete task '${String((await this._kanbn.getTask(this._taskId ?? '')).name)}'?`, 'Yes', 'No')
               .then(async (value) => {
                 if (value === 'Yes') {
                   await this._kanbn.deleteTask(message.taskId, true)
                   this.dispose()
                   if (vscode.workspace.getConfiguration('kanbn').get<boolean>('showTaskNotifications') ?? true) {
                     // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
-                    void vscode.window.showInformationMessage(`Deleted task '${String(message.taskData.name)}'.`)
+                    void vscode.window.showInformationMessage(`Deleted task '${String(String((await this._kanbn.getTask(this._taskId ?? '')).name))}'.`)
                   }
                 }
               })
