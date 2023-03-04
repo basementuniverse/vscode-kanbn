@@ -1,3 +1,5 @@
+# 0.12.1
+
 * Fixed an issue with not being able to update titles more than one letter at a time when writing titles.
 
 # 0.12.0
