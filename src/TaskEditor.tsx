@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import React, { useEffect, useState, useCallback } from 'react'
-// import { Formik, Form, Field, ErrorMessage, FieldArray } from 'formik'
 import { useForm } from 'react-hook-form'
 import formatDate from 'dateformat'
 import vscode from './vscode'
@@ -13,35 +12,6 @@ import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import 'katex/dist/katex.min.css'
-
-// interface KanbnTaskValidationOutput {
-//   name: string
-//   metadata: {
-//     tags: string[]
-//     created?: string | Date | undefined
-//     updated?: string | null | undefined
-//     started?: string
-//     due?: string
-//     completed?: string
-//     assigned?: string | undefined
-//   }
-//   subTasks: Array<{
-//     text: string
-//   }>
-//   comments: Array<{
-//     author?: string
-//     date?: string
-//     text: string
-//   }>
-// }
-
-// interface KanbnTaskValidationInput extends KanbnTaskValidationOutput {
-//   description: any
-//   relations: any
-//   progress: number | undefined
-//   id: string
-//   column: string
-// }
 
 const components = {
   code ({ node, inline, className, children, ...props }) {
@@ -226,59 +196,10 @@ const TaskEditor = (): JSX.Element => {
   }
 
   // Validate form data
-  // const validate = (values: KanbnTaskValidationInput): KanbnTaskValidationOutput | {} => {
-  //   let hasErrors = false
-  //   const errors: KanbnTaskValidationOutput = {
-  //     name: '',
-  //     metadata: {
-  //       tags: []
-  //     },
-  //     subTasks: [],
-  //     comments: []
-  //   }
-
-  //   // Task name cannot be empty
-  //   if (values.name === '') {
-  //     errors.name = 'Task name is required.'
-  //     hasErrors = true
-  //   }
-
-  //   // Check if the id is already in use
-  //   if (paramCase(state.taskData.name ?? '') in state.tasks && state.tasks[paramCase(state.taskData.name ?? '')].uuid !== ((state.task != null) ? (state.task as any).uuid : '')) {
-  //     errors.name = 'There is already a task with the same name or id.'
-  //     hasErrors = true
-  //   }
-
-  //   // Tag names cannot be empty
-  //   for (let i = 0; i < values.metadata.tags.length; i++) {
-  //     if (values.metadata.tags[i] === '') {
-  //       errors.metadata.tags[i] = 'Tag cannot be empty.'
-  //       hasErrors = true
-  //     }
-  //   }
-
-  //   // Sub-tasks text cannot be empty
-  //   for (let i = 0; i < values.subTasks.length; i++) {
-  //     if (values.subTasks[i].text === '') {
-  //       errors.subTasks[i] = {
-  //         text: 'Sub-task text cannot be empty.'
-  //       }
-  //       hasErrors = true
-  //     }
-  //   }
-
-  //   // Comments text cannot be empty
-  //   for (let i = 0; i < values.comments.length; i++) {
-  //     if (values.comments[i].text === '') {
-  //       errors.comments[i] = {
-  //         text: 'Comment text cannot be empty.'
-  //       }
-  //       hasErrors = true
-  //     }
-  //   }
-
-  //   return hasErrors ? errors : {}
-  // }
+  const validateName = (name: string): boolean => {
+    if (paramCase(name) in state.tasks && (state.tasks[paramCase(name)].uuid !== (state.task as any)?.uuid ?? '')) { return false }
+    return true
+  }
 
   useEffect(() => {
     vscode.postMessage({
@@ -292,7 +213,6 @@ const TaskEditor = (): JSX.Element => {
     <div className="kanbn-task-editor">
       <form onSubmit={handleSubmit(handleTaskSave)}>
         {/* initialValues={state.taskData}
-        validate={validate}
         enableReinitialize
         onSubmit={(values, { setSubmitting, resetForm }) => {
           handleSubmit(values, setSubmitting, resetForm)
@@ -357,9 +277,8 @@ const TaskEditor = (): JSX.Element => {
                   <label className="kanbn-task-editor-field-label">
                     <p>Name</p>
                     <input
-                      {...register('name')}
+                      {...register('name', { required: true, validate: validateName })}
                       className="kanbn-task-editor-field-input"
-                      // name="name"
                       placeholder="Name"
                     />
                   </label>
@@ -419,7 +338,7 @@ const TaskEditor = (): JSX.Element => {
                           <div className="kanbn-task-editor-row kanbn-task-editor-row-subtask" key={index}>
                             <div className="kanbn-task-editor-column kanbn-task-editor-field-subtask-completed">
                               <input
-                                {...register(`subTasks.${index}.completed`)}
+                                {...register(`subTasks.${index}.completed`, { required: true })}
                                 className="kanbn-task-editor-field-checkbox"
                                 type="checkbox"
                                 // name={`subTasks.${index}.completed`}
@@ -543,7 +462,7 @@ const TaskEditor = (): JSX.Element => {
                                   state.editingComment === index
                                     ? <>
                                       <input
-                                        {...register(`comments.${index}.author`)}
+                                        {...register(`comments.${index}.author`, { required: true })}
                                         className="kanbn-task-editor-field-input"
                                         // name={`comments.${index}.author`}
                                         placeholder="Comment author"
@@ -796,7 +715,7 @@ const TaskEditor = (): JSX.Element => {
                           <div className="kanbn-task-editor-row kanbn-task-editor-row-tag" key={index}>
                             <div className="kanbn-task-editor-column kanbn-task-editor-field-tag">
                               <input
-                                {...register(`metadata.tags.${index}`)}
+                                {...register(`metadata.tags.${index}`, { required: true })}
                                 className="kanbn-task-editor-field-input"
                                 // name={`metadata.tags.${index}`}
                                 placeholder="Tag name"
