@@ -1,7 +1,6 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import getNonce from './getNonce'
-import { v4 as uuidv4 } from 'uuid'
 import { Kanbn } from '@basementuniverse/kanbn/src/main'
 
 function transformTaskData (
@@ -158,41 +157,39 @@ export default class KanbnTaskPanel {
             return
 
           // Create a task
-          case 'kanbn.create':
-            await this._kanbn.createTask(
-              transformTaskData(message.taskData, message.customFields),
-              message.taskData.column
-            )
-            this._taskId = message.taskData.id
-            this._panel.onDidDispose((e) => { if (this._taskId !== null) taskCache.delete(this._taskId) })
-            taskCache.set(message.taskData.id, this)
-            this._panel.title = message.taskData.name
-            void this.update()
-            if (vscode.workspace.getConfiguration('kanbn').get<boolean>('showTaskNotifications') ?? true) {
-              // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
-              void vscode.window.showInformationMessage(`Created task '${String(message.taskData.name)}'.`)
-            }
-            return
-
-          // Update a task
-          case 'kanbn.update':
-            await this._kanbn.updateTask(
-              message.taskId,
-              transformTaskData(message.taskData, message.customFields),
-              message.taskData.column
-            )
-            if (this._taskId !== message.taskData.id) {
+          case 'kanbn.updateOrCreate':
+            if (this._taskId === null) {
+              await this._kanbn.createTask(
+                transformTaskData(message.taskData, message.customFields),
+                message.taskData.column
+              )
+              this._panel.onDidDispose((e) => { if (this._taskId !== null) taskCache.delete(this._taskId) })
               taskCache.set(message.taskData.id, this)
-              taskCache.delete(this._taskId ?? '')
-              this._taskId = message.taskData.id
+              void this.update()
+              if (vscode.workspace.getConfiguration('kanbn').get<boolean>('showTaskNotifications') ?? true) {
+                // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
+                void vscode.window.showInformationMessage(`Created task '${String(message.taskData.name)}'.`)
+              }
+            } else {
+              await this._kanbn.updateTask(
+                message.taskId,
+                transformTaskData(message.taskData, message.customFields),
+                message.taskData.column
+              )
+              if (this._taskId !== message.taskData.id) {
+                taskCache.set(message.taskData.id, this)
+                taskCache.delete(this._taskId ?? '')
+                this._taskId = message.taskData.id
+              }
+
+              if (vscode.workspace.getConfiguration('kanbn').get<boolean>('showTaskNotifications') ?? true) {
+                // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
+                void vscode.window.showInformationMessage(`Updated task '${String(message.taskData.name)}'.`)
+              }
             }
-            // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
-            this._panel.title = message.taskData.name
+            this._taskId = message.taskData.id as string
+            this._panel.title = this._taskId
             void this.update()
-            if (vscode.workspace.getConfiguration('kanbn').get<boolean>('showTaskNotifications') ?? true) {
-              // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
-              void vscode.window.showInformationMessage(`Updated task '${String(message.taskData.name)}'.`)
-            }
             return
 
           // Delete a task and close the webview panel
@@ -202,7 +199,7 @@ export default class KanbnTaskPanel {
               .showInformationMessage(`Delete task '${String((await this._kanbn.getTask(this._taskId ?? '')).name)}'?`, 'Yes', 'No')
               .then(async (value) => {
                 if (value === 'Yes') {
-                  await this._kanbn.deleteTask(message.taskId, true)
+                  if (this._taskId !== null) { await this._kanbn.deleteTask(this._taskId, true) }
                   this.dispose()
                   if (vscode.workspace.getConfiguration('kanbn').get<boolean>('showTaskNotifications') ?? true) {
                     // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
@@ -214,7 +211,7 @@ export default class KanbnTaskPanel {
 
           // Archive a task and close the webview panel
           case 'kanbn.archive':
-            await this._kanbn.archiveTask(message.taskId)
+            if (this._taskId !== null) await this._kanbn.archiveTask(this._taskId)
             this.dispose()
             if (vscode.workspace.getConfiguration('kanbn').get<boolean>('showTaskNotifications') ?? true) {
               // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
@@ -252,7 +249,6 @@ export default class KanbnTaskPanel {
     let tasks: any[]
     try {
       tasks = (await this._kanbn.loadAllTrackedTasks(index)).map((task) => ({
-        uuid: uuidv4(),
         ...this._kanbn.hydrateTask(index, task)
       }))
     } catch (error) {
