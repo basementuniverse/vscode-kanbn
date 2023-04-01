@@ -86,35 +86,56 @@ const EditableMarkdown = ({ formMethods, inputName, multiline, markdownClassname
   )
 }
 
-interface Metadata {
-  created: Date
-  updated: Date
-  started: Date | null
-  due: Date | null
-  completed: Date | null
-  assigned: string
-  tags: string[]
-}
+// interface Metadata {
+//   created: Date
+//   updated: Date
+//   started: Date | null
+//   due: Date | null
+//   completed: Date | null
+//   assigned: string
+//   tags: string[]
+// }
 
 interface CustomField {
   name: string
   type: string
+  value: any
+}
+
+interface Subtask {
+  text: string
+  completed: boolean
+}
+
+interface Relation {
+  task: string
+  type: string
+}
+
+interface Comment {
+  author: string
+  date: Date
+  text: string
+}
+
+interface Tag {
+  tag: string
 }
 
 interface EditorState {
   name: string
   description: string
+  subtasks: Subtask[]
+  relations: Relation[]
+  comments: Comment[]
   column: string
+  assignedTo: string
+  startedDate: Date | null
+  dueDate: Date | null
+  completedDate: Date | null
+  tags: Tag[]
   progress: number
-  metadata: Metadata
-  relations: string[]
-  subTasks: string[]
-  comments: string[]
   customFields: CustomField[]
-  // Not sure about the types of these yet.
-  focusedOn: string
-  dirty: string[]
-  touched: string[]
 }
 
 interface Task {
@@ -188,7 +209,7 @@ const TaskEditor = (): JSX.Element => {
   }, [])
 
   // TODO: set default values here.
-  const { control, watch, register, handleSubmit, formState: { isDirty, isSubmitting } } = useForm()
+  const { control, watch, register, handleSubmit, formState: { isDirty, isSubmitting } } = useForm<EditorState>()
   const {
     fields: commentFields,
     append: appendComment,
@@ -260,13 +281,13 @@ const TaskEditor = (): JSX.Element => {
   })
   const watchedDue = useWatch({
     control,
-    name: 'progress'
+    name: 'dueDate'
   })
 
   // Check if a task's due date is in the past
   const checkOverdue = (): boolean => {
     if (watchedDue != null) {
-      return Date.parse(watchedDue) < (new Date()).getTime()
+      return watchedDue < new Date()
     }
     return false
   }
@@ -326,22 +347,15 @@ const TaskEditor = (): JSX.Element => {
         description: event.data.task?.description ?? '',
         column: event.data.columnName,
         progress: event.data.task?.progress ?? 0,
-        metadata: {
-          created: event.data.task?.metadata?.created ?? null,
-          updated: event.data.task?.metadata?.updated ?? null,
-          started: event.data.task?.metadata?.started ?? null,
-          due: event.data.task?.metadata?.due ?? null,
-          completed: event.data.task?.metadata?.completed ?? null,
-          assigned: event.data.task?.metadata?.assigned ?? '',
-          tags: event.data.task?.metadata?.tags ?? []
-        },
         relations: event.data.task?.relations ?? [],
-        subTasks: event.data.task?.subTasks ?? [],
+        subtasks: event.data.task?.subTasks ?? [],
         comments: event.data.task?.comments ?? [],
         customFields: event.data.task?.customFields ?? [],
-        focusedOn: '',
-        dirty: [],
-        touched: []
+        tags: event.data.task?.metadata?.tags ?? [],
+        dueDate: event.data.task?.metadata?.due ?? null,
+        startedDate: event.data.task?.metadata?.started ?? null,
+        completedDate: event.data.task?.metadata?.completed ?? null,
+        assignedTo: event.data.task?.metadata?.assigned ?? ''
       })
     }
     setState(newState)
@@ -445,16 +459,14 @@ const TaskEditor = (): JSX.Element => {
                           <div className="kanbn-task-editor-row kanbn-task-editor-row-subtask" key={index}>
                             <div className="kanbn-task-editor-column kanbn-task-editor-field-subtask-completed">
                               <input
-                                {...register(`subTasks.${index}.completed`)}
-                                defaultValue={subTask.completed}
+                                {...register(`subtasks.${index}.completed`)}
                                 className="kanbn-task-editor-field-checkbox"
                                 type="checkbox"
                               />
                             </div>
                             <div className="kanbn-task-editor-column kanbn-task-editor-field-subtask-text">
                               <input
-                                {...register(`subTasks.${index}.text`)}
-                                defaultValue={subTask.text}
+                                {...register(`subtasks.${index}.text`)}
                                 className="kanbn-task-editor-field-input"
                                 placeholder="Sub-task text"
                               />
@@ -540,7 +552,6 @@ const TaskEditor = (): JSX.Element => {
                                     {...register(`comments.${index}.author`)}
                                     className="kanbn-task-editor-field-input"
                                     placeholder="Comment author"
-                                    defaultValue={comment.author}
                                   />
                                   // : <div className="kanbn-task-editor-field-comment-author-value">
                                   //   <i className="codicon codicon-account"></i>
@@ -671,7 +682,7 @@ const TaskEditor = (): JSX.Element => {
                           ? (
                             <>
                               <input
-                                {...register(`customField.${index}.value`)}
+                                {...register(`customFields.${index}.value`)}
                                 className="kanbn-task-editor-field-input kanbn-task-editor-custom-checkbox"
                                 type="checkbox"
                               /><p>{customField.name}</p>
@@ -681,7 +692,7 @@ const TaskEditor = (): JSX.Element => {
                             <>
                               <p>{customField.name}</p>
                               <input
-                                {...register(`customField.${index}.value`)}
+                                {...register(`customFields.${index}.value`)}
                                 className="kanbn-task-editor-field-input"
                                 type={customField.type}
                               />
