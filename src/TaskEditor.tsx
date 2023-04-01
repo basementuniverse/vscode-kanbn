@@ -6,43 +6,85 @@ import { useForm, useFieldArray, useWatch } from 'react-hook-form'
 import formatDate from 'dateformat'
 import vscode from './vscode'
 import { paramCase } from '@basementuniverse/kanbn/src/utility'
-// import ReactMarkdown from 'react-markdown'
+import ReactMarkdown from 'react-markdown'
 // import TextareaAutosize from 'react-textarea-autosize'
-// import remarkMath from 'remark-math'
-// import rehypeKatex from 'rehype-katex'
-// import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import 'katex/dist/katex.min.css'
 
-// const Markdown = (props): JSX.Element => {
-//   const components = {
-//     code ({ node, inline, className, children, ...props }) {
-//       const match = /language-(\w+)/.exec(className ?? '')
-//       return inline !== false && (match != null)
-//         ? (
-//       <SyntaxHighlighter
-//         style={{}}
-//         useInlineStyles={false}
-//         language={match[1]}
-//         PreTag="div"
-//         {...props}>
-//           {String(children).replace(/\n$/, '')}
-//         </SyntaxHighlighter>
-//           )
-//         : (
-//       <code className={className} {...props}>
-//         {children}
-//       </code>
-//           )
-//     }
-//   }
+const Markdown = (props): JSX.Element => {
+  const components = {
+    code ({ node, inline, className, children, ...props }) {
+      const match = /language-(\w+)/.exec(className ?? '')
+      return inline !== false && (match != null)
+        ? (
+      <SyntaxHighlighter
+        style={{}}
+        useInlineStyles={false}
+        language={match[1]}
+        PreTag="div"
+        {...props}>
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+          )
+        : (
+      <code className={className} {...props}>
+        {children}
+      </code>
+          )
+    }
+  }
 
-//   return (<ReactMarkdown {...{
-//     remarkPlugins: [remarkMath],
-//     rehypePlugins: [rehypeKatex],
-//     components,
-//     ...props
-//   }} />)
-// }
+  return (<ReactMarkdown {...{
+    remarkPlugins: [remarkMath],
+    rehypePlugins: [rehypeKatex],
+    components,
+    ...props
+  }} />)
+}
+
+const EditableMarkdown = ({ formMethods, inputName, multiline, markdownClassnames, inputClassnames, inputId, defaultValue }: any): JSX.Element => {
+  const { register, watch } = formMethods
+  const [isFocused, setIsFocused] = useState(false)
+  const markdown = watch(inputName, defaultValue ?? '')
+
+  const handleFocus = (): void => {
+    setIsFocused(true)
+  }
+
+  const handleBlur = (): void => {
+    setIsFocused(false)
+  }
+
+  return (
+    <div>
+      {isFocused
+        ? (
+            multiline
+              ? <textarea
+          {...register(inputName)}
+          onBlur={handleBlur}
+          autoFocus={true}
+          id={inputId}
+          className={inputClassnames}
+        />
+              : <input
+          {...register(inputName)}
+          onBlur={handleBlur}
+          autoFocus={true}
+          id={inputId}
+          className={inputClassnames}
+        />
+          )
+        : (
+        <div onClick={() => handleFocus()} className={markdownClassnames}>
+          <Markdown>{markdown as string}</Markdown>
+        </div>
+          )}
+    </div>
+  )
+}
 
 interface Metadata {
   created: Date
@@ -132,14 +174,6 @@ const TaskEditor = (): JSX.Element => {
     })
   }
 
-  // Check if a task's due date is in the past
-  // const checkOverdue = (values: { metadata: { due?: string } }): boolean => {
-  //   if ('due' in values.metadata && values.metadata.due !== undefined) {
-  //     return Date.parse(values.metadata.due) < (new Date()).getTime()
-  //   }
-  //   return false
-  // }
-
   // Validate form data
   const validateName = (name: string): boolean => {
     if (state === null) { return false }
@@ -154,7 +188,7 @@ const TaskEditor = (): JSX.Element => {
   }, [])
 
   // TODO: set default values here.
-  const { control, register, handleSubmit, formState: { isDirty, isSubmitting } } = useForm()
+  const { control, watch, register, handleSubmit, formState: { isDirty, isSubmitting } } = useForm()
   const {
     fields: commentFields,
     append: appendComment,
@@ -207,10 +241,36 @@ const TaskEditor = (): JSX.Element => {
     name: 'tags' // unique name for your Field Array
   })
 
+  const {
+    fields: customFields
+    // append: appendTag,
+    // prepend: prependComment,
+    // remove: removeTag
+    // swap: swapComment,
+    // move: moveComment,
+    // insert: insertComment
+  } = useFieldArray({
+    control, // control props comes from useForm (optional: if you are using FormContext)
+    name: 'customFields' // unique name for your Field Array
+  })
+
   const watchedProgress = useWatch({
     control,
     name: 'progress'
   })
+  const watchedDue = useWatch({
+    control,
+    name: 'progress'
+  })
+
+  // Check if a task's due date is in the past
+  const checkOverdue = (): boolean => {
+    if (watchedDue != null) {
+      return Date.parse(watchedDue) < (new Date()).getTime()
+    }
+    return false
+  }
+
   const setEditorState = (editorState: EditorState): void => {
 
   }
@@ -308,23 +368,6 @@ const TaskEditor = (): JSX.Element => {
   return (
     <div className="kanbn-task-editor">
       <form onSubmit={handleSubmit(handleTaskSave)}>
-        {/* initialValues={state.taskData}
-        enableReinitialize
-        onSubmit={(values, { setSubmitting, resetForm }) => {
-          handleSubmit(values, setSubmitting, resetForm)
-        }} */}
-      {/* > */}
-        {/* {({
-          dirty,
-          values,
-          handleChange,
-          isSubmitting
-        }) => ( */}
-          {/* <Form
-          onChange={(e) => {
-            handleChange(e)
-            handleFormValuesChange(e, values)
-          }}> */}
             <h1 className="kanbn-task-editor-title">
               {state.taskCreated ? 'Update task' : 'Create new task'}
               {isDirty && <span className="kanbn-task-editor-dirty">*</span>}
@@ -387,51 +430,25 @@ const TaskEditor = (): JSX.Element => {
                   >
                     <p>Description</p>
                   </label>
-                  {/* <button
-                    type="button"
-                    className="kanbn-task-editor-button kanbn-task-editor-button-edit-description"
-                    title="Edit description"
-                    // TODO: make the text box the button
-                    // onClick={() => {
-                    //   setEditingDescription(!state.editingDescription)
-                    // }}
-                  > */}
-                    {/* {
-                      state.editingDescription
-                        ? <><i className="codicon codicon-preview"></i> Preview</> */}
-                        {/* <><i className="codicon codicon-edit"></i> Edit</> */}
-                    {/* } */}
-                  {/* </button> */}
-                  {
-                    // state.editingDescription
-                      <textarea
-                        {...register('description')}
-                        className="kanbn-task-editor-field-textarea"
-                        id="description-input"
-                        // TODO: figure out how to replace the TextareaAutosize component
-                        // as={TextareaAutosize}
-                        // name="description"
-                      />
-                      // TODO: temporarily disabling markup at the moment
-                      // : <Markdown className="kanbn-task-editor-description-preview">
-                      //   {state.taskData?.description ?? ''}
-                      // </Markdown>
-                  }
+                  <EditableMarkdown
+                    formMethods={{ watch, register }}
+                    inputName='description'
+                    multiline={true}
+                    markdownClassnames="kanbn-task-editor-description-preview"
+                    inputId="description-input"
+                    inputClassnames="kanbn-task-editor-field-textarea"/>
                 </div>
                 <div className="kanbn-task-editor-field kanbn-task-editor-field-subtasks">
                   <h2 className="kanbn-task-editor-title">Sub-tasks</h2>
-                  {/* <FieldArray name="subTasks"> */}<>
-                    {/* {({ insert, remove, push }) => ( */}
                       <div>
                         {subtaskFields.map((subTask: any, index) => (
                           <div className="kanbn-task-editor-row kanbn-task-editor-row-subtask" key={index}>
                             <div className="kanbn-task-editor-column kanbn-task-editor-field-subtask-completed">
                               <input
-                                {...register(`subTasks.${index}.completed`, { required: true })}
+                                {...register(`subTasks.${index}.completed`)}
                                 defaultValue={subTask.completed}
                                 className="kanbn-task-editor-field-checkbox"
                                 type="checkbox"
-                                // name={`subTasks.${index}.completed`}
                               />
                             </div>
                             <div className="kanbn-task-editor-column kanbn-task-editor-field-subtask-text">
@@ -439,7 +456,6 @@ const TaskEditor = (): JSX.Element => {
                                 {...register(`subTasks.${index}.text`)}
                                 defaultValue={subTask.text}
                                 className="kanbn-task-editor-field-input"
-                                // name={`subTasks.${index}.text`}
                                 placeholder="Sub-task text"
                               />
                             </div>
@@ -466,13 +482,9 @@ const TaskEditor = (): JSX.Element => {
                           </button>
                         </div>
                       </div>
-                    {/* )} */}
-                  {/* </FieldArray> */}</>
                 </div>
                 <div className="kanbn-task-editor-field kanbn-task-editor-field-relations">
                   <h2 className="kanbn-task-editor-title">Relations</h2>
-                  {/* <FieldArray name="relations"> */}<>
-                    {/* {({ insert, remove, push }) => ( */}
                       <div>
                         {relationFields.map((relation: any, index) => (
                           <div className="kanbn-task-editor-row kanbn-task-editor-row-relation" key={index}>
@@ -481,17 +493,13 @@ const TaskEditor = (): JSX.Element => {
                                 {...register(`relations.${index}.type`)}
                                 className="kanbn-task-editor-field-input"
                                 defaultValue={relation.type}
-                                // name={`relations.${index}.type`}
                                 placeholder="Relation type"
                               />
                             </div>
                             <div className="kanbn-task-editor-column kanbn-task-editor-field-relation-task">
                               <select
                                 {...register(`relations.${index}.task`)}
-                                defaultValue={relation.task}
                                 className="kanbn-task-editor-field-select"
-                                // as="select"
-                                // name={`relations.${index}.task`}
                               >
                                 {Object.keys(state.tasks).map(t => <option key={state.tasks[t].id} value={t}>{t}</option>)}
                               </select>
@@ -519,33 +527,25 @@ const TaskEditor = (): JSX.Element => {
                           </button>
                         </div>
                       </div>
-                    {/* )} */}
-                  {/* </FieldArray> */}</>
                 </div>
                 <div className="kanbn-task-editor-field kanbn-task-editor-field-comments">
                   <h2 className="kanbn-task-editor-title">Comments</h2>
-                  {/* <FieldArray name="comments"> */}<>
-                    {/* {({ insert, remove, push }) => ( */}
                       <div>
                         {commentFields.map((comment: any, index) => (
                           <div className="kanbn-task-editor-row-comment" key={index}>
                             <div className="kanbn-task-editor-row">
                               <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-author">
                                 {
-                                  // state.editingComment === index
-                                    <>
-                                      <input
-                                        {...register(`comments.${index}.author`, { required: true })}
-                                        className="kanbn-task-editor-field-input"
-                                        // name={`comments.${index}.author`}
-                                        placeholder="Comment author"
-                                        defaultValue={comment.author}
-                                      />
-                                    </>
-                                    // : <div className="kanbn-task-editor-field-comment-author-value">
-                                    //   <i className="codicon codicon-account"></i>
-                                    //   {comment.author ?? 'Anonymous'}
-                                    // </div>
+                                  <input
+                                    {...register(`comments.${index}.author`)}
+                                    className="kanbn-task-editor-field-input"
+                                    placeholder="Comment author"
+                                    defaultValue={comment.author}
+                                  />
+                                  // : <div className="kanbn-task-editor-field-comment-author-value">
+                                  //   <i className="codicon codicon-account"></i>
+                                  //   {comment.author ?? 'Anonymous'}
+                                  // </div>
                                 }
                               </div>
                               <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-date">
@@ -560,40 +560,16 @@ const TaskEditor = (): JSX.Element => {
                                 >
                                   <i className="codicon codicon-trash"></i>
                                 </button>
-                                {/* <button
-                                  type="button"
-                                  className="kanbn-task-editor-button kanbn-task-editor-button-edit"
-                                  title={state.editingComment === index ? 'View comment' : 'Edit comment'}
-                                  onClick={() => {
-                                    setEditingComment(state.editingComment !== index ? index : -1)
-                                  }}
-                                >
-                                  {
-                                    state.editingComment === index
-                                      ? <i className="codicon codicon-preview"></i>
-                                      : <i className="codicon codicon-edit"></i>
-                                  }
-                                </button> */}
                               </div>
                             </div>
                             <div className="kanbn-task-editor-row">
                               <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-text">
-                                {
-                                  // state.editingComment === index
-                                     <>
-                                      <input
-                                        {...register(`comments.${index}.text`)}
-                                        className="kanbn-task-editor-field-textarea"
-                                        defaultValue={comment.text}
-                                        // as={TextareaAutosize}
-                                        // name={`comments.${index}.text`}
-                                      />
-                                    </>
-                                    // TODO: show markdown again
-                                    // : <Markdown className="kanbn-task-editor-comment-text">
-                                    //   {comment.text}
-                                    // </Markdown>
-                                }
+                                <EditableMarkdown
+                                  formMethods={{ watch, register }}
+                                  inputName={`comments.${index}.text`}
+                                  multiline={true}
+                                  markdownClassnames="kanbn-task-editor-comment-text"
+                                  inputClassnames="kanbn-task-editor-field-textarea"/>
                               </div>
                             </div>
                           </div>
@@ -604,16 +580,14 @@ const TaskEditor = (): JSX.Element => {
                             className="kanbn-task-editor-button kanbn-task-editor-button-add"
                             title="Add comment"
                             onClick={() => {
+                              console.log('appendComment')
                               appendComment({ text: '', date: new Date(), author: '' })
-                              // setEditingComment(values.comments.length)
                             }}
                           >
                             <i className="codicon codicon-comment"></i>Add comment
                           </button>
                         </div>
                       </div>
-                    {/* )} */}
-                  {/* </FieldArray> */}</>
                 </div>
               </div>
               <div className="kanbn-task-editor-column-right">
@@ -623,8 +597,6 @@ const TaskEditor = (): JSX.Element => {
                     <select
                       {...register('column')}
                       className="kanbn-task-editor-field-select"
-                      // as="select"
-                      // name="column"
                     >
                       {state.columnNames.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
@@ -634,10 +606,8 @@ const TaskEditor = (): JSX.Element => {
                   <label className="kanbn-task-editor-field-label">
                     <p>Assigned to</p>
                     <input
-                      {...register('metadata.assigned')}
+                      {...register('assignedTo')}
                       className="kanbn-task-editor-field-input"
-                      // name="metadata.assigned"
-                      placeholder="Assigned to"
                     />
                   </label>
                 </div>
@@ -645,10 +615,9 @@ const TaskEditor = (): JSX.Element => {
                   <label className="kanbn-task-editor-field-label">
                     <p>Started date</p>
                     <input
-                      {...register('metadata.started')}
+                      {...register('startedDate')}
                       className="kanbn-task-editor-field-input"
                       type="date"
-                      // name="metadata.started"
                     />
                   </label>
                 </div>
@@ -656,14 +625,12 @@ const TaskEditor = (): JSX.Element => {
                   <label className="kanbn-task-editor-field-label">
                     <p>Due date</p>
                     <input
-                      {...register('metadata.due')}
+                      {...register('dueDate')}
                       className={[
-                        'kanbn-task-editor-field-input'
-                        // TODO: fix this
-                        // checkOverdue(values) ? 'kanbn-task-overdue' : null
+                        'kanbn-task-editor-field-input',
+                        checkOverdue() ? 'kanbn-task-overdue' : null
                       ].filter(i => i).join(' ')}
                       type="date"
-                      // name="metadata.due"
                     />
                   </label>
                 </div>
@@ -671,10 +638,9 @@ const TaskEditor = (): JSX.Element => {
                   <label className="kanbn-task-editor-field-label">
                     <p>Completed date</p>
                     <input
-                      {...register('metadata.completed')}
+                      {...register('completedDate')}
                       className="kanbn-task-editor-field-input"
                       type="date"
-                      // name="metadata.completed"
                     />
                   </label>
                 </div>
@@ -685,7 +651,6 @@ const TaskEditor = (): JSX.Element => {
                       {...register('progress')}
                       className="kanbn-task-editor-field-input"
                       type="number"
-                      // name="progress"
                       min="0"
                       max="1"
                       step="0.05"
@@ -696,35 +661,29 @@ const TaskEditor = (): JSX.Element => {
                   </label>
                 </div>
                 {
-                  state.customFields.map(customField => (
-                    <div key={(customField).name} className={[
+                  customFields.map((customField: any, index) => (
+                    <div key={customField.id} className={[
                       'kanbn-task-editor-field kanbn-task-editor-custom-field',
-                      `kanbn-task-editor-custom-field-${paramCase(customField.name ?? '')}`
+                      `kanbn-task-editor-custom-field-${paramCase(customField?.name ?? '')}`
                     ].join(' ')}>
                       <label className="kanbn-task-editor-field-label">
-                        {(customField).type === 'boolean'
+                        {customField.type === 'boolean'
                           ? (
                             <>
                               <input
-                                {...register(`metadata.${(customField).name}`)}
+                                {...register(`customField.${index}.value`)}
                                 className="kanbn-task-editor-field-input kanbn-task-editor-custom-checkbox"
                                 type="checkbox"
-                                // name={`metadata.${(customField as any).name}`}
-                              /><p>{(customField).name}</p>
+                              /><p>{customField.name}</p>
                             </>
                             )
                           : (
                             <>
-                              <p>{(customField).name}</p>
+                              <p>{customField.name}</p>
                               <input
-                                {...register(`metadata.${(customField).name}`)}
+                                {...register(`customField.${index}.value`)}
                                 className="kanbn-task-editor-field-input"
-                                type={{
-                                  date: 'date',
-                                  number: 'number',
-                                  string: 'text'
-                                }[customField.type]}
-                                // name={`metadata.${(customField as any).name}`}
+                                type={customField.type}
                               />
                             </>
                             )}
@@ -736,55 +695,49 @@ const TaskEditor = (): JSX.Element => {
                   <label className="kanbn-task-editor-field-label">
                     <p>Tags</p>
                   </label>
-                  {/* <FieldArray name="metadata.tags"> */}<>
-                    {/* {({ insert, remove, push }) => ( */}
-                      <div>
-                        {tagFields.map((tag, index) => (
-                          <div className="kanbn-task-editor-row kanbn-task-editor-row-tag" key={index}>
-                            <div className="kanbn-task-editor-column kanbn-task-editor-field-tag">
-                              <input
-                                {...register(`metadata.tags.${index}`, { required: true })}
-                                className="kanbn-task-editor-field-input"
-                                // name={`metadata.tags.${index}`}
-                                placeholder="Tag name"
-                              />
-                              <div
-                                className={[
-                                  'kanbn-task-editor-tag-highlight',
-                                  `kanbn-task-tag-${paramCase(tag ?? '')}`
-                                ].join(' ')}
-                              ></div>
-                            </div>
-                            <div className="kanbn-task-editor-column kanbn-task-editor-column-buttons">
-                              <button
-                                type="button"
-                                className="kanbn-task-editor-button kanbn-task-editor-button-delete"
-                                title="Remove tag"
-                                onClick={() => removeTag(index)}
-                              >
-                                <i className="codicon codicon-trash"></i>
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                        <div className="kanbn-task-editor-buttons">
+                  <div>
+                    {tagFields.map((tag: any, index) => (
+                      <div className="kanbn-task-editor-row kanbn-task-editor-row-tag" key={index}>
+                        <div className="kanbn-task-editor-column kanbn-task-editor-field-tag">
+                          {/* TODO: fix this. I would expect tags to be selectable from a list specified for the particular board. */}
+                          <input
+                            {...register(`tags.${index}.tag`, { required: true })}
+                            className="kanbn-task-editor-field-input"
+                            placeholder="Tag name"
+                          />
+                          <div
+                            className={[
+                              'kanbn-task-editor-tag-highlight',
+                              `kanbn-task-tag-${paramCase(tag.tag ?? '')}`
+                            ].join(' ')}
+                          ></div>
+                        </div>
+                        <div className="kanbn-task-editor-column kanbn-task-editor-column-buttons">
                           <button
                             type="button"
-                            className="kanbn-task-editor-button kanbn-task-editor-button-add"
-                            title="Add tag"
-                            onClick={() => appendTag('')}
+                            className="kanbn-task-editor-button kanbn-task-editor-button-delete"
+                            title="Remove tag"
+                            onClick={() => removeTag(index)}
                           >
-                            <i className="codicon codicon-tag"></i>Add tag
+                            <i className="codicon codicon-trash"></i>
                           </button>
                         </div>
                       </div>
-                    {/* )} */}
-                  {/* </FieldArray> */}</>
+                    ))}
+                    <div className="kanbn-task-editor-buttons">
+                      <button
+                        type="button"
+                        className="kanbn-task-editor-button kanbn-task-editor-button-add"
+                        title="Add tag"
+                        onClick={() => appendTag({ tag: '' })}
+                      >
+                        <i className="codicon codicon-tag"></i>Add tag
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          {/* </Form> */}
-        {/* )} */}
       </form>
     </div>
   )
