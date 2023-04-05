@@ -86,16 +86,6 @@ const EditableMarkdown = ({ formMethods, inputName, multiline, markdownClassname
   )
 }
 
-// interface Metadata {
-//   created: Date
-//   updated: Date
-//   started: Date | null
-//   due: Date | null
-//   completed: Date | null
-//   assigned: string
-//   tags: string[]
-// }
-
 interface CustomField {
   name: string
   type: string
@@ -153,25 +143,11 @@ interface TaskState {
   customFields: CustomField[]
 }
 
-// interface Comment {
-//   author: string
-//   date: Date
-// }
-
 // vscode state is task data as shown in the form, and the state of the form
 // react state is all the other stuff, like the available columnNames, tasks, task, dateFormat, name.
 const TaskEditor = (): JSX.Element => {
   // vscode state will store the form data when the editor is hidden
   const [state, setState] = useState<TaskState | null>(null)
-
-  // Called when the name field is changed
-  // const handleFormValuesChange = (e, values): void => {
-  //   console.log(e)
-  //   console.log(values)
-  //   const newState = { ...state, taskData: values }
-  //   setState(newState)
-  //   vscode.setState(values)
-  // }
 
   // Called when the form is submitted
   const handleTaskSave = (values): void => {
@@ -207,17 +183,36 @@ const TaskEditor = (): JSX.Element => {
       command: 'kanbn.updateMe'
     })
   }, [])
+  const initialEditorState: EditorState = vscode.getState() ?? {
+    name: '',
+    description: '',
+    subtasks: [],
+    relations: [],
+    comments: [],
+    column: '',
+    assignedTo: '',
+    startedDate: null,
+    dueDate: null,
+    completedDate: null,
+    tags: [],
+    progress: 0,
+    customFields: []
+  }
 
-  // TODO: set default values here.
-  const { control, watch, register, handleSubmit, formState: { isDirty, isSubmitting } } = useForm<EditorState>()
+  // TODO: the default values can probably be set from the KanbnTaskPanel object,
+  // since we can pass it a future the panel can resolve
+  const {
+    control,
+    watch,
+    register,
+    handleSubmit,
+    setValue,
+    formState: { isDirty, isValid }
+  } = useForm<EditorState>({ defaultValues: initialEditorState })
   const {
     fields: commentFields,
     append: appendComment,
-    // prepend: prependComment,
     remove: removeComment
-    // swap: swapComment,
-    // move: moveComment,
-    // insert: insertComment
   } = useFieldArray({
     control, // control props comes from useForm (optional: if you are using FormContext)
     name: 'comments' // unique name for your Field Array
@@ -226,53 +221,35 @@ const TaskEditor = (): JSX.Element => {
   const {
     fields: subtaskFields,
     append: appendSubtask,
-    // prepend: prependComment,
     remove: removeSubtask
-    // swap: swapComment,
-    // move: moveComment,
-    // insert: insertComment
   } = useFieldArray({
-    control, // control props comes from useForm (optional: if you are using FormContext)
-    name: 'subtasks' // unique name for your Field Array
+    control,
+    name: 'subtasks'
   })
   // relations
   const {
     fields: relationFields,
     append: appendRelation,
-    // prepend: prependComment,
     remove: removeRelation
-    // swap: swapComment,
-    // move: moveComment,
-    // insert: insertComment
   } = useFieldArray({
-    control, // control props comes from useForm (optional: if you are using FormContext)
-    name: 'relations' // unique name for your Field Array
+    control,
+    name: 'relations'
   })
   // tags
   const {
     fields: tagFields,
     append: appendTag,
-    // prepend: prependComment,
     remove: removeTag
-    // swap: swapComment,
-    // move: moveComment,
-    // insert: insertComment
   } = useFieldArray({
-    control, // control props comes from useForm (optional: if you are using FormContext)
-    name: 'tags' // unique name for your Field Array
+    control,
+    name: 'tags'
   })
 
   const {
     fields: customFields
-    // append: appendTag,
-    // prepend: prependComment,
-    // remove: removeTag
-    // swap: swapComment,
-    // move: moveComment,
-    // insert: insertComment
   } = useFieldArray({
-    control, // control props comes from useForm (optional: if you are using FormContext)
-    name: 'customFields' // unique name for your Field Array
+    control,
+    name: 'customFields'
   })
 
   const watchedProgress = useWatch({
@@ -293,37 +270,19 @@ const TaskEditor = (): JSX.Element => {
   }
 
   const setEditorState = (editorState: EditorState): void => {
-
-  }
-  // const getEditorState = (): EditorState => {
-  //   return {
-  //     name: '',
-  //     description: '',
-  //     column: '',
-  //     progress: 0,
-  //     metadata: {
-  //       created: new Date(),
-  //       updated: new Date(),
-  //       started: new Date(),
-  //       due: new Date(),
-  //       completed: new Date(),
-  //       assigned: '',
-  //       tags: []
-  //     },
-  //     relations: [],
-  //     subTasks: [],
-  //     comments: [],
-  //     customFields: [],
-  //     focusedOn: '',
-  //     dirty: [],
-  //     touched: []
-  //   }
-  // }
-  const initialEditorState: EditorState | undefined = vscode.getState()
-  if (initialEditorState !== undefined) {
-    useEffect(() => {
-      setEditorState(initialEditorState)
-    }, [])
+    setValue('name', editorState.name)
+    setValue('description', editorState.description)
+    setValue('column', editorState.column)
+    setValue('assignedTo', editorState.assignedTo)
+    setValue('startedDate', editorState.startedDate)
+    setValue('dueDate', editorState.dueDate)
+    setValue('completedDate', editorState.completedDate)
+    setValue('progress', editorState.progress)
+    setValue('customFields', editorState.customFields)
+    setValue('subtasks', editorState.subtasks)
+    setValue('relations', editorState.relations)
+    setValue('comments', editorState.comments)
+    setValue('tags', editorState.tags)
   }
 
   const processMessage = useCallback(event => {
@@ -342,6 +301,8 @@ const TaskEditor = (): JSX.Element => {
       customFields: event.data.customFields ?? []
     }
     if (vscode.getState() === undefined) {
+      // No need to also set vscode state until the form is modified
+      // Should be able to avoid this whatsoever when initial editor state is fetched from the panel
       setEditorState({
         name: event.data.task?.name ?? '',
         description: event.data.task?.description ?? '',
@@ -411,7 +372,7 @@ const TaskEditor = (): JSX.Element => {
                 type="submit"
                 className="kanbn-task-editor-button kanbn-task-editor-button-submit"
                 title="Save task"
-                disabled={isSubmitting}
+                disabled={!isValid}
               >
                 <i className="codicon codicon-save"></i>Save
               </button>
