@@ -183,32 +183,20 @@ const TaskEditor = (): JSX.Element => {
       command: 'kanbn.updateMe'
     })
   }, [])
-  const initialEditorState: EditorState = vscode.getState() ?? {
-    name: '',
-    description: '',
-    subtasks: [],
-    relations: [],
-    comments: [],
-    column: '',
-    assignedTo: '',
-    startedDate: null,
-    dueDate: null,
-    completedDate: null,
-    tags: [],
-    progress: 0,
-    customFields: []
-  }
 
   // TODO: the default values can probably be set from the KanbnTaskPanel object,
   // since we can pass it a future the panel can resolve
+  const vscodeState = vscode.getState()
+  const [shouldUpdateEditorState, setShouldUpdateEditorState] = useState(vscodeState === undefined)
   const {
     control,
     watch,
+    reset,
     register,
     handleSubmit,
-    setValue,
     formState: { isDirty, isValid }
-  } = useForm<EditorState>({ defaultValues: initialEditorState })
+  } = vscodeState !== undefined ? useForm<EditorState>({ defaultValues: vscodeState }) : useForm<EditorState>()
+
   const {
     fields: commentFields,
     append: appendComment,
@@ -269,22 +257,6 @@ const TaskEditor = (): JSX.Element => {
     return false
   }
 
-  const setEditorState = (editorState: EditorState): void => {
-    setValue('name', editorState.name)
-    setValue('description', editorState.description)
-    setValue('column', editorState.column)
-    setValue('assignedTo', editorState.assignedTo)
-    setValue('startedDate', editorState.startedDate)
-    setValue('dueDate', editorState.dueDate)
-    setValue('completedDate', editorState.completedDate)
-    setValue('progress', editorState.progress)
-    setValue('customFields', editorState.customFields)
-    setValue('subtasks', editorState.subtasks)
-    setValue('relations', editorState.relations)
-    setValue('comments', editorState.comments)
-    setValue('tags', editorState.tags)
-  }
-
   const processMessage = useCallback(event => {
     console.log('Received message from webview', event.data)
     const tasks = Object.fromEntries((event.data.tasks ?? []).map(task => [task.id, task]))
@@ -300,26 +272,27 @@ const TaskEditor = (): JSX.Element => {
       updatedDate: event.data.task?.metadata?.updated ?? null,
       customFields: event.data.customFields ?? []
     }
-    if (vscode.getState() === undefined) {
-      // No need to also set vscode state until the form is modified
-      // Should be able to avoid this whatsoever when initial editor state is fetched from the panel
-      setEditorState({
-        name: event.data.task?.name ?? '',
-        description: event.data.task?.description ?? '',
-        column: event.data.columnName,
-        progress: event.data.task?.progress ?? 0,
-        relations: event.data.task?.relations ?? [],
-        subtasks: event.data.task?.subTasks ?? [],
-        comments: event.data.task?.comments ?? [],
-        customFields: event.data.task?.customFields ?? [],
-        tags: event.data.task?.metadata?.tags ?? [],
-        dueDate: event.data.task?.metadata?.due ?? null,
-        startedDate: event.data.task?.metadata?.started ?? null,
-        completedDate: event.data.task?.metadata?.completed ?? null,
-        assignedTo: event.data.task?.metadata?.assigned ?? ''
-      })
-    }
     setState(newState)
+    if (shouldUpdateEditorState) {
+      setShouldUpdateEditorState(false)
+      reset(
+        {
+          name: event.data.task?.name ?? '',
+          description: event.data.task?.description ?? '',
+          column: event.data.columnName,
+          progress: event.data.task?.progress ?? 0,
+          relations: event.data.task?.relations ?? [],
+          subtasks: event.data.task?.subTasks ?? [],
+          comments: event.data.task?.comments ?? [],
+          customFields: event.data.task?.customFields ?? [],
+          tags: event.data.task?.metadata?.tags ?? [],
+          dueDate: event.data.task?.metadata?.due ?? null,
+          startedDate: event.data.task?.metadata?.started ?? null,
+          completedDate: event.data.task?.metadata?.completed ?? null,
+          assignedTo: event.data.task?.metadata?.assigned ?? ''
+        }
+      )
+    }
   }, [])
 
   useEffect(() => {
@@ -329,15 +302,14 @@ const TaskEditor = (): JSX.Element => {
     }
   })
 
-  const vscodeState = vscode.getState()
+  const formData = watch()
   // Set the initial state of the form once
-  if (vscodeState !== undefined) {
-    useEffect(() => {
-      setEditorState(vscodeState)
-    }, [])
-  }
+  useEffect(() => {
+    console.log('setting form state: ', formData)
+    vscode.setState(formData)
+  }, [formData])
 
-  if (state === null) {
+  if (state === null || shouldUpdateEditorState) {
     return <div className="kanbn-task-editor">Loading...</div>
   }
   return (
