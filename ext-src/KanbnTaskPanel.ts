@@ -146,11 +146,6 @@ export default class KanbnTaskPanel {
             void vscode.window.showErrorMessage(message.text)
             return
 
-          // Update the task webview panel title
-          case 'kanbn.updatePanelTitle':
-            this._panel.title = message.title
-            return
-
           // Update panel once it's loaded
           case 'kanbn.updateMe':
             void this.update()
@@ -189,7 +184,6 @@ export default class KanbnTaskPanel {
             }
             this._taskId = message.taskData.id as string
             this._panel.title = this._taskId
-            void this.update()
             return
 
           // Delete a task and close the webview panel
@@ -234,7 +228,7 @@ export default class KanbnTaskPanel {
     }
   }
 
-  private async update (): Promise<void> {
+  private async _getTaskData (): Promise<any> {
     let index: any
     try {
       index = await this._kanbn.getIndex()
@@ -268,15 +262,19 @@ export default class KanbnTaskPanel {
     const columnName = task?.column ?? this._defaultColumn ?? Object.keys(index.columns)[0]
 
     // Send task data to the webview
-    void this._panel.webview.postMessage({
-      type: 'task',
+    return {
       index,
       task,
       tasks,
       customFields: index.options.customFields ?? [],
       columnName,
       dateFormat: this._kanbn.getDateFormat(index)
-    })
+    }
+  }
+
+  private async update (): Promise<void> {
+    // Send task data to the webview
+    void this._panel.webview.postMessage(await this._getTaskData())
   }
 
   private _getHtmlForWebview (): string {
