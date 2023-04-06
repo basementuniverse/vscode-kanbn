@@ -1,6 +1,5 @@
 // Note that Date properties will be converted to strings (ISO) when a task is serialized and passed as a prop
 declare interface KanbnTask {
-  uuid?: string
   id: string
   name: string
   description: string
