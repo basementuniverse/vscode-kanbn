@@ -12,56 +12,31 @@ function transformTaskData (
     name: taskData.name,
     description: taskData.description,
     metadata: {
-      created: taskData.metadata.created !== '' ? new Date(taskData.metadata.created) : new Date(),
+      created: taskData.createdDate ?? new Date(),
       updated: new Date(),
-      assigned: taskData.metadata.assigned,
+      assigned: taskData.assignedTo,
       progress: taskData.progress,
-      tags: taskData.metadata.tags
+      tags: taskData.tags
     } as any,
-    relations: taskData.relations,
-    subTasks: taskData.subTasks,
-    comments: taskData.comments.map((comment: any) => ({
-      author: comment.author,
-      date: new Date(Date.parse(comment.date)),
-      text: comment.text
-    }))
+    relations: taskData.relations ?? [],
+    subTasks: taskData.subTasks ?? [],
+    comments: taskData.comments ?? []
   } as any
 
-  // Add assigned
-  if (taskData.metadata.assigned !== '') {
-    result.metadata.assigned = taskData.metadata.assigned
-  }
-
-  // Add progress
-  if (taskData.progress > 0) {
-    result.metadata.progress = taskData.progress
-  }
-
-  // Add tags
-  if (taskData.metadata.tags.length > 0) {
-    result.metadata.tags = taskData.metadata.tags
-  }
-
   // Add due, started and completed dates if present
-  if (taskData.metadata.due !== '') {
-    result.metadata.due = new Date(Date.parse(taskData.metadata.due))
+  if (taskData.dueDate !== null) {
+    result.metadata.due = taskData.dueDate
   }
-  if (taskData.metadata.started !== '') {
-    result.metadata.started = new Date(Date.parse(taskData.metadata.started))
+  if (taskData.startedDate !== null) {
+    result.metadata.started = taskData.startedDate
   }
-  if (taskData.metadata.completed !== '') {
-    result.metadata.completed = new Date(Date.parse(taskData.metadata.completed))
+  if (taskData.completedDate !== null) {
+    result.completedDate = taskData.completedDate
   }
 
   // Add custom fields
-  for (const customField of customFields) {
-    if (customField.name in taskData.metadata && taskData.metadata[customField.name] !== null) {
-      if (customField.type === 'date') {
-        result.metadata[customField.name] = new Date(Date.parse(taskData.metadata[customField.name]))
-      } else {
-        result.metadata[customField.name] = taskData.metadata[customField.name]
-      }
-    }
+  for (const customField of taskData.customFields) {
+    result.metadata[customField.name] = customField.value
   }
 
   return result
@@ -153,6 +128,7 @@ export default class KanbnTaskPanel {
 
           // Create a task
           case 'kanbn.updateOrCreate':
+            console.log('here are the values', transformTaskData(message.taskData, message.customFields))
             if (this._taskId === null) {
               await this._kanbn.createTask(
                 transformTaskData(message.taskData, message.customFields),
@@ -161,6 +137,7 @@ export default class KanbnTaskPanel {
               this._panel.onDidDispose((e) => { if (this._taskId !== null) taskCache.delete(this._taskId) })
               taskCache.set(message.taskData.id, this)
               void this.update()
+              console.log('task data', message.taskData)
               if (vscode.workspace.getConfiguration('kanbn').get<boolean>('showTaskNotifications') ?? true) {
                 // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
                 void vscode.window.showInformationMessage(`Created task '${String(message.taskData.name)}'.`)
@@ -187,30 +164,32 @@ export default class KanbnTaskPanel {
             return
 
           // Delete a task and close the webview panel
-          case 'kanbn.delete':
+          case 'kanbn.delete': {
+            const taskName: string = (await this._kanbn.getTask(this._taskId ?? '')).name
             void vscode.window
-              // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
-              .showInformationMessage(`Delete task '${String((await this._kanbn.getTask(this._taskId ?? '')).name)}'?`, 'Yes', 'No')
+              .showInformationMessage(`Delete task '${taskName}'?`, 'Yes', 'No')
               .then(async (value) => {
                 if (value === 'Yes') {
                   if (this._taskId !== null) { await this._kanbn.deleteTask(this._taskId, true) }
                   this.dispose()
                   if (vscode.workspace.getConfiguration('kanbn').get<boolean>('showTaskNotifications') ?? true) {
-                    // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
-                    void vscode.window.showInformationMessage(`Deleted task '${String(String((await this._kanbn.getTask(this._taskId ?? '')).name))}'.`)
+                    void vscode.window.showInformationMessage(`Deleted task '${taskName}'.`)
                   }
                 }
               })
             return
+          }
 
           // Archive a task and close the webview panel
-          case 'kanbn.archive':
+          case 'kanbn.archive': {
+            const taskName: string = (await this._kanbn.getTask(this._taskId ?? '')).name
             if (this._taskId !== null) await this._kanbn.archiveTask(this._taskId)
             this.dispose()
             if (vscode.workspace.getConfiguration('kanbn').get<boolean>('showTaskNotifications') ?? true) {
               // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
-              void vscode.window.showInformationMessage(`Archived task '${String(message.taskData.name)}'.`)
+              void vscode.window.showInformationMessage(`Archived task '${taskName}'.`)
             }
+          }
         }
       },
       null,

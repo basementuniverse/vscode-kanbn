@@ -150,8 +150,13 @@ const TaskEditor = (): JSX.Element => {
   const [state, setState] = useState<TaskState | null>(null)
 
   // Called when the form is submitted
-  const handleTaskSave = (values): void => {
-    const newValues = { ...values, id: paramCase(values.name ?? '') }
+  const handleTaskSave = (values: EditorState): void => {
+    const newValues = {
+      ...values,
+      id: paramCase(values.name ?? ''),
+      createdDate: state?.createdDate
+    }
+    console.log('Saving task', newValues)
     vscode.postMessage({
       command: 'kanbn.updateOrCreate',
       taskData: newValues
