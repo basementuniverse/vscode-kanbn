@@ -12,7 +12,7 @@ function transformTaskData (
     name: taskData.name,
     description: taskData.description,
     metadata: {
-      created: taskData.createdDate ?? new Date(),
+      created: new Date(taskData.createdDate ?? new Date()),
       updated: new Date(),
       assigned: taskData.assignedTo,
       progress: taskData.progress,
@@ -23,20 +23,27 @@ function transformTaskData (
     comments: taskData.comments ?? []
   } as any
 
+  for (const comment of result.comments) {
+    comment.date = new Date(comment.date)
+  }
+
   // Add due, started and completed dates if present
   if (taskData.dueDate !== null) {
-    result.metadata.due = taskData.dueDate
+    result.metadata.due = new Date(taskData.dueDate)
   }
   if (taskData.startedDate !== null) {
-    result.metadata.started = taskData.startedDate
+    result.metadata.started = new Date(taskData.startedDate)
   }
   if (taskData.completedDate !== null) {
-    result.completedDate = taskData.completedDate
+    result.metadata.completed = new Date(taskData.completedDate)
   }
 
   // Add custom fields
   for (const customField of taskData.customFields) {
     result.metadata[customField.name] = customField.value
+    if (customField.type === 'date') {
+      result.metadata[customField.name] = new Date(customField.value)
+    }
   }
 
   return result
@@ -128,7 +135,6 @@ export default class KanbnTaskPanel {
 
           // Create a task
           case 'kanbn.updateOrCreate':
-            console.log('here are the values', transformTaskData(message.taskData, message.customFields))
             if (this._taskId === null) {
               await this._kanbn.createTask(
                 transformTaskData(message.taskData, message.customFields),
@@ -137,14 +143,13 @@ export default class KanbnTaskPanel {
               this._panel.onDidDispose((e) => { if (this._taskId !== null) taskCache.delete(this._taskId) })
               taskCache.set(message.taskData.id, this)
               void this.update()
-              console.log('task data', message.taskData)
               if (vscode.workspace.getConfiguration('kanbn').get<boolean>('showTaskNotifications') ?? true) {
                 // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
                 void vscode.window.showInformationMessage(`Created task '${String(message.taskData.name)}'.`)
               }
             } else {
               await this._kanbn.updateTask(
-                message.taskId,
+                this._taskId,
                 transformTaskData(message.taskData, message.customFields),
                 message.taskData.column
               )

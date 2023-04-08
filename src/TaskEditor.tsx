@@ -156,7 +156,6 @@ const TaskEditor = (): JSX.Element => {
       id: paramCase(values.name ?? ''),
       createdDate: state?.createdDate
     }
-    console.log('Saving task', newValues)
     vscode.postMessage({
       command: 'kanbn.updateOrCreate',
       taskData: newValues
@@ -485,15 +484,14 @@ const TaskEditor = (): JSX.Element => {
                     <div className="kanbn-task-editor-row">
                       <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-author">
                         {
-                          <input
-                            {...register(`comments.${index}.author`)}
-                            className="kanbn-task-editor-field-input"
-                            placeholder="Comment author"
-                          />
-                          // : <div className="kanbn-task-editor-field-comment-author-value">
-                          //   <i className="codicon codicon-account"></i>
-                          //   {comment.author ?? 'Anonymous'}
-                          // </div>
+                          <label className="kanbn-task-editor-field-label">
+                            <p>Author</p>
+                            <input
+                              {...register(`comments.${index}.author`)}
+                              className="kanbn-task-editor-field-input"
+                              placeholder="Comment author"
+                            />
+                          </label>
                         }
                       </div>
                       <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-date">
