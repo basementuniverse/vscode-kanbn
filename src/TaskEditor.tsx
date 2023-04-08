@@ -392,7 +392,7 @@ const TaskEditor = (): JSX.Element => {
             <div className="kanbn-task-editor-field kanbn-task-editor-field-subtasks">
               <h2 className="kanbn-task-editor-title">Sub-tasks</h2>
               <div>
-                {subtaskFields.map((subTask: any, index) => (
+                {subtaskFields.map((subTask: Subtask, index) => (
                   <div className="kanbn-task-editor-row kanbn-task-editor-row-subtask" key={index}>
                     <div className="kanbn-task-editor-column kanbn-task-editor-field-subtask-completed">
                       <input
@@ -435,7 +435,7 @@ const TaskEditor = (): JSX.Element => {
             <div className="kanbn-task-editor-field kanbn-task-editor-field-relations">
               <h2 className="kanbn-task-editor-title">Relations</h2>
               <div>
-                {relationFields.map((relation: any, index) => (
+                {relationFields.map((relation: Relation, index) => (
                   <div className="kanbn-task-editor-row kanbn-task-editor-row-relation" key={index}>
                     <div className="kanbn-task-editor-column kanbn-task-editor-field-relation-type">
                       <input
@@ -480,7 +480,7 @@ const TaskEditor = (): JSX.Element => {
             <div className="kanbn-task-editor-field kanbn-task-editor-field-comments">
               <h2 className="kanbn-task-editor-title">Comments</h2>
               <div>
-                {commentFields.map((comment: any, index) => (
+                {commentFields.map((comment: Comment, index) => (
                   <div className="kanbn-task-editor-row-comment" key={index}>
                     <div className="kanbn-task-editor-row">
                       <div className="kanbn-task-editor-column kanbn-task-editor-field-comment-author">
