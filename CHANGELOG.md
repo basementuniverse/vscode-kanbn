@@ -1,3 +1,14 @@
+# 0.13.0
+
+A number of changes to the task editor:
+* Editor state is now saved even when the editor is hidden, and restored once the editor is shown again. Previously hiding an editor would discard any user changes to the task being edited if it wasn't saved.
+* A revamp to markdown components in the task editor: `Edit` buttons are no more. Instead simply click on the text area to enter editing mode; click away to see the resulting markdown.
+* Moved away from `Formik` to `react-hook-form`, which should result in a small performance improvement.
+* Some other small visual changes.
+
+Other changes:
+* Fixed functionality of the kanbn status bar item. Clicking on it used to throw an error, now it shows a choice of boards to open (same as the Open Board command from the command palette).
+
 # 0.12.1
 
 * Fixed an issue with not being able to update titles more than one letter at a time when writing titles.
