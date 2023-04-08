@@ -47,7 +47,7 @@ export default class KanbnStatusBarItem {
       }
       this._statusBarItem.text = text.join(' ')
       this._statusBarItem.tooltip = tooltip.join('\n')
-      this._statusBarItem.command = 'kanbn.board'
+      this._statusBarItem.command = 'kanbn.openBoard'
       this._statusBarItem.show()
     } else {
       this._statusBarItem.text = '$(project)'
