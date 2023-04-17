@@ -16,13 +16,12 @@ function transformTaskData (
       updated: new Date(),
       assigned: taskData.assignedTo,
       progress: taskData.progress,
-      tags: taskData.tags
+      tags: taskData.tags.map((tag: any) => tag.tag)
     } as any,
     relations: taskData.relations ?? [],
     subTasks: taskData.subTasks ?? [],
     comments: taskData.comments ?? []
   } as any
-
   for (const comment of result.comments) {
     comment.date = new Date(comment.date)
   }
@@ -30,19 +29,40 @@ function transformTaskData (
   // Add due, started and completed dates if present
   if (taskData.dueDate !== null) {
     result.metadata.due = new Date(taskData.dueDate)
+    if (!(result.metadata.due instanceof Date) || isNaN(result.metadata.due.getTime())) {
+      delete result.metadata.due
+    }
   }
   if (taskData.startedDate !== null) {
     result.metadata.started = new Date(taskData.startedDate)
+    if (!(result.metadata.started instanceof Date) || isNaN(result.metadata.started.getTime())) {
+      delete result.metadata.started
+    }
   }
   if (taskData.completedDate !== null) {
     result.metadata.completed = new Date(taskData.completedDate)
+    if (!(result.metadata.completed instanceof Date) || isNaN(result.metadata.completed.getTime())) {
+      delete result.metadata.completed
+    }
   }
 
   // Add custom fields
   for (const customField of taskData.customFields) {
     result.metadata[customField.name] = customField.value
-    if (customField.type === 'date') {
+    if (customField.type === 'date' && customField.value != null) {
       result.metadata[customField.name] = new Date(customField.value)
+      if (!(result.metadata[customField.name] instanceof Date) || isNaN(result.metadata[customField.name].getTime())) {
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+        delete result.metadata[customField.name]
+      }
+    }
+    if (customField.type === 'boolean' && customField.value === false) {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete result.metadata[customField.name]
+    }
+    if (customField.type === 'number' && customField.value === '') {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete result.metadata[customField.name]
     }
   }
 

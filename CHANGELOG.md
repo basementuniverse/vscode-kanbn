@@ -1,3 +1,10 @@
+# 0.13.1
+
+* Fixed a few of issues with mapping between the extension server and task editor panel that disallowed saving a task that had tags, subtasks or custom fields.
+* Fixed a name validation issue that didn't allow saving tasks unless the task name had changed.
+* Fixed rendering of dates in the task editor.
+* Fixed small rendering issues of custom fields in the board panel.
+
 # 0.13.0
 
 A number of changes to the task editor:

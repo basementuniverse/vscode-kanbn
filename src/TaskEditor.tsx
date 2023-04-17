@@ -92,7 +92,7 @@ interface CustomField {
   value: any
 }
 
-interface Subtask {
+interface SubTask {
   text: string
   completed: boolean
 }
@@ -115,14 +115,14 @@ interface Tag {
 interface EditorState {
   name: string
   description: string
-  subtasks: Subtask[]
+  subTasks: SubTask[]
   relations: Relation[]
   comments: Comment[]
   column: string
   assignedTo: string
-  startedDate: Date | null
-  dueDate: Date | null
-  completedDate: Date | null
+  startedDate: string | null
+  dueDate: string | null
+  completedDate: string | null
   tags: Tag[]
   progress: number
   customFields: CustomField[]
@@ -216,7 +216,7 @@ const TaskEditor = (): JSX.Element => {
     remove: removeSubtask
   } = useFieldArray({
     control,
-    name: 'subtasks'
+    name: 'subTasks'
   })
   // relations
   const {
@@ -256,7 +256,7 @@ const TaskEditor = (): JSX.Element => {
   // Check if a task's due date is in the past
   const checkOverdue = (): boolean => {
     if (watchedDue != null) {
-      return watchedDue < new Date()
+      return new Date(watchedDue) < new Date()
     }
     return false
   }
@@ -265,7 +265,7 @@ const TaskEditor = (): JSX.Element => {
     const tasks = Object.fromEntries((event.data.tasks ?? []).map(task => [task.id, task]))
     const newState: TaskState = {
       // TODO: Not sure yet if name is necessary. Definitely won't be necessary in the future
-      name: event.data.name,
+      name: event.data.task?.name ?? '',
       taskCreated: event.data.task !== null,
       tasks,
       columnNames: Object.keys(event.data.index.columns),
@@ -278,6 +278,17 @@ const TaskEditor = (): JSX.Element => {
     setState(newState)
     if (shouldUpdateEditorState) {
       setShouldUpdateEditorState(false)
+      function formatDateString (dateString: string | null): string | null {
+        if (dateString === null) {
+          return null
+        }
+        const date = new Date(dateString)
+        const year = date.getFullYear()
+        const month = (date.getMonth() + 1).toString().padStart(2, '0')
+        const day = date.getDate().toString().padStart(2, '0')
+
+        return `${year}-${month}-${day}`
+      }
       reset(
         {
           name: event.data.task?.name ?? '',
@@ -285,13 +296,13 @@ const TaskEditor = (): JSX.Element => {
           column: event.data.columnName,
           progress: event.data.task?.progress ?? 0,
           relations: event.data.task?.relations ?? [],
-          subtasks: event.data.task?.subTasks ?? [],
+          subTasks: event.data.task?.subTasks ?? [],
           comments: event.data.task?.comments ?? [],
-          customFields: event.data.task?.customFields ?? [],
-          tags: event.data.task?.metadata?.tags ?? [],
-          dueDate: event.data.task?.metadata?.due ?? null,
-          startedDate: event.data.task?.metadata?.started ?? null,
-          completedDate: event.data.task?.metadata?.completed ?? null,
+          customFields: event.data.customFields?.map((customField: { name: string, type: string }) => ({ ...customField, value: (customField.type === 'date' ? formatDateString(event.data.task?.metadata[customField.name]) : event.data.task?.metadata[customField.name]) })) ?? [],
+          tags: event.data.task?.metadata?.tags.map((tag: string): Tag => ({ tag })) ?? [],
+          dueDate: formatDateString(event.data.task?.metadata?.due),
+          startedDate: formatDateString(event.data.task?.metadata?.started),
+          completedDate: formatDateString(event.data.task?.metadata?.completed),
           assignedTo: event.data.task?.metadata?.assigned ?? ''
         }
       )
@@ -306,7 +317,7 @@ const TaskEditor = (): JSX.Element => {
   })
 
   const formData = watch()
-  // Set the initial state of the form once
+  // Store the form state whenever it changes
   useEffect(() => {
     vscode.setState(formData)
   }, [formData])
@@ -391,18 +402,18 @@ const TaskEditor = (): JSX.Element => {
             <div className="kanbn-task-editor-field kanbn-task-editor-field-subtasks">
               <h2 className="kanbn-task-editor-title">Sub-tasks</h2>
               <div>
-                {subtaskFields.map((subTask: Subtask, index) => (
+                {subtaskFields.map((subTask: SubTask, index) => (
                   <div className="kanbn-task-editor-row kanbn-task-editor-row-subtask" key={index}>
                     <div className="kanbn-task-editor-column kanbn-task-editor-field-subtask-completed">
                       <input
-                        {...register(`subtasks.${index}.completed`)}
+                        {...register(`subTasks.${index}.completed`)}
                         className="kanbn-task-editor-field-checkbox"
                         type="checkbox"
                       />
                     </div>
                     <div className="kanbn-task-editor-column kanbn-task-editor-field-subtask-text">
                       <input
-                        {...register(`subtasks.${index}.text`)}
+                        {...register(`subTasks.${index}.text`)}
                         className="kanbn-task-editor-field-input"
                         placeholder="Sub-task text"
                       />
