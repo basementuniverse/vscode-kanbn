@@ -1,3 +1,7 @@
+# 0.13.2
+
+* Fixed issue with custom `board.css` not being loaded by the extension. The custom styles should now work in all panels.
+
 # 0.13.1
 
 * Fixed a few of issues with mapping between the extension server and task editor panel that disallowed saving a task that had tags, subtasks or custom fields.
