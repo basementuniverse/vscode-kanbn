@@ -294,7 +294,7 @@ const TaskEditor = (): JSX.Element => {
           name: event.data.task?.name ?? '',
           description: event.data.task?.description ?? '',
           column: event.data.columnName,
-          progress: event.data.task?.progress ?? 0,
+          progress: event.data.task?.metadata?.progress ?? 0,
           relations: event.data.task?.relations ?? [],
           subTasks: event.data.task?.subTasks ?? [],
           comments: event.data.task?.comments ?? [],
