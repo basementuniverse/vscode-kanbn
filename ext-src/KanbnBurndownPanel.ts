@@ -34,7 +34,7 @@ export default class KanbnBurndownPanel {
       // Restrict the webview to only loading content from allowed paths
       localResourceRoots: [
         vscode.Uri.file(path.join(this._extensionPath, 'build')),
-        vscode.Uri.file(path.join(this._workspacePath, this._kanbnFolderName)),
+        vscode.Uri.file(path.join(this._kanbnFolderName, '.kanbn')),
         vscode.Uri.file(path.join(this._extensionPath, 'node_modules', 'vscode-codicons', 'dist'))
       ]
     });
@@ -161,7 +161,7 @@ export default class KanbnBurndownPanel {
     const styleUri = webview.asWebviewUri(vscode.Uri.file(path.join(this._extensionPath, 'build', mainStyle)))
 
     const customStyleUri = webview.asWebviewUri(vscode.Uri.file(
-      path.join(this._workspacePath, this._kanbnFolderName, 'board.css')
+      path.join(this._kanbnFolderName, '.kanbn', 'board.css')
     ))
     const codiconsUri = webview.asWebviewUri(vscode.Uri.file(
       path.join(this._extensionPath, 'node_modules', 'vscode-codicons', 'dist', 'codicon.css')
