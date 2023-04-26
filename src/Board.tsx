@@ -356,7 +356,7 @@ function Board (): JSX.Element {
                     <i className="codicon codicon-check"></i>
                   }
                   {columnName}
-                  <span className="kanbn-column-count">{((column as any).length > 0) || ''}</span>
+                  <span className="kanbn-column-count">{(column as any).length}</span>
                   <button
                     type="button"
                     className="kanbn-column-button kanbn-create-task-button"
