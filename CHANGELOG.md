@@ -2,6 +2,7 @@
 
 * Fixed issue with custom `board.css` not being loaded by the extension. The custom styles should now work in all panels.
 * Added task counters to the top of all columns. This used to be a feature in the past and I had accidentally removed it.
+* Fix a bug where a task wouldn't save if it had a progress value set.
 
 # 0.13.1
 
