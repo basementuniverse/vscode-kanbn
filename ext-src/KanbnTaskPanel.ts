@@ -15,7 +15,7 @@ function transformTaskData (
       created: new Date(taskData.createdDate ?? new Date()),
       updated: new Date(),
       assigned: taskData.assignedTo,
-      progress: taskData.progress,
+      progress: Number(taskData.progress),
       tags: taskData.tags.map((tag: any) => tag.tag)
     } as any,
     relations: taskData.relations ?? [],
