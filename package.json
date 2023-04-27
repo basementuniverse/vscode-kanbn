@@ -1,19 +1,24 @@
 {
-  "name": "vscode-kanbn",
-  "displayName": "Kanbn Extension for Visual Studio Code",
+  "name": "vscode-kanbn-boards",
+  "displayName": "Kanbn Extension for VSCode",
   "description": "An extension for Visual Studio Code that allows you to manage tasks on a kanban board.",
   "icon": "resources/kanbn.png",
   "galleryBanner": {
     "color": "#72abdd",
     "theme": "dark"
   },
-  "version": "0.11.0",
+  "version": "0.13.2",
   "engines": {
-    "vscode": "^1.23.0"
+    "vscode": "^1.73.1"
   },
   "author": "Gordon Larrigan",
+  "contributors": [
+    {
+      "name": "Zigmas Bitinas"
+    }
+  ],
   "license": "MIT",
-  "publisher": "gordonlarrigan",
+  "publisher": "samgiz",
   "keywords": [
     "kanbn",
     "kanban",
@@ -32,7 +37,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/basementuniverse/vscode-kanbn.git"
+    "url": "https://github.com/samgiz/vscode-kanbn.git"
   },
   "activationEvents": [
     "onStartupFinished"
@@ -41,12 +46,12 @@
   "contributes": {
     "commands": [
       {
-        "command": "kanbn.init",
-        "title": "Initialise Kanbn",
+        "command": "kanbn.createBoard",
+        "title": "Create board",
         "category": "Kanbn"
       },
       {
-        "command": "kanbn.board",
+        "command": "kanbn.openBoard",
         "title": "Open board",
         "category": "Kanbn"
       },
@@ -74,6 +79,11 @@
     "configuration": {
       "title": "Kanbn",
       "properties": {
+        "kanbn.additionalBoards": {
+          "type": "array",
+          "default": [],
+          "description": "Specify additional kanbn boards in non-standard locations."
+        },
         "kanbn.showUninitialisedStatusBarItem": {
           "type": "boolean",
           "default": true,
@@ -98,46 +108,48 @@
     }
   },
   "dependencies": {
-    "@basementuniverse/kanbn": "^0.10.0",
-    "dateformat": "^4.5.1",
-    "formik": "^2.2.6",
-    "git-user-name": "^2.0.0",
+    "@basementuniverse/kanbn": "git@github.com:samgiz/kanbn.git#1536b686f8b530c5eca1cd997347f250d767951c",
+    "@types/vscode": "^1.74.0",
+    "@vscode/test-electron": "^2.2.1",
+    "dateformat": "^5.0.3",
     "param-case": "^3.0.4",
-    "react": "^16.3.2",
-    "react-beautiful-dnd": "12.2.0",
-    "react-dom": "^16.3.2",
-    "react-markdown": "^6.0.1",
-    "react-syntax-highlighter": "^15.4.3",
-    "react-textarea-autosize": "^8.3.2",
-    "recharts": "^2.0.9",
-    "rehype-katex": "^5.0.0",
-    "remark-math": "^4.0.0",
-    "terser": "3.14.1",
-    "throttle-debounce": "^3.0.1",
-    "uuid": "^8.3.2",
-    "vscode-codicons": "^0.0.15"
+    "path": "^0.12.7",
+    "react": "^18.2.0",
+    "react-beautiful-dnd": "13.1.1",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.43.3",
+    "react-markdown": "^8.0.3",
+    "react-syntax-highlighter": "^15.5.0",
+    "react-textarea-autosize": "^8.4.0",
+    "recharts": "^2.2.0",
+    "rehype-katex": "^6.0.2",
+    "remark-math": "^5.1.1",
+    "terser": "5.16.0",
+    "throttle-debounce": "^5.0.0",
+    "uuid": "^9.0.0",
+    "vscode-codicons": "^0.0.17"
   },
   "scripts": {
     "vscode:prepublish": "./scripts/build-non-split.js && tsc -p tsconfig.extension.json",
-    "postinstall": "node ./node_modules/vscode/bin/install",
     "start": "react-scripts start",
     "build": "./scripts/build-non-split.js && tsc -p tsconfig.extension.json",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
   },
   "devDependencies": {
-    "@types/dateformat": "^3.0.1",
-    "@types/git-user-name": "^2.0.0",
-    "@types/jest": "^23.3.14",
-    "@types/lodash": "^4.14.168",
-    "@types/node": "^10.17.56",
-    "@types/react-syntax-highlighter": "^13.5.0",
-    "@types/recharts": "^1.8.19",
-    "@types/uuid": "^8.3.0",
-    "react-scripts": "^2.1.8",
-    "rewire": "^4.0.1",
-    "typescript": "^4.0.2",
-    "vscode": "^1.1.37"
+    "@types/dateformat": "^5.0.0",
+    "@types/git-user-name": "^2.0.1",
+    "@types/jest": "^29.2.4",
+    "@types/lodash": "^4.14.191",
+    "@types/node": "^18.11.18",
+    "@types/react-syntax-highlighter": "^15.5.5",
+    "@types/recharts": "^1.8.24",
+    "@types/uuid": "^9.0.0",
+    "eslint": "^8.30.0",
+    "eslint-config-standard-with-typescript": "^24.0.0",
+    "react-scripts": "^5.0.1",
+    "rewire": "^6.0.0",
+    "typescript": "^4.9.4"
   },
   "browserslist": [
     ">0.2%",

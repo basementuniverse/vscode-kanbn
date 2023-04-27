@@ -1,3 +1,38 @@
+# 0.13.2
+
+* Fixed issue with custom `board.css` not being loaded by the extension. The custom styles should now work in all panels.
+* Added task counters to the top of all columns. This used to be a feature in the past and I had accidentally removed it.
+* Fix a bug where a task wouldn't save if it had a progress value set.
+
+# 0.13.1
+
+* Fixed a few of issues with mapping between the extension server and task editor panel that disallowed saving a task that had tags, subtasks or custom fields.
+* Fixed a name validation issue that didn't allow saving tasks unless the task name had changed.
+* Fixed rendering of dates in the task editor.
+* Fixed small rendering issues of custom fields in the board panel.
+
+# 0.13.0
+
+A number of changes to the task editor:
+* Editor state is now saved even when the editor is hidden, and restored once the editor is shown again. Previously hiding an editor would discard any user changes to the task being edited if it wasn't saved.
+* A revamp to markdown components in the task editor: `Edit` buttons are no more. Instead simply click on the text area to enter editing mode; click away to see the resulting markdown.
+* Moved away from `Formik` to `react-hook-form`, which should result in a small performance improvement.
+* Some other small visual changes.
+
+Other changes:
+* Fixed functionality of the kanbn status bar item. Clicking on it used to throw an error, now it shows a choice of boards to open (same as the Open Board command from the command palette).
+
+# 0.12.1
+
+* Fixed an issue with not being able to update titles more than one letter at a time when writing titles.
+
+# 0.12.0
+
+* Added support for multiple boards. New boards are stored under `.kanbn_boards/<board_name>/.kanbn`, though the legacy location `.kanbn` is still supported. Use the new `createBoard` and `openBoard` commands to choose which board you want to open at any given point, or even open all of them at once!
+* Added user and workspace options called `additionalBoards` that allow specifying non-standard board locations to be accessible from a workspace or globally.
+* The extension webview panels now take up much less memory when hidden.
+* Updated most of the dependencies.
+
 # 0.11.0
 
 * KaTeX support in task markdown (description and comments) using `$$...$$` for blocks and `$...$` for inline

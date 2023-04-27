@@ -419,6 +419,10 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
     border: 1px transparent solid;
 }
 
+#description-input {
+    min-height: 97px;
+}
+
 .kanbn-task-editor-field-input[type=date] {
     padding: 6px 8px;
 }
@@ -602,6 +606,7 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
 
 .kanbn-task-editor-description-preview {
     padding: .5em;
+    min-height: 90px;
     border: 1px var(--vscode-input-background) solid;
 }
 
