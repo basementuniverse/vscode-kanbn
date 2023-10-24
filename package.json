@@ -9,11 +9,11 @@
   },
   "version": "0.11.0",
   "engines": {
-    "vscode": "^1.23.0"
+    "vscode": "^1.83.1"
   },
-  "author": "Gordon Larrigan",
+  "author": "William Kuang",
   "license": "MIT",
-  "publisher": "gordonlarrigan",
+  "publisher": "wkuang",
   "keywords": [
     "kanbn",
     "kanban",
@@ -119,7 +119,6 @@
   },
   "scripts": {
     "vscode:prepublish": "./scripts/build-non-split.js && tsc -p tsconfig.extension.json",
-    "postinstall": "node ./node_modules/vscode/bin/install",
     "start": "react-scripts start",
     "build": "./scripts/build-non-split.js && tsc -p tsconfig.extension.json",
     "test": "react-scripts test --env=jsdom",
@@ -134,10 +133,11 @@
     "@types/react-syntax-highlighter": "^13.5.0",
     "@types/recharts": "^1.8.19",
     "@types/uuid": "^8.3.0",
-    "react-scripts": "^2.1.8",
+    "@types/vscode": "^1.83.1",
+    "@vscode/test-electron": "^2.3.5",
+    "react-scripts": "^5.0.1",
     "rewire": "^4.0.1",
-    "typescript": "^4.0.2",
-    "vscode": "^1.1.37"
+    "typescript": "^4.0.2"
   },
   "browserslist": [
     ">0.2%",
