@@ -1,6 +1,6 @@
-import Board from './Board';
-import Burndown from './Burndown';
-import TaskEditor from './TaskEditor';
+import Board from "./Board";
+import Burndown from "./Burndown";
+import TaskEditor from "./TaskEditor";
 import React, { useState, useEffect, useCallback } from "react";
 import VSCodeApi from "./VSCodeApi";
 
@@ -10,41 +10,43 @@ const vscode: VSCodeApi = acquireVsCodeApi();
 const zip = (a: Array<any>, b: Array<any>): Array<[any, any]> => a.map((v: any, i: number): [any, any] => [v, b[i]]);
 
 function App() {
-  const [type, setType] = useState('');
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const [type, setType] = useState("");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [columns, setColumns] = useState({});
   const [hiddenColumns, setHiddenColumns] = useState([]);
   const [startedColumns, setStartedColumns] = useState([]);
   const [completedColumns, setCompletedColumns] = useState([]);
   const [columnSorting, setColumnSorting] = useState({});
   const [customFields, setCustomFields] = useState([]);
-  const [dateFormat, setDateFormat] = useState('');
+  const [dateFormat, setDateFormat] = useState("");
   const [task, setTask] = useState({});
   const [tasks, setTasks] = useState({});
-  const [columnName, setColumnName] = useState('');
+  const [columnName, setColumnName] = useState("");
   const [columnNames, setColumnNames] = useState([] as string[]);
-  const [panelUuid, setPanelUuid] = useState('');
+  const [panelUuid, setPanelUuid] = useState("");
   const [showBurndownButton, setShowBurndownButton] = useState(false);
   const [showSprintButton, setShowSprintButton] = useState(false);
   const [sprints, setSprints] = useState([]);
   const [currentSprint, setCurrentSprint] = useState(null);
   const [burndownData, setBurndownData] = useState({ series: [] });
 
-  const processMessage = useCallback(event => {
-    const tasks = event.data.tasks
-      ? Object.fromEntries(event.data.tasks.map(task => [task.id, task]))
-      : {};
+  const processMessage = useCallback((event) => {
+    const tasks = event.data.tasks ? Object.fromEntries(event.data.tasks.map((task) => [task.id, task])) : {};
     switch (event.data.type) {
-      case 'index':
+      case "index":
         setName(event.data.index.name);
         setDescription(event.data.index.description);
-        setColumns(Object.fromEntries(
-          zip(
-            Object.keys(event.data.index.columns),
-            Object.values(event.data.index.columns).map(column => (column as string[]).map(taskId => tasks[taskId]))
+        setColumns(
+          Object.fromEntries(
+            zip(
+              Object.keys(event.data.index.columns),
+              Object.values(event.data.index.columns).map((column) =>
+                (column as string[]).map((taskId) => tasks[taskId])
+              )
+            )
           )
-        ));
+        );
         setHiddenColumns(event.data.hiddenColumns);
         setStartedColumns(event.data.startedColumns);
         setCompletedColumns(event.data.completedColumns);
@@ -55,13 +57,13 @@ function App() {
 
         // Get current sprint
         let sprint = null;
-        if ('sprints' in event.data.index.options && event.data.index.options.sprints.length) {
+        if ("sprints" in event.data.index.options && event.data.index.options.sprints.length) {
           sprint = event.data.index.options.sprints[event.data.index.options.sprints.length - 1];
         }
         setCurrentSprint(sprint);
         break;
 
-      case 'task':
+      case "task":
         setTask(event.data.task);
         setTasks(tasks);
         setColumnName(event.data.columnName);
@@ -70,14 +72,10 @@ function App() {
         setPanelUuid(event.data.panelUuid);
         break;
 
-      case 'burndown':
+      case "burndown":
         setName(event.data.index.name);
         setTasks(tasks);
-        setSprints(
-          'sprints' in event.data.index.options
-            ? event.data.index.options.sprints
-            : []
-        );
+        setSprints("sprints" in event.data.index.options ? event.data.index.options.sprints : []);
         setBurndownData(event.data.burndownData);
         break;
     }
@@ -86,16 +84,15 @@ function App() {
   }, []);
 
   useEffect(() => {
-    window.addEventListener('message', processMessage);
+    window.addEventListener("message", processMessage);
     return () => {
-      window.removeEventListener('message', processMessage);
+      window.removeEventListener("message", processMessage);
     };
   });
 
   return (
     <React.Fragment>
-      {
-        type === 'index' &&
+      {type === "index" && (
         <Board
           name={name}
           description={description}
@@ -111,11 +108,10 @@ function App() {
           currentSprint={currentSprint}
           vscode={vscode}
         />
-      }
-      {
-        type === 'task' &&
+      )}
+      {type === "task" && (
         <TaskEditor
-          task={task as KanbnTask|null}
+          task={task as KanbnTask | null}
           tasks={tasks}
           columnName={columnName}
           columnNames={columnNames}
@@ -124,17 +120,10 @@ function App() {
           panelUuid={panelUuid}
           vscode={vscode}
         />
-      }
-      {
-        type === 'burndown' &&
-        <Burndown
-          name={name}
-          sprints={sprints}
-          burndownData={burndownData}
-          dateFormat={dateFormat}
-          vscode={vscode}
-        />
-      }
+      )}
+      {type === "burndown" && (
+        <Burndown name={name} sprints={sprints} burndownData={burndownData} dateFormat={dateFormat} vscode={vscode} />
+      )}
     </React.Fragment>
   );
 }
