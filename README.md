@@ -1,8 +1,10 @@
 # Kanbn Extension for Visual Studio Code
 
-![Marketplace version](https://vsmarketplacebadge.apphb.com/version-short/gordonlarrigan.vscode-kanbn.svg?color=lightblue) ![Marketplace installs](https://vsmarketplacebadge.apphb.com/installs-short/gordonlarrigan.vscode-kanbn.svg?color=lightblue) ![Marketplace rating](https://vsmarketplacebadge.apphb.com/rating-short/gordonlarrigan.vscode-kanbn.svg?color=lightblue) [![MIT License](https://img.shields.io/github/license/basementuniverse/vscode-kanbn?color=orange)](https://opensource.org/licenses/MIT)
+[![MIT License](https://img.shields.io/github/license/basementuniverse/vscode-kanbn?color=orange)](https://opensource.org/licenses/MIT)
 
 This extension adds a [Kanbn](https://www.npmjs.com/package/@basementuniverse/kanbn)-powered kanban board to Visual Studio Code.
+
+This extension is a fork of the original [Kanbn Extension](https://github.com/basementuniverse/vscode-kanbn). Some documentation may be out of date. Please report any issues through [GitHub](https://github.com/samgiz/vscode-kanbn/issues/new).
 
 ![Kanbn](docs/preview.gif "Kanbn")
 
@@ -36,8 +38,8 @@ You can also modify the index or task files directly, or by using Kanbn CLI comm
 
 The following commands are available:
 
-- `Kanbn: Initialise Kanbn` will initialise Kanbn in the open workspace.
-- `Kanbn: Open board` will open open the Kanbn board.
+- `Kanbn: Create board` will create a Kanbn board in the current workspace.
+- `Kanbn: Open board` will open open a Kanbn board.
 - `Kanbn: Open burndown chart` will open a burndown chart.
 - `Kanbn: Add task` will open the task editor.
 - `Kanbn: Archive tasks` will send tasks to the archive.

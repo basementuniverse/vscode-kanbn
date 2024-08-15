@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es6",
     "lib": [
       "dom",
       "dom.iterable",
@@ -17,10 +17,12 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "preserve",
-    "noImplicitAny": false
+    "jsx": "react-jsx",
+    "noImplicitAny": false,
+    "noFallthroughCasesInSwitch": true
   },
   "include": [
-    "src"
+    "src",
+    "ext-src"
   ]
 }

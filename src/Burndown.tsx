@@ -1,212 +1,223 @@
-import React, { useState, useRef } from 'react';
-import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
-import VSCodeApi from "./VSCodeApi";
-import formatDate from 'dateformat';
-import { debounce } from 'throttle-debounce';
+import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts'
+import vscode from './vscode'
+import formatDate from 'dateformat'
+import { debounce } from 'throttle-debounce'
 
-const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
-  name: string,
-  sprints: KanbnSprint[],
-  burndownData: {
-    series: Array<{
-      sprint: KanbnSprint,
-      from: string,
-      to: string,
-      dataPoints: Array<{
-        x: string,
-        y: number,
-        count: number,
-        tasks: Array<{
-          eventType: string,
-          taskId: string
-        }>
-      }>
-    }>
-  },
-  dateFormat: string,
-  vscode: VSCodeApi
-}) => {
-  const hasSprints = sprints.length > 0;
-  const [sprintMode, setSprintMode] = useState(hasSprints);
-  const [sprint, setSprint] = useState((sprintMode && hasSprints) ? sprints[sprints.length - 1].name : '');
-  const [startDate, setStartDate] = useState(
-    (sprintMode && burndownData.series.length > 0)
-      ? ''
-      : formatDate(burndownData.series[0].from, 'yyyy-mm-dd')
-  );
-  const [endDate, setEndDate] = useState(
-    (sprintMode && burndownData.series.length > 0)
-      ? ''
-      : formatDate(burndownData.series[0].to, 'yyyy-mm-dd')
-  );
+const Burndown = (): JSX.Element => {
+  const [state, setState] = useState(vscode.getState() ?? {
+    name: '',
+    dateFormat: 'yyyy-mm-dd',
+    sprints: [],
+    burndownData: { series: [] },
+    sprintMode: false,
+    sprint: '',
+    startDate: '',
+    endDate: ''
+  })
+  const processMessage = useCallback(event => {
+    const newState: any = {}
+    newState.name = event.data.index.name
+    newState.sprints = 'sprints' in event.data.index.options
+      ? event.data.index.options.sprints
+      : []
+    newState.burndownData = event.data.burndownData
+    newState.dateFormat = event.data.dateFormat
+    newState.sprintMode = state.sprintMode
+    newState.sprint = state.sprint
+    newState.startDate = state.startDate
+    if (newState.sprintMode === false && newState.burndownData.series.length > 0 && newState.startDate === '') {
+      newState.startDate = formatDate(newState.burndownData.series[0].from, state.dateFormat)
+    }
+    newState.endDate = state.endDate
+    if (newState.sprintMode === false && newState.burndownData.series.length > 0 && newState.endDate === '') {
+      newState.endDate = formatDate(newState.burndownData.series[0].to, state.dateFormat)
+    }
+    vscode.setState(newState)
+    setState(newState)
+  }, [])
+
+  useEffect(() => {
+    window.addEventListener('message', processMessage)
+    return () => {
+      window.removeEventListener('message', processMessage)
+    }
+  }, [])
+  const hasSprints = state.sprints.length > 0
+  const setSprintMode = (sprintMode): void => {
+    const newState = { ...state, sprintMode }
+    setState(newState)
+    vscode.setState(newState)
+  }
+  const setSprint = (sprint): void => {
+    const newState = { ...state, sprint }
+    setState(newState)
+    vscode.setState(newState)
+  }
+  const setStartDate = (startDate): void => {
+    const newState = { ...state, startDate }
+    setState(newState)
+    vscode.setState(newState)
+  }
+  const setEndDate = (endDate): void => {
+    const newState = { ...state, endDate }
+    setState(newState)
+    vscode.setState(newState)
+  }
 
   const refreshBurndownData = useRef(debounce(500, settings => {
     vscode.postMessage({
       command: 'kanbn.refreshBurndownData',
       ...settings
-    });
-  })).current;
+    })
+  })).current
 
-  const handleChangeSprint = ({ target: { value }}) => {
-    setSprint(value);
+  const handleChangeSprint = ({ target: { value } }): void => {
+    setSprint(value)
     refreshBurndownData(
       Object.assign(
         {
-          sprintMode,
-          sprint,
-          startDate,
-          endDate
-        },
-        {
-          sprint: value
+          sprintMode: state.sprintMode,
+          sprint: value,
+          startDate: state.startDate,
+          endDate: state.endDate
         }
       )
-    );
-  };
+    )
+  }
 
-  const handleChangeStartDate = ({ target: { value }}) => {
-    setStartDate(value);
+  const handleChangeStartDate = ({ target: { value } }): void => {
+    setStartDate(value)
     refreshBurndownData(
       Object.assign(
         {
-          sprintMode,
-          sprint,
-          startDate,
-          endDate
-        },
-        {
-          startDate: value
+          sprintMode: state.sprintMode,
+          sprint: state.sprint,
+          startDate: value,
+          endDate: state.endDate
         }
       )
-    );
-  };
+    )
+  }
 
-  const handleChangeEndDate = ({ target: { value }}) => {
-    setEndDate(value);
+  const handleChangeEndDate = ({ target: { value } }): void => {
+    setEndDate(value)
+    refreshBurndownData(
+      {
+        sprintMode: state.sprintMode,
+        sprint: state.sprint,
+        startDate: state.startDate,
+        endDate: value
+      }
+    )
+  }
+
+  const handleClickSprintMode = (): void => {
+    setSprintMode(true)
     refreshBurndownData(
       Object.assign(
         {
-          sprintMode,
-          sprint,
-          startDate,
-          endDate
-        },
-        {
-          endDate: value
+          sprintMode: true,
+          sprint: state.sprint,
+          startDate: state.value,
+          endDate: state.endDate
         }
       )
-    );
-  };
+    )
+  }
 
-  const handleClickSprintMode = () => {
-    setSprintMode(true);
+  const handleClickDateMode = (): void => {
+    setSprintMode(false)
     refreshBurndownData(
-      Object.assign(
-        {
-          sprintMode,
-          sprint,
-          startDate,
-          endDate
-        },
-        {
-          sprintMode: true
-        }
-      )
-    );
-  };
+      {
+        sprintMode: false,
+        sprint: state.sprint,
+        startDate: state.startDate,
+        endDate: state.endDate
+      }
+    )
+  }
 
-  const handleClickDateMode = () => {
-    setSprintMode(false);
-    refreshBurndownData(
-      Object.assign(
-        {
-          sprintMode,
-          sprint,
-          startDate,
-          endDate
-        },
-        {
-          sprintMode: false
-        }
-      )
-    );
-  };
+  const chartData = state.burndownData.series.length > 0
+    ? state.burndownData.series[0].dataPoints.map(dataPoint => ({
+      x: Date.parse(dataPoint.x),
+      y: dataPoint.y,
+      count: dataPoint.count,
+      tasks: dataPoint.tasks
+    }))
+    : []
 
-  const chartData = burndownData.series.length > 0
-    ? burndownData.series[0].dataPoints.map(dataPoint => ({
-        x: Date.parse(dataPoint.x),
-        y: dataPoint.y,
-        count: dataPoint.count,
-        tasks: dataPoint.tasks,
-      }))
-    : [];
-
-  const formatXAxis = date => formatDate(date, dateFormat);
-
-  const renderTooltip = e => {
-    if (e.active && e.payload && e.payload.length) {
-      const data = e.payload[0].payload;
+  const formatXAxis = (date): string => {
+    return formatDate(date, state.dateFormat)
+  }
+  const renderTooltip = (e): JSX.Element | null => {
+    if (e.active === true && e.payload !== undefined && e.payload.length > 0) {
+      const data = e.payload[0].payload
       return (
         <div className="kanbn-burndown-tooltip">
-          <p className="kanbn-burndown-tooltip-date">{formatDate(data.x, dateFormat)}</p>
+          <p className="kanbn-burndown-tooltip-date">{formatDate(data.x, state.dateFormat)}</p>
           <p className="kanbn-burndown-tooltip-workload">Total workload: {data.y}</p>
           <p className="kanbn-burndown-tooltip-count">Active tasks: {data.count}</p>
           {data.tasks.map(task => (
-            <p className="kanbn-burndown-tooltip-task">
+            <p className="kanbn-burndown-tooltip-task" key={task.id}>
               {{ created: 'Created', started: 'Started', completed: 'Completed' }[task.eventType]} {task.task.name}
             </p>
           ))}
         </div>
       )
     }
-    return null;
-  };
+    return null
+  }
+
+  useEffect(() => {
+    vscode.postMessage({ command: 'kanbn.updateMe' })
+  }, [])
 
   return (
-    <React.Fragment>
+    <>
       <div className="kanbn-header">
         <h1 className="kanbn-header-name">
-          <p>{name}</p>
+          <p>{state.name}</p>
           <div className="kanbn-burndown-settings">
             <form>
               {
-                sprintMode
+                state.sprintMode as boolean
                   ? <select
-                      value={sprint}
+                      value={state.sprint}
                       className="kanbn-burndown-settings-sprint-select"
                       onChange={handleChangeSprint}
                     >
                     {
-                      sprints.length > 0
-                        ? sprints.map(sprint => {
-                            return (
-                              <option value={sprint.name}>{sprint.name}</option>
-                            );
-                          })
+                      state.sprints.length > 0
+                        ? state.sprints.map(sprint => {
+                          return (
+                              <option key={sprint.start} value={sprint.name}>{sprint.name}</option>
+                          )
+                        })
                         : <option disabled>No sprints</option>
                     }
                     </select>
-                  : <React.Fragment>
+                  : <>
                       <input
                         type="date"
-                        value={startDate}
+                        value={state.startDate}
                         className="kanbn-burndown-settings-input kanbn-burndown-settings-start-date"
                         onChange={handleChangeStartDate}
                       />
                       <input
                         type="date"
-                        value={endDate}
+                        value={state.endDate}
                         className="kanbn-burndown-settings-input kanbn-burndown-settings-end-date"
                         onChange={handleChangeEndDate}
                       />
-                    </React.Fragment>
+                    </>
               }
               {hasSprints && <button
                 type="button"
                 className={[
                   'kanbn-header-button',
                   'kanbn-burndown-settings-sprint-mode',
-                  sprintMode ? 'kanbn-header-button-active' : 'kanbn-header-button-inactive'
+                  state.sprintMode as boolean ? 'kanbn-header-button-active' : 'kanbn-header-button-inactive'
                 ].join(' ')}
                 onClick={handleClickSprintMode}
                 title="View sprint burndown"
@@ -218,7 +229,7 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
                 className={[
                   'kanbn-header-button',
                   'kanbn-burndown-settings-date-mode',
-                  sprintMode ? 'kanbn-header-button-inactive' : 'kanbn-header-button-active'
+                  state.sprintMode as boolean ? 'kanbn-header-button-inactive' : 'kanbn-header-button-active'
                 ].join(' ')}
                 onClick={handleClickDateMode}
                 title="View date-range burndown"
@@ -241,20 +252,20 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
               isAnimationActive={false}
             />
             <CartesianGrid className="kanbn-burndown-grid" strokeDasharray="5 5" vertical={false} />
-            <XAxis
+            {chartData.length > 0 && <XAxis
               dataKey="x"
               type="number"
               domain={['dataMin', 'dataMax']}
               tickFormatter={formatXAxis}
               tickCount={6}
-            />
+            />}
             <YAxis />
             <Tooltip content={renderTooltip} />
           </LineChart>
         </ResponsiveContainer>
       </div>
-    </React.Fragment>
-  );
-};
+    </>
+  )
+}
 
-export default Burndown;
+export default Burndown

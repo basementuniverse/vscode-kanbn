@@ -1,30 +1,29 @@
-import React from "react";
-import { Draggable } from "react-beautiful-dnd";
-import formatDate from 'dateformat';
-import { paramCase } from '@basementuniverse/kanbn/src/utility';
-import VSCodeApi from "./VSCodeApi";
+import React from 'react'
+import { Draggable } from 'react-beautiful-dnd'
+import formatDate from 'dateformat'
+import { paramCase } from '@basementuniverse/kanbn/src/utility'
+import vscode from './vscode'
 
-const TaskItem = ({ task, columnName, customFields, position, dateFormat, vscode }: {
-  task: KanbnTask,
-  columnName: string,
-  customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string' }[],
-  position: number,
-  dateFormat: string,
-  vscode: VSCodeApi
-}) => {
-  const createdDate = 'created' in task.metadata ? formatDate(task.metadata.created, dateFormat) : null;
-  const updatedDate = 'updated' in task.metadata ? formatDate(task.metadata.updated, dateFormat) : null;
-  const startedDate = 'started' in task.metadata ? formatDate(task.metadata.started, dateFormat) : null;
-  const dueDate = 'due' in task.metadata ? formatDate(task.metadata.due, dateFormat) : null;
-  const completedDate = 'completed' in task.metadata ? formatDate(task.metadata.completed, dateFormat) : null;
+const TaskItem = ({ task, columnName, customFields, position, dateFormat }: {
+  task: KanbnTask
+  columnName: string
+  customFields: Array<{ name: string, type: 'boolean' | 'date' | 'number' | 'string' }>
+  position: number
+  dateFormat: string
+}): JSX.Element => {
+  const createdDate = 'created' in task.metadata ? formatDate(task.metadata.created, dateFormat) : null
+  const updatedDate = 'updated' in task.metadata ? formatDate(task.metadata.updated, dateFormat) : null
+  const startedDate = 'started' in task.metadata ? formatDate(task.metadata.started, dateFormat) : null
+  const dueDate = 'due' in task.metadata ? formatDate(task.metadata.due, dateFormat) : null
+  const completedDate = 'completed' in task.metadata ? formatDate(task.metadata.completed, dateFormat) : null
 
   // Check if a task's due date is in the past
-  const checkOverdue = (task: KanbnTask) => {
+  const checkOverdue = (task: KanbnTask): boolean => {
     if ('due' in task.metadata && task.metadata.due !== undefined) {
-      return Date.parse(task.metadata.due) < (new Date()).getTime();
+      return Date.parse(task.metadata.due) < (new Date()).getTime()
     }
-    return false;
-  };
+    return false
+  }
 
   return (
     <Draggable
@@ -33,6 +32,7 @@ const TaskItem = ({ task, columnName, customFields, position, dateFormat, vscode
       index={position}
     >
       {(provided, snapshot) => {
+        const isDragging: boolean = snapshot.isDragging
         return (
           <div
             ref={provided.innerRef}
@@ -40,13 +40,14 @@ const TaskItem = ({ task, columnName, customFields, position, dateFormat, vscode
             {...provided.dragHandleProps}
             className={[
               'kanbn-task',
-              `kanbn-task-column-${paramCase(columnName)}`,
+              // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
+              `kanbn-task-column-${String(paramCase(columnName))}`,
               checkOverdue(task) ? 'kanbn-task-overdue' : null,
-              !!completedDate ? 'kanbn-task-completed' : null,
-              snapshot.isDragging ? 'drag' : null
+              completedDate ?? 'kanbn-task-completed',
+              isDragging ? 'drag' : null
             ].filter(i => i).join(' ')}
             style={{
-              userSelect: "none",
+              userSelect: 'none',
               ...provided.draggableProps.style
             }}
           >
@@ -58,7 +59,7 @@ const TaskItem = ({ task, columnName, customFields, position, dateFormat, vscode
                     command: 'kanbn.task',
                     taskId: task.id,
                     columnName: task.column
-                  });
+                  })
                 }}
                 title={task.id}
               >
@@ -66,18 +67,19 @@ const TaskItem = ({ task, columnName, customFields, position, dateFormat, vscode
               </button>
             </div>
             {
-              'tags' in task.metadata &&
-              task.metadata.tags!.length > 0 &&
+              task.metadata.tags !== undefined &&
+              task.metadata.tags.length > 0 &&
               <div className="kanbn-task-data kanbn-task-data-tags">
-                {task.metadata.tags!.map(tag => {
+                {task.metadata.tags.map(tag => {
                   return (
-                    <span className={[
+                    <span key={tag} className={[
                       'kanbn-task-tag',
-                      `kanbn-task-tag-${paramCase(tag)}`
+                      // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
+                      `kanbn-task-tag-${String(paramCase(tag))}`
                     ].join(' ')}>
                       {tag}
                     </span>
-                  );
+                  )
                 })}
               </div>
             }
@@ -85,20 +87,22 @@ const TaskItem = ({ task, columnName, customFields, position, dateFormat, vscode
               customFields.map(customField => {
                 if (customField.name in task.metadata) {
                   return (
-                    <div className={[
+                    <div key={customField.name} className={[
                       'kanbn-task-data kanbn-task-data-custom-field',
-                      `kanbn-task-data-${paramCase(customField.name)}`
+                      // TODO: remove the explicit String cast once typescript bindings for kanbn are updated
+                      `kanbn-task-data-${String(paramCase(customField.name))}`
                     ].join(' ')}>
                       {
                         customField.type === 'boolean'
                           ? (
                             <>
-                              <i className={`codicon codicon-${task.metadata[customField.name]
+                              <i className={`codicon codicon-${task.metadata[customField.name] !== undefined
                                 ? 'pass-filled'
                                 : 'circle-large-outline'}`}></i>
                               {customField.name}
                             </>
-                          ) : (
+                            )
+                          : (
                             <>
                               <i className="codicon codicon-json"></i>
                               <span title={customField.name}>
@@ -107,47 +111,47 @@ const TaskItem = ({ task, columnName, customFields, position, dateFormat, vscode
                                   : task.metadata[customField.name]}
                               </span>
                             </>
-                          )
+                            )
                       }
                     </div>
-                  );
+                  )
                 }
-                return (<></>);
+                return (<></>)
               })
             }
             {
               'assigned' in task.metadata &&
-              !!task.metadata.assigned &&
+              (task.metadata.assigned != null) &&
               <div className="kanbn-task-data kanbn-task-data-assigned">
                 <i className="codicon codicon-account"></i>{task.metadata.assigned}
               </div>
             }
             {
-              createdDate &&
+              (createdDate != null) &&
               <div className="kanbn-task-data kanbn-task-data-created" title={`Created ${createdDate}`}>
                 <i className="codicon codicon-clock"></i>{createdDate}
               </div>
             }
             {
-              updatedDate &&
+              (updatedDate != null) &&
               <div className="kanbn-task-data kanbn-task-data-updated" title={`Updated ${updatedDate}`}>
                 <i className="codicon codicon-clock"></i>{updatedDate}
               </div>
             }
             {
-              startedDate &&
+              (startedDate != null) &&
               <div className="kanbn-task-data kanbn-task-data-started" title={`Started ${startedDate}`}>
                 <i className="codicon codicon-run"></i>{startedDate}
               </div>
             }
             {
-              dueDate &&
+              (dueDate != null) &&
               <div className="kanbn-task-data kanbn-task-data-due" title={`Due ${dueDate}`}>
                 <i className="codicon codicon-watch"></i>{dueDate}
               </div>
             }
             {
-              completedDate &&
+              (completedDate != null) &&
               <div className="kanbn-task-data kanbn-task-data-completed" title={`Completed ${completedDate}`}>
                 <i className="codicon codicon-check"></i>{completedDate}
               </div>
@@ -174,9 +178,9 @@ const TaskItem = ({ task, columnName, customFields, position, dateFormat, vscode
             {
               task.relations.length > 0 &&
               task.relations.map(relation => (
-                <div className={[
+                <div key={relation.task} className={[
                   'kanbn-task-data kanbn-task-data-relation',
-                  relation.type ? `kanbn-task-data-relation-${relation.type}` : null,
+                  relation.type !== '' ? `kanbn-task-data-relation-${relation.type}` : null
                 ].join(' ')}>
                   <i className="codicon codicon-link"></i>
                   <span className="kanbn-task-data-label">
@@ -193,10 +197,10 @@ const TaskItem = ({ task, columnName, customFields, position, dateFormat, vscode
               }}></div>
             }
           </div>
-        );
+        )
       }}
     </Draggable>
-  );
+  )
 }
 
-export default TaskItem;
+export default TaskItem
