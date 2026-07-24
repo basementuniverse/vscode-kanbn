@@ -61,6 +61,11 @@
         "category": "Kanbn"
       },
       {
+        "command": "kanbn.gantt",
+        "title": "Open gantt chart",
+        "category": "Kanbn"
+      },
+      {
         "command": "kanbn.archiveTasks",
         "title": "Archive tasks",
         "category": "Kanbn"
@@ -93,12 +98,18 @@
           "type": "boolean",
           "default": false,
           "description": "Show a 'Burndown chart' button on the Kanbn board."
+        },
+        "kanbn.showGanttButton": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show a 'Gantt chart' button on the Kanbn board."
         }
       }
     }
   },
   "dependencies": {
-    "@basementuniverse/kanbn": "^0.10.0",
+    "@basementuniverse/kanbn": "^1.0.1",
+    "@vscode/codicons": "^0.0.46-24",
     "dateformat": "^4.5.1",
     "formik": "^2.2.6",
     "git-user-name": "^2.0.0",
@@ -114,8 +125,7 @@
     "remark-math": "^4.0.0",
     "terser": "3.14.1",
     "throttle-debounce": "^3.0.1",
-    "uuid": "^8.3.2",
-    "vscode-codicons": "^0.0.15"
+    "uuid": "^8.3.2"
   },
   "scripts": {
     "vscode:prepublish": "./scripts/build-non-split.js && tsc -p tsconfig.extension.json",

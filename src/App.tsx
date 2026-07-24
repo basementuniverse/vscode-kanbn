@@ -1,5 +1,6 @@
 import Board from './Board';
 import Burndown from './Burndown';
+import Gantt from './Gantt';
 import TaskEditor from './TaskEditor';
 import React, { useState, useEffect, useCallback } from "react";
 import VSCodeApi from "./VSCodeApi";
@@ -26,10 +27,19 @@ function App() {
   const [columnNames, setColumnNames] = useState([] as string[]);
   const [panelUuid, setPanelUuid] = useState('');
   const [showBurndownButton, setShowBurndownButton] = useState(false);
+  const [showGanttButton, setShowGanttButton] = useState(false);
   const [showSprintButton, setShowSprintButton] = useState(false);
   const [sprints, setSprints] = useState([]);
   const [currentSprint, setCurrentSprint] = useState(null);
   const [burndownData, setBurndownData] = useState({ series: [] });
+  const [ganttData, setGanttData] = useState({
+    from: null,
+    to: null,
+    dependencyCycleDetected: false,
+    dependencyCycleTaskIds: [],
+    cycleFallbackTaskIds: [],
+    tasks: []
+  });
 
   const processMessage = useCallback(event => {
     const tasks = event.data.tasks
@@ -51,6 +61,7 @@ function App() {
         setColumnSorting(event.data.columnSorting);
         setCustomFields(event.data.customFields);
         setShowBurndownButton(event.data.showBurndownButton);
+        setShowGanttButton(event.data.showGanttButton);
         setShowSprintButton(event.data.showSprintButton);
 
         // Get current sprint
@@ -80,6 +91,11 @@ function App() {
         );
         setBurndownData(event.data.burndownData);
         break;
+
+      case 'gantt':
+        setName(event.data.index.name);
+        setGanttData(event.data.ganttData);
+        break;
     }
     setType(event.data.type);
     setDateFormat(event.data.dateFormat);
@@ -107,6 +123,7 @@ function App() {
           customFields={customFields}
           dateFormat={dateFormat}
           showBurndownButton={showBurndownButton}
+          showGanttButton={showGanttButton}
           showSprintButton={showSprintButton}
           currentSprint={currentSprint}
           vscode={vscode}
@@ -131,6 +148,15 @@ function App() {
           name={name}
           sprints={sprints}
           burndownData={burndownData}
+          dateFormat={dateFormat}
+          vscode={vscode}
+        />
+      }
+      {
+        type === 'gantt' &&
+        <Gantt
+          name={name}
+          ganttData={ganttData}
           dateFormat={dateFormat}
           vscode={vscode}
         />

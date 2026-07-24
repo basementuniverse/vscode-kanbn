@@ -1,13 +1,14 @@
 import { status } from '@basementuniverse/kanbn/src/main';
 import * as vscode from 'vscode';
+import type { KanbnApi } from './KanbnApi';
 
 export default class KanbnStatusBarItem {
   private readonly _statusBarItem: vscode.StatusBarItem;
-  private readonly _kanbn: typeof import('@basementuniverse/kanbn/src/main');
+  private readonly _kanbn: KanbnApi;
 
   constructor(
     context: vscode.ExtensionContext,
-    kanbn: typeof import('@basementuniverse/kanbn/src/main')
+    kanbn: KanbnApi
   ) {
     this._statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
     context.subscriptions.push(this._statusBarItem);

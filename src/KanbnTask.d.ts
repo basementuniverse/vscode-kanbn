@@ -29,5 +29,14 @@ declare type KanbnTask = {
     author: string,
     date: string,
     text: string
+  }>,
+  history?: Array<{
+    date: string,
+    type?: string,
+    column?: string,
+    fromColumn?: string,
+    toColumn?: string,
+    fromProgress?: number,
+    toProgress?: number
   }>
 };

@@ -3,6 +3,8 @@ import * as vscode from "vscode";
 import getNonce from "./getNonce";
 import KanbnTaskPanel from "./KanbnTaskPanel";
 import KanbnBurndownPanel from "./KanbnBurndownPanel";
+import KanbnGanttPanel from "./KanbnGanttPanel";
+import type { KanbnApi } from "./KanbnApi";
 
 const sortByFields: { [key: string]: string } = {
   'Name': 'name',
@@ -27,14 +29,14 @@ export default class KanbnBoardPanel {
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionPath: string;
   private readonly _workspacePath: string;
-  private readonly _kanbn: typeof import("@basementuniverse/kanbn/src/main");
+  private readonly _kanbn: KanbnApi;
   private readonly _kanbnFolderName: string;
   private _disposables: vscode.Disposable[] = [];
 
   public static createOrShow(
     extensionPath: string,
     workspacePath: string,
-    kanbn: typeof import("@basementuniverse/kanbn/src/main"),
+    kanbn: KanbnApi,
     kanbnFolderName: string
   ) {
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
@@ -82,6 +84,7 @@ export default class KanbnBoardPanel {
         customFields: index.options.customFields ?? [],
         dateFormat: KanbnBoardPanel.currentPanel._kanbn.getDateFormat(index),
         showBurndownButton: vscode.workspace.getConfiguration("kanbn").get("showBurndownButton"),
+        showGanttButton: vscode.workspace.getConfiguration("kanbn").get("showGanttButton"),
         showSprintButton: vscode.workspace.getConfiguration("kanbn").get("showSprintButton"),
       });
     }
@@ -91,7 +94,7 @@ export default class KanbnBoardPanel {
     extensionPath: string,
     workspacePath: string,
     column: vscode.ViewColumn,
-    kanbn: typeof import("@basementuniverse/kanbn/src/main"),
+    kanbn: KanbnApi,
     kanbnFolderName: string
   ) {
     this._extensionPath = extensionPath;
@@ -111,7 +114,7 @@ export default class KanbnBoardPanel {
       localResourceRoots: [
         vscode.Uri.file(path.join(this._extensionPath, "build")),
         vscode.Uri.file(path.join(this._workspacePath, this._kanbnFolderName)),
-        vscode.Uri.file(path.join(this._extensionPath, "node_modules", "vscode-codicons", "dist")),
+        vscode.Uri.file(path.join(this._extensionPath, "node_modules", "@vscode", "codicons", "dist")),
       ],
     });
     (this._panel as any).iconPath = {
@@ -156,7 +159,7 @@ export default class KanbnBoardPanel {
           // Move a task
           case "kanbn.move":
             try {
-              await kanbn.moveTask(message.task, message.columnName, message.position);
+              await this._kanbn.moveTask(message.task, message.columnName, message.position);
             } catch (e) {
               vscode.window.showErrorMessage(e.message);
             }
@@ -253,6 +256,17 @@ export default class KanbnBoardPanel {
             KanbnBurndownPanel.update();
             return;
 
+          // Open a gantt chart
+          case "kanbn.gantt":
+            KanbnGanttPanel.createOrShow(
+              this._extensionPath,
+              this._workspacePath,
+              this._kanbn,
+              this._kanbnFolderName
+            );
+            KanbnGanttPanel.update();
+            return;
+
           // Start a new sprint
           case "kanbn.sprint":
             // Prompt for a sprint name
@@ -263,7 +277,7 @@ export default class KanbnBoardPanel {
             // If the input prompt wasn't cancelled, start a new sprint
             if (newSprintName !== undefined) {
               try {
-                await kanbn.sprint(newSprintName, "", new Date());
+                await this._kanbn.sprint(newSprintName, "", new Date());
               } catch (e) {
                 vscode.window.showErrorMessage(e.message);
               }
@@ -304,7 +318,7 @@ export default class KanbnBoardPanel {
       path.join(this._workspacePath, this._kanbnFolderName, "board.css")
     ).with({ scheme: "vscode-resource" });
     const codiconsUri = vscode.Uri.file(
-      path.join(this._extensionPath, "node_modules", "vscode-codicons", "dist", "codicon.css")
+      path.join(this._extensionPath, "node_modules", "@vscode", "codicons", "dist", "codicon.css")
     ).with({ scheme: "vscode-resource" });
 
     // Use a nonce to whitelist which scripts can be run

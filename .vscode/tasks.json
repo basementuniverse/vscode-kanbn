@@ -4,6 +4,29 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "build-extension-debug",
+      "type": "shell",
+      "command": "NODE_OPTIONS=--openssl-legacy-provider ./scripts/build-non-split.js && npx tsc -p tsconfig.extension.json",
+      "group": "build",
+      "problemMatcher": [
+        "$tsc"
+      ]
+    },
+    {
+      "label": "build-extension-host",
+      "type": "shell",
+      "command": "npx",
+      "args": [
+        "tsc",
+        "-p",
+        "tsconfig.extension.json"
+      ],
+      "group": "build",
+      "problemMatcher": [
+        "$tsc"
+      ]
+    },
+    {
       "type": "npm",
       "script": "build",
       "isBackground": false,

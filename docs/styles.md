@@ -77,6 +77,7 @@ Here's an example of a task card style using some of the above features:
 - `kanbn-header-button-clear-filter`
 - `kanbn-header-button-sprint`
 - `kanbn-header-button-burndown`
+- `kanbn-header-button-gantt`
 - `kanbn-header-description`
 - `kanbn-board`
 - `kanbn-column`
@@ -201,6 +202,37 @@ Here's an example of a task card style using some of the above features:
 - `kanbn-burndown-tooltip-workload`
 - `kanbn-burndown-tooltip-count`
 - `kanbn-burndown-tooltip-task`
+
+### Gantt chart
+
+- `kanbn-gantt`
+- `kanbn-gantt-warning`
+- `kanbn-gantt-scroll-x`
+- `kanbn-gantt-canvas`
+- `kanbn-gantt-scroll-y`
+- `kanbn-gantt-body`
+- `kanbn-gantt-overlay`
+- `kanbn-gantt-dependencies`
+- `kanbn-gantt-dependency-line`
+- `kanbn-gantt-arrow-head`
+- `kanbn-gantt-row`
+- `kanbn-gantt-task-name`
+- `kanbn-gantt-row-timeline`
+- `kanbn-gantt-bar`
+- `kanbn-gantt-bar-completed`
+- `kanbn-gantt-bar-started`
+- `kanbn-gantt-bar-not-started`
+- `kanbn-gantt-bar-blocked`
+- `kanbn-gantt-now-line`
+- `kanbn-gantt-axis`
+- `kanbn-gantt-axis-label-spacer`
+- `kanbn-gantt-axis-timeline`
+- `kanbn-gantt-axis-label`
+- `kanbn-gantt-axis-label-first`
+- `kanbn-gantt-axis-label-last`
+- `kanbn-gantt-axis-tick`
+- `kanbn-gantt-axis-label-text`
+- `kanbn-gantt-now-line-axis`
 
 ### Syntax highlighting
 

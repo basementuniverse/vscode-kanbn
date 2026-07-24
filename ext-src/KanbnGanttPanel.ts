@@ -1,10 +1,12 @@
 import * as path from "path";
 import * as vscode from "vscode";
 import getNonce from "./getNonce";
+import KanbnTaskPanel from "./KanbnTaskPanel";
 import type { KanbnApi } from "./KanbnApi";
 
-export default class KanbnBurndownPanel {
-  public static currentPanel: KanbnBurndownPanel | undefined;
+export default class KanbnGanttPanel {
+  public static currentPanel: KanbnGanttPanel | undefined;
+  private static latestUpdateId = 0;
 
   private static readonly viewType = "react";
 
@@ -13,10 +15,6 @@ export default class KanbnBurndownPanel {
   private readonly _workspacePath: string;
   private readonly _kanbn: KanbnApi;
   private readonly _kanbnFolderName: string;
-  private sprintMode: boolean = true;
-  private sprint: string = '';
-  private startDate: string = '';
-  private endDate: string = '';
   private _disposables: vscode.Disposable[] = [];
 
   public static async createOrShow(
@@ -28,10 +26,10 @@ export default class KanbnBurndownPanel {
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
     // If we already have a panel, show it, otherwise create a new panel
-    if (KanbnBurndownPanel.currentPanel) {
-      KanbnBurndownPanel.currentPanel._panel.reveal(column);
+    if (KanbnGanttPanel.currentPanel) {
+      KanbnGanttPanel.currentPanel._panel.reveal(column);
     } else {
-      KanbnBurndownPanel.currentPanel = new KanbnBurndownPanel(
+      KanbnGanttPanel.currentPanel = new KanbnGanttPanel(
         extensionPath,
         workspacePath,
         column || vscode.ViewColumn.One,
@@ -42,36 +40,34 @@ export default class KanbnBurndownPanel {
   }
 
   public static async update() {
-    if (KanbnBurndownPanel.currentPanel) {
+    if (KanbnGanttPanel.currentPanel) {
+      const updateId = ++KanbnGanttPanel.latestUpdateId;
       let index: any;
       try {
-        index = await KanbnBurndownPanel.currentPanel._kanbn.getIndex();
+        index = await KanbnGanttPanel.currentPanel._kanbn.getIndex();
       } catch (error) {
         vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
         return;
       }
-      KanbnBurndownPanel.currentPanel._panel.webview.postMessage({
-        type: "burndown",
+
+      let ganttData: any;
+      try {
+        ganttData = await (KanbnGanttPanel.currentPanel._kanbn as any).gantt(null, null, null, null);
+      } catch (error) {
+        vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
+        return;
+      }
+
+      // Ignore stale async updates when multiple refreshes are triggered in quick succession.
+      if (!KanbnGanttPanel.currentPanel || updateId !== KanbnGanttPanel.latestUpdateId) {
+        return;
+      }
+
+      KanbnGanttPanel.currentPanel._panel.webview.postMessage({
+        type: "gantt",
         index,
-        dateFormat: KanbnBurndownPanel.currentPanel._kanbn.getDateFormat(index),
-        burndownData: await KanbnBurndownPanel.currentPanel._kanbn.burndown(
-          (KanbnBurndownPanel.currentPanel.sprintMode && KanbnBurndownPanel.currentPanel.sprint)
-            ? [KanbnBurndownPanel.currentPanel.sprint]
-            : null,
-          (
-            !KanbnBurndownPanel.currentPanel.sprintMode &&
-            KanbnBurndownPanel.currentPanel.startDate &&
-            KanbnBurndownPanel.currentPanel.endDate
-          )
-            ? [
-              new Date(Date.parse(KanbnBurndownPanel.currentPanel.startDate)),
-              new Date(Date.parse(KanbnBurndownPanel.currentPanel.endDate))
-            ]
-            : null,
-          null,
-          null,
-          'auto'
-        )
+        dateFormat: KanbnGanttPanel.currentPanel._kanbn.getDateFormat(index),
+        ganttData
       });
     }
   }
@@ -89,7 +85,7 @@ export default class KanbnBurndownPanel {
     this._kanbnFolderName = kanbnFolderName;
 
     // Create and show a new webview panel
-    this._panel = vscode.window.createWebviewPanel(KanbnBurndownPanel.viewType, "Burndown Chart", column, {
+    this._panel = vscode.window.createWebviewPanel(KanbnGanttPanel.viewType, "Gantt Chart", column, {
       // Enable javascript in the webview
       enableScripts: true,
 
@@ -104,8 +100,8 @@ export default class KanbnBurndownPanel {
       ],
     });
     (this._panel as any).iconPath = {
-      light: vscode.Uri.file(path.join(this._extensionPath, "resources", "burndown_light.svg")),
-      dark: vscode.Uri.file(path.join(this._extensionPath, "resources", "burndown_dark.svg")),
+      light: vscode.Uri.file(path.join(this._extensionPath, "resources", "gantt_light.svg")),
+      dark: vscode.Uri.file(path.join(this._extensionPath, "resources", "gantt_dark.svg")),
     };
 
     // Set the webview's title to the kanbn project name
@@ -130,13 +126,16 @@ export default class KanbnBurndownPanel {
             vscode.window.showErrorMessage(message.text);
             return;
 
-          // Refresh the kanbn chart
-          case 'kanbn.refreshBurndownData':
-            this.sprintMode = message.sprintMode;
-            this.sprint = message.sprint;
-            this.startDate = message.startDate;
-            this.endDate = message.endDate;
-            KanbnBurndownPanel.update();
+          // Open a task in the editor
+          case "kanbn.task":
+            KanbnTaskPanel.show(
+              this._extensionPath,
+              this._workspacePath,
+              this._kanbn,
+              this._kanbnFolderName,
+              message.taskId,
+              message.columnName
+            );
             return;
         }
       },
@@ -146,7 +145,7 @@ export default class KanbnBurndownPanel {
   }
 
   public dispose() {
-    KanbnBurndownPanel.currentPanel = undefined;
+    KanbnGanttPanel.currentPanel = undefined;
 
     // Clean up our resources
     this._panel.dispose();

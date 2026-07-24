@@ -186,6 +186,7 @@ const Board = ({
   customFields,
   dateFormat,
   showBurndownButton,
+  showGanttButton,
   showSprintButton,
   currentSprint,
   vscode
@@ -200,6 +201,7 @@ const Board = ({
   customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string' }[],
   dateFormat: string,
   showBurndownButton: boolean,
+  showGanttButton: boolean,
   showSprintButton: boolean,
   currentSprint: KanbnSprint|null,
   vscode: VSCodeApi
@@ -282,7 +284,22 @@ const Board = ({
                   }}
                   title="Open burndown chart"
                 >
-                  <i className="codicon codicon-graph"></i>
+                  <i className="codicon codicon-graph-line"></i>
+                </button>
+              }
+              {
+                showGanttButton &&
+                <button
+                  type="button"
+                  className="kanbn-header-button kanbn-header-button-gantt"
+                  onClick={() => {
+                    vscode.postMessage({
+                      command: 'kanbn.gantt'
+                    });
+                  }}
+                  title="Open gantt chart"
+                >
+                  <i className="codicon codicon-symbol-structure"></i>
                 </button>
               }
             </form>

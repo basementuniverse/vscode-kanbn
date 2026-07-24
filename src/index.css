@@ -77,6 +77,10 @@ Board styles
     top: 2px;
 }
 
+.kanbn-header-button-gantt .codicon {
+    top: 2px;
+}
+
 .kanbn-header-button-sprint .codicon {
     margin-right: 0.5em;
 }
@@ -423,6 +427,42 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
     padding: 6px 8px;
 }
 
+.kanbn-task-editor-date-input-wrap {
+    position: relative;
+}
+
+.kanbn-task-editor-date-input-wrap .kanbn-task-editor-field-input[type=date] {
+    padding-right: 20px;
+}
+
+.kanbn-task-editor-date-input-wrap .kanbn-task-editor-button.kanbn-task-editor-button-date-clear {
+    position: absolute;
+    top: 52%;
+    right: 4px;
+    transform: translateY(-50%);
+    margin: 0;
+    padding: 2px;
+    border: none;
+    background: transparent;
+    color: var(--vscode-input-foreground);
+    opacity: 0.75;
+    line-height: 1.1;
+    z-index: 1;
+}
+
+.kanbn-task-editor-date-input-wrap .kanbn-task-editor-button.kanbn-task-editor-button-date-clear:hover,
+.kanbn-task-editor-date-input-wrap .kanbn-task-editor-button.kanbn-task-editor-button-date-clear:focus {
+    background: transparent;
+    border: none;
+    opacity: 1;
+}
+
+.kanbn-task-editor-date-input-wrap .kanbn-task-editor-button.kanbn-task-editor-button-date-clear .codicon {
+    margin-right: 0;
+    top: 0;
+    font-size: 10px !important;
+}
+
 .kanbn-task-editor-field-select {
     padding-bottom: 7px;
 }
@@ -596,6 +636,61 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
 	clip-path: polygon(0 0, 100% 0, 100% 100%);
 }
 
+.kanbn-task-editor-field-history {
+    margin-top: 1.5em;
+}
+
+.kanbn-task-editor-history-list {
+    margin-left: 6px;
+    padding-left: 12px;
+    border-left: 2px solid var(--vscode-activityBar-inactiveForeground);
+}
+
+.kanbn-task-editor-history-entry {
+    position: relative;
+    margin: 0 0 10px 0;
+    padding: 8px 10px;
+    background-color: var(--vscode-input-background);
+    border-radius: 4px;
+}
+
+.kanbn-task-editor-history-entry::before {
+    content: "";
+    position: absolute;
+    left: -17px;
+    top: 12px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--vscode-activityBar-foreground);
+}
+
+.kanbn-task-editor-history-entry-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.kanbn-task-editor-history-entry-type {
+    font-weight: bold;
+}
+
+.kanbn-task-editor-history-entry-type .codicon {
+    font-size: 0.85em !important;
+    margin-right: 0.5em;
+}
+
+.kanbn-task-editor-history-entry-date {
+    opacity: 0.8;
+    font-style: italic;
+    white-space: nowrap;
+}
+
+.kanbn-task-editor-history-entry-description {
+    margin-top: 4px;
+    opacity: 0.95;
+}
+
 .kanbn-task-editor-field-label-description {
     display: inline-block;
 }
@@ -703,6 +798,271 @@ body.vscode-dark .kanbn-burndown-settings-input[type="date"]::-webkit-calendar-p
 
 .kanbn-burndown-tooltip-task {
     font-style: italic;
+}
+
+/*-----------------------------------------------------------------------------
+Gantt chart styles
+-----------------------------------------------------------------------------*/
+
+.kanbn-gantt-warning {
+    border-left: 4px solid #f22;
+    background-color: rgba(254, 20, 20, 0.12);
+    margin: 0 0 12px 0;
+    padding: 8px 12px;
+}
+
+.kanbn-gantt-warning p {
+    margin: 6px 0 0 0;
+}
+
+.kanbn-gantt-page {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 2em);
+    min-height: 420px;
+}
+
+.kanbn-gantt {
+    --kanbn-gantt-label-width: 240px;
+    flex: 1;
+    min-height: 300px;
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.kanbn-gantt-scroll-x {
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.kanbn-gantt-canvas {
+    min-width: 100%;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.kanbn-gantt-scroll-y {
+    flex: 1;
+    min-height: 220px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid var(--vscode-activityBar-inactiveForeground);
+}
+
+.kanbn-gantt-body {
+    position: relative;
+    z-index: 1;
+}
+
+.kanbn-gantt-row {
+    display: grid;
+    grid-template-columns: var(--kanbn-gantt-label-width) 1fr;
+    min-height: 34px;
+    align-items: center;
+}
+
+.kanbn-gantt-task-name {
+    position: relative;
+    border: none;
+    background-color: transparent;
+    color: var(--vscode-editor-foreground);
+    text-align: left;
+    padding: 0 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+.kanbn-gantt-task-name:hover,
+.kanbn-gantt-task-name:focus {
+    text-decoration: underline;
+    outline: none;
+}
+
+.kanbn-gantt-row-timeline {
+    position: relative;
+    height: 100%;
+    border-left: 1px solid var(--vscode-activityBar-inactiveForeground);
+    border-bottom: 1px dashed rgba(127, 127, 127, 0.24);
+}
+
+.kanbn-gantt-bar {
+    position: absolute;
+    top: 4px;
+    height: 26px;
+    box-sizing: border-box;
+    border: none;
+    border-left: 4px solid var(--vscode-activityBar-inactiveForeground);
+    border-radius: 3px;
+    text-align: left;
+    padding: 0 8px 0 6px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    color: var(--vscode-editor-foreground);
+    font-weight: bold;
+}
+
+.kanbn-gantt-bar span {
+    display: inline-block;
+    opacity: 0.95;
+    font-size: 0.7em;
+    font-weight: bold;
+}
+
+.kanbn-gantt-bar-completed {
+    border-left-color: #e83;
+}
+
+.kanbn-gantt-bar-started {
+    border-left-color: #194;
+}
+
+.kanbn-gantt-bar-not-started {
+    border-left-color: #36d;
+}
+
+body.vscode-light .kanbn-gantt-bar {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+body.vscode-dark .kanbn-gantt-bar {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+body.vscode-high-contrast .kanbn-gantt-bar {
+    background-color: var(--vscode-editor-background);
+    box-shadow: inset 0 0 0 1px var(--vscode-contrastBorder);
+}
+
+.kanbn-gantt-overlay {
+    position: absolute;
+    left: var(--kanbn-gantt-label-width);
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.kanbn-gantt-dependencies {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 2;
+}
+
+.kanbn-gantt-dependency-line {
+    fill: none;
+    stroke: var(--vscode-editor-foreground);
+    stroke-opacity: 0.85;
+    stroke-width: 1.4;
+}
+
+.kanbn-gantt-dependency-line-non-forward {
+    stroke: #f66;
+    stroke-opacity: 0.65;
+    stroke-dasharray: 3 3;
+}
+
+.kanbn-gantt-dependency-line.kanbn-gantt-dependency-line-blocks {
+    stroke: #eb1;
+    stroke-opacity: 0.85;
+}
+
+.kanbn-gantt-arrow-head {
+    fill: var(--vscode-editor-foreground);
+}
+
+.kanbn-gantt-arrow-head-blocks {
+    fill: #eb1;
+}
+
+.kanbn-gantt-now-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--vscode-editorWarning-foreground, #eb1);
+    opacity: 0.9;
+}
+
+.kanbn-gantt-axis {
+    display: grid;
+    grid-template-columns: var(--kanbn-gantt-label-width) 1fr;
+    margin-top: 8px;
+}
+
+.kanbn-gantt-axis-timeline {
+    position: relative;
+    height: 48px;
+}
+
+.kanbn-gantt-axis-label {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+}
+
+.kanbn-gantt-axis-label-first {
+    transform: translateX(0);
+}
+
+.kanbn-gantt-axis-label-last {
+    transform: translateX(-100%);
+}
+
+.kanbn-gantt-axis-tick {
+    display: block;
+    width: 1px;
+    height: 10px;
+    margin: 0 auto;
+    background-color: var(--vscode-editor-foreground);
+    opacity: 0.8;
+}
+
+body.vscode-light .kanbn-gantt-bar.kanbn-gantt-bar-overdue,
+body.vscode-dark .kanbn-gantt-bar.kanbn-gantt-bar-overdue,
+body.vscode-high-contrast .kanbn-gantt-bar.kanbn-gantt-bar-overdue {
+    background-color: rgba(255, 20, 20, 0.05);
+}
+
+.kanbn-gantt-axis-label-text {
+    display: block;
+    margin-top: 4px;
+    white-space: nowrap;
+    opacity: 0.8;
+}
+
+.kanbn-gantt-now-line-axis {
+    display: none;
+    top: 0;
+    height: 12px;
+    bottom: auto;
+}
+
+.kanbn-gantt-blocked-icon {
+    position: absolute;
+    top: 0px;
+    right: 4px;
+    color: #f22;
+}
+
+@media (max-width: 900px) {
+    .kanbn-gantt {
+        --kanbn-gantt-label-width: 170px;
+    }
 }
 
 /*-----------------------------------------------------------------------------

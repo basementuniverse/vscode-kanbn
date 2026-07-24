@@ -2,7 +2,9 @@ import * as vscode from "vscode";
 import KanbnStatusBarItem from "./KanbnStatusBarItem";
 import KanbnBoardPanel from "./KanbnBoardPanel";
 import KanbnBurndownPanel from "./KanbnBurndownPanel";
+import KanbnGanttPanel from "./KanbnGanttPanel";
 import KanbnTaskPanel from "./KanbnTaskPanel";
+import type { KanbnApi } from "./KanbnApi";
 
 let kanbnStatusBarItem: KanbnStatusBarItem;
 
@@ -19,7 +21,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // Set the node process directory and import kanbn
       process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-      const kanbn = await import("@basementuniverse/kanbn/src/main");
+      const kanbn = (await import("@basementuniverse/kanbn/src/main")) as unknown as KanbnApi;
 
       // If kanbn is already initialised, get the project name
       let projectName = "";
@@ -60,7 +62,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // Set the node process directory and import kanbn
       process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-      const kanbn = await import("@basementuniverse/kanbn/src/main");
+      const kanbn = (await import("@basementuniverse/kanbn/src/main")) as unknown as KanbnApi;
 
       // If kanbn is initialised, view the kanbn board
       if (await kanbn.initialised()) {
@@ -89,7 +91,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // Set the node process directory and import kanbn
       process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-      const kanbn = await import("@basementuniverse/kanbn/src/main");
+      const kanbn = (await import("@basementuniverse/kanbn/src/main")) as unknown as KanbnApi;
 
       // If kanbn is initialised, open the task webview
       if (await kanbn.initialised()) {
@@ -118,7 +120,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // Set the node process directory and import kanbn
       process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-      const kanbn = await import("@basementuniverse/kanbn/src/main");
+      const kanbn = (await import("@basementuniverse/kanbn/src/main")) as unknown as KanbnApi;
 
       // If kanbn is initialised, view the burndown chart
       if (await kanbn.initialised()) {
@@ -136,6 +138,35 @@ export async function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // Register a command to open a gantt chart.
+  context.subscriptions.push(
+    vscode.commands.registerCommand("kanbn.gantt", async () => {
+      // If no workspace folder is opened, we can't open the gantt chart
+      if (vscode.workspace.workspaceFolders === undefined) {
+        vscode.window.showErrorMessage("You need to open a workspace before viewing the gantt chart.");
+        return;
+      }
+
+      // Set the node process directory and import kanbn
+      process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
+      const kanbn = (await import("@basementuniverse/kanbn/src/main")) as unknown as KanbnApi;
+
+      // If kanbn is initialised, view the gantt chart
+      if (await kanbn.initialised()) {
+        KanbnGanttPanel.createOrShow(
+          context.extensionPath,
+          vscode.workspace.workspaceFolders[0].uri.fsPath,
+          kanbn,
+          await kanbn.getFolderName()
+        );
+        KanbnGanttPanel.update();
+      } else {
+        vscode.window.showErrorMessage("You need to initialise Kanbn before viewing the gantt chart.");
+      }
+      kanbnStatusBarItem.update();
+    })
+  );
+
   // Register a command to archive tasks.
   context.subscriptions.push(
     vscode.commands.registerCommand("kanbn.archiveTasks", async () => {
@@ -147,7 +178,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // Set the node process directory and import kanbn
       process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-      const kanbn = await import("@basementuniverse/kanbn/src/main");
+      const kanbn = (await import("@basementuniverse/kanbn/src/main")) as unknown as KanbnApi;
 
       // Get a list of tracked tasks
       let tasks: string[] = [];
@@ -193,7 +224,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       // Set the node process directory and import kanbn
       process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-      const kanbn = await import("@basementuniverse/kanbn/src/main");
+      const kanbn = (await import("@basementuniverse/kanbn/src/main")) as unknown as KanbnApi;
 
       // Get a list of archived tasks
       let archivedTasks: string[] = [];
@@ -248,7 +279,7 @@ export async function activate(context: vscode.ExtensionContext) {
   if (vscode.workspace.workspaceFolders !== undefined) {
     // Set the node process directory and import kanbn
     process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-    const kanbn = await import("@basementuniverse/kanbn/src/main");
+    const kanbn = (await import("@basementuniverse/kanbn/src/main")) as unknown as KanbnApi;
 
     // Create status bar item
     kanbnStatusBarItem = new KanbnStatusBarItem(context, kanbn);
@@ -261,11 +292,15 @@ export async function activate(context: vscode.ExtensionContext) {
     const fileWatcher = vscode.workspace.createFileSystemWatcher(
       new vscode.RelativePattern(uri, `${kanbnFolderName}/**.*`)
     );
-    fileWatcher.onDidChange(() => {
+    const updatePanels = () => {
       kanbnStatusBarItem.update();
       KanbnBoardPanel.update();
       KanbnBurndownPanel.update();
-    });
+      KanbnGanttPanel.update();
+    };
+    fileWatcher.onDidChange(updatePanels);
+    fileWatcher.onDidCreate(updatePanels);
+    fileWatcher.onDidDelete(updatePanels);
   }
 
   // Handle configuration changes

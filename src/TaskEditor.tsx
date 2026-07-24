@@ -53,6 +53,64 @@ const Markdown = props => (<ReactMarkdown {...{
   ...props,
 }} />);
 
+const toPercent = (value: number | undefined) => `${Math.round((value || 0) * 100)}%`;
+
+const getHistoryEventLabel = (historyEvent: any) => {
+  switch (historyEvent.type) {
+    case 'created':
+      return 'Created';
+    case 'moved':
+      return 'Moved';
+    case 'progress':
+      return 'Progress';
+    case 'archived':
+      return 'Archived';
+    case 'restored':
+      return 'Restored';
+    default:
+      return historyEvent.type ? String(historyEvent.type) : 'Event';
+  }
+};
+
+const getHistoryEventIcon = (historyEvent: any) => {
+  switch (historyEvent.type) {
+    case 'created':
+      return 'add';
+    case 'moved':
+      return 'arrow-swap';
+    case 'progress':
+      return 'graph';
+    case 'archived':
+      return 'archive';
+    case 'restored':
+      return 'history';
+    default:
+      return 'pulse';
+  }
+};
+
+const getHistoryEventDescription = (historyEvent: any) => {
+  switch (historyEvent.type) {
+    case 'created': {
+      const column = historyEvent.column || historyEvent.toColumn;
+      if (column) {
+        return `Created in ${column} at ${toPercent(historyEvent.toProgress)} progress.`;
+      }
+      return `Created at ${toPercent(historyEvent.toProgress)} progress.`;
+    }
+    case 'moved':
+      return `Moved from ${historyEvent.fromColumn || 'unknown'} to ${historyEvent.toColumn || 'unknown'}.`;
+    case 'progress':
+      return `Progress changed from ${toPercent(historyEvent.fromProgress)} to ${toPercent(historyEvent.toProgress)}.`;
+    case 'archived':
+      return `Archived from ${historyEvent.fromColumn || historyEvent.column || 'unknown'}.`;
+    case 'restored':
+      return `Restored to ${historyEvent.toColumn || 'unknown'}.`;
+    default:
+      return 'Task event recorded.';
+  }
+};
+
 const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFormat, panelUuid, vscode }: {
   task: KanbnTask | null,
   tasks: Record<string, KanbnTask>,
@@ -74,6 +132,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
       created: (task && 'created' in task.metadata) ? task.metadata.created : new Date(),
       updated: (task && 'updated' in task.metadata) ? task.metadata.updated : null,
       started: (task && 'started' in task.metadata) ? formatDate(task.metadata.started!, 'yyyy-mm-dd') : '',
+      postponed: (task && 'postponed' in task.metadata) ? formatDate(task.metadata['postponed'] as string | number | Date, 'yyyy-mm-dd') : '',
       due: (task && 'due' in task.metadata) ? formatDate(task.metadata.due!, 'yyyy-mm-dd') : '',
       completed: (task && 'completed' in task.metadata) ? formatDate(task.metadata.completed!, 'yyyy-mm-dd') : '',
       assigned: (task && 'assigned' in task.metadata) ? task.metadata.assigned : (gitUsername() || ''),
@@ -91,7 +150,8 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
     },
     relations: task ? task.relations : [],
     subTasks: task ? task.subTasks : [],
-    comments: task ? task.comments : []
+    comments: task ? task.comments : [],
+    history: task ? (task.history || []) : []
   });
   const [editingDescription, setEditingDescription] = useState(!editing);
   const [editingComment, setEditingComment] = useState(-1);
@@ -235,6 +295,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
           dirty,
           values,
           handleChange,
+          setFieldValue,
           isSubmitting
         }) => (
           <Form>
@@ -551,6 +612,37 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                     )}
                   </FieldArray>
                 </div>
+                {
+                  values.history.length > 0 &&
+                  <div className="kanbn-task-editor-field kanbn-task-editor-field-history">
+                    <h2 className="kanbn-task-editor-title">History</h2>
+                    <div className="kanbn-task-editor-history-list">
+                      {
+                        [...values.history]
+                          .sort((a, b) => Date.parse(String(b.date)) - Date.parse(String(a.date)))
+                          .map((historyEvent, index) => (
+                            <div
+                              className="kanbn-task-editor-history-entry"
+                              key={`${historyEvent.type || 'event'}-${historyEvent.date || ''}-${index}`}
+                            >
+                              <div className="kanbn-task-editor-history-entry-header">
+                                <span className="kanbn-task-editor-history-entry-type">
+                                  <i className={`codicon codicon-${getHistoryEventIcon(historyEvent)}`}></i>
+                                  {getHistoryEventLabel(historyEvent)}
+                                </span>
+                                <span className="kanbn-task-editor-history-entry-date">
+                                  {formatDate(historyEvent.date, dateFormat)}
+                                </span>
+                              </div>
+                              <div className="kanbn-task-editor-history-entry-description">
+                                {getHistoryEventDescription(historyEvent)}
+                              </div>
+                            </div>
+                          ))
+                      }
+                    </div>
+                  </div>
+                }
               </div>
               <div className="kanbn-task-editor-column-right">
                 <div className="kanbn-task-editor-field kanbn-task-editor-field-column">
@@ -600,17 +692,54 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                     name="metadata.started"
                   />
                 </div>
+                <div className="kanbn-task-editor-field kanbn-task-editor-field-postponed">
+                  <label className="kanbn-task-editor-field-label">
+                    <p>Postponed date</p>
+                    <div className="kanbn-task-editor-date-input-wrap">
+                      <Field
+                        className="kanbn-task-editor-field-input"
+                        type="date"
+                        name="metadata.postponed"
+                      />
+                      <button
+                        type="button"
+                        className="kanbn-task-editor-button kanbn-task-editor-button-edit kanbn-task-editor-button-date-clear"
+                        title="Clear postponed date"
+                        aria-label="Clear postponed date"
+                        onClick={() => setFieldValue('metadata.postponed', '')}
+                      >
+                        <i className="codicon codicon-close"></i>
+                      </button>
+                    </div>
+                  </label>
+                  <ErrorMessage
+                    className="kanbn-task-editor-field-errors"
+                    component="div"
+                    name="metadata.postponed"
+                  />
+                </div>
                 <div className="kanbn-task-editor-field kanbn-task-editor-field-due">
                   <label className="kanbn-task-editor-field-label">
                     <p>Due date</p>
-                    <Field
-                      className={[
-                        'kanbn-task-editor-field-input',
-                        checkOverdue(values) ? 'kanbn-task-overdue' : null
-                      ].filter(i => i).join(' ')}
-                      type="date"
-                      name="metadata.due"
-                    />
+                    <div className="kanbn-task-editor-date-input-wrap">
+                      <Field
+                        className={[
+                          'kanbn-task-editor-field-input',
+                          checkOverdue(values) ? 'kanbn-task-overdue' : null
+                        ].filter(i => i).join(' ')}
+                        type="date"
+                        name="metadata.due"
+                      />
+                      <button
+                        type="button"
+                        className="kanbn-task-editor-button kanbn-task-editor-button-edit kanbn-task-editor-button-date-clear"
+                        title="Clear due date"
+                        aria-label="Clear due date"
+                        onClick={() => setFieldValue('metadata.due', '')}
+                      >
+                        <i className="codicon codicon-close"></i>
+                      </button>
+                    </div>
                   </label>
                   <ErrorMessage
                     className="kanbn-task-editor-field-errors"
@@ -673,15 +802,36 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                           ) : (
                             <>
                               <p>{customField.name}</p>
-                              <Field
-                                className="kanbn-task-editor-field-input"
-                                type={{
-                                  date: 'date',
-                                  number: 'number',
-                                  string: 'text',
-                                }[customField.type]}
-                                name={`metadata.${customField.name}`}
-                              />
+                              {
+                                customField.type === 'date' &&
+                                <div className="kanbn-task-editor-date-input-wrap">
+                                  <Field
+                                    className="kanbn-task-editor-field-input"
+                                    type="date"
+                                    name={`metadata.${customField.name}`}
+                                  />
+                                  <button
+                                    type="button"
+                                    className="kanbn-task-editor-button kanbn-task-editor-button-edit kanbn-task-editor-button-date-clear"
+                                    title={`Clear ${customField.name}`}
+                                    aria-label={`Clear ${customField.name}`}
+                                    onClick={() => setFieldValue(`metadata.${customField.name}`, '')}
+                                  >
+                                    <i className="codicon codicon-close"></i>
+                                  </button>
+                                </div>
+                              }
+                              {
+                                customField.type !== 'date' &&
+                                <Field
+                                  className="kanbn-task-editor-field-input"
+                                  type={{
+                                    number: 'number',
+                                    string: 'text',
+                                  }[customField.type]}
+                                  name={`metadata.${customField.name}`}
+                                />
+                              }
                             </>
                           )}
                       </label>

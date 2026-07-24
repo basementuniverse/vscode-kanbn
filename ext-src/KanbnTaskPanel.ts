@@ -2,6 +2,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import getNonce from "./getNonce";
 import { v4 as uuidv4 } from "uuid";
+import type { KanbnApi } from "./KanbnApi";
 
 function transformTaskData(
   taskData: any,
@@ -20,6 +21,10 @@ function transformTaskData(
     } as any,
     relations: taskData.relations,
     subTasks: taskData.subTasks,
+    history: (taskData.history || []).map((historyEvent: any) => ({
+      ...historyEvent,
+      date: historyEvent.date ? new Date(Date.parse(historyEvent.date)) : historyEvent.date,
+    })),
     comments: taskData.comments.map((comment: any) => ({
       author: comment.author,
       date: new Date(Date.parse(comment.date)),
@@ -42,7 +47,7 @@ function transformTaskData(
     result.metadata["tags"] = taskData.metadata.tags;
   }
 
-  // Add due, started and completed dates if present
+  // Add due, started, and completed dates if present
   if (taskData.metadata.due) {
     result.metadata["due"] = new Date(Date.parse(taskData.metadata.due));
   }
@@ -74,7 +79,7 @@ export default class KanbnTaskPanel {
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionPath: string;
   private readonly _workspacePath: string;
-  private readonly _kanbn: typeof import("@basementuniverse/kanbn/src/main");
+  private readonly _kanbn: KanbnApi;
   private readonly _kanbnFolderName: string;
   private readonly _panelUuid: string;
   private _taskId: string | null;
@@ -84,7 +89,7 @@ export default class KanbnTaskPanel {
   public static async show(
     extensionPath: string,
     workspacePath: string,
-    kanbn: typeof import("@basementuniverse/kanbn/src/main"),
+    kanbn: KanbnApi,
     kanbnFolderName: string,
     taskId: string | null,
     columnName: string | null
@@ -111,7 +116,7 @@ export default class KanbnTaskPanel {
     extensionPath: string,
     workspacePath: string,
     column: vscode.ViewColumn,
-    kanbn: typeof import("@basementuniverse/kanbn/src/main"),
+    kanbn: KanbnApi,
     kanbnFolderName: string,
     taskId: string | null,
     columnName: string | null,
@@ -137,7 +142,7 @@ export default class KanbnTaskPanel {
       localResourceRoots: [
         vscode.Uri.file(path.join(this._extensionPath, "build")),
         vscode.Uri.file(path.join(this._workspacePath, this._kanbnFolderName)),
-        vscode.Uri.file(path.join(this._extensionPath, "node_modules", "vscode-codicons", "dist")),
+        vscode.Uri.file(path.join(this._extensionPath, "node_modules", "@vscode", "codicons", "dist")),
       ],
     });
     (this._panel as any).iconPath = {
@@ -300,7 +305,7 @@ export default class KanbnTaskPanel {
       path.join(this._workspacePath, this._kanbnFolderName, "board.css")
     ).with({ scheme: "vscode-resource" });
     const codiconsUri = vscode.Uri.file(
-      path.join(this._extensionPath, "node_modules", "vscode-codicons", "dist", "codicon.css")
+      path.join(this._extensionPath, "node_modules", "@vscode", "codicons", "dist", "codicon.css")
     ).with({ scheme: "vscode-resource" });
 
     // Use a nonce to whitelist which scripts can be run
