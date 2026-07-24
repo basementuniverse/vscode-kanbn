@@ -47,9 +47,15 @@ function transformTaskData(
     result.metadata["tags"] = taskData.metadata.tags;
   }
 
-  // Add due, started, and completed dates if present
+  // Add due timeline dates if present
   if (taskData.metadata.due) {
     result.metadata["due"] = new Date(Date.parse(taskData.metadata.due));
+  }
+  if (taskData.metadata.plannedStart) {
+    result.metadata["plannedStart"] = new Date(Date.parse(taskData.metadata.plannedStart));
+  }
+  if (taskData.metadata.plannedFinish) {
+    result.metadata["plannedFinish"] = new Date(Date.parse(taskData.metadata.plannedFinish));
   }
   if (taskData.metadata.started) {
     result.metadata["started"] = new Date(Date.parse(taskData.metadata.started));

@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import formatDate from 'dateformat';
 import VSCodeApi from './VSCodeApi';
 
@@ -10,9 +10,12 @@ type GanttTask = {
   start: string,
   end: string,
   due?: string | false,
+  plannedStart?: string | false,
+  plannedFinish?: string | false,
   metadata?: {
     due?: string | Date,
-    postponed?: string | Date,
+    plannedStart?: string | Date,
+    plannedFinish?: string | Date,
   },
   relations?: Array<{
     type?: string,
@@ -40,6 +43,9 @@ const GANTT_BAR_HEIGHT = 26;
 const FORWARD_MIN_HORIZONTAL_TRAVEL = 20;
 const NON_FORWARD_DETOUR_GAP = 18;
 const TARGET_TOP_APPROACH_GAP = 12;
+const INTERACTION_EDGE_THRESHOLD = 7;
+const MIN_BAR_PIXEL_WIDTH = 14;
+const DRAG_START_THRESHOLD = 2;
 
 const toTime = (value: string | Date | null | undefined): number => {
   if (!value) {
@@ -163,6 +169,24 @@ type DependencyPath = {
   isBlocks: boolean,
 };
 
+type DragMode = 'drag' | 'resize-left' | 'resize-right';
+
+type DragIntent = DragMode | null;
+
+type DraftSchedule = {
+  startMs: number,
+  endMs: number,
+};
+
+type ActiveInteraction = {
+  taskId: string,
+  mode: DragMode,
+  startClientX: number,
+  initialStartMs: number,
+  initialEndMs: number,
+  didMove: boolean,
+};
+
 const normaliseRelationType = (type: string | undefined): string => {
   if (!type) {
     return '';
@@ -255,6 +279,15 @@ const getXAxisPlacements = (fromMs: number, toMs: number, width: number, dateFor
   return [{ x: 0, label: formatDate(new Date(fromMs), dateFormat), start: 0, end: 0 }];
 };
 
+const toIso = (valueMs: number): string => new Date(valueMs).toISOString();
+
+const parsePlannedTime = (task: GanttTask, field: 'plannedStart' | 'plannedFinish'): number => {
+  if (task.metadata && task.metadata[field]) {
+    return toTime(task.metadata[field] || null);
+  }
+  return toTime(task[field] || null);
+};
+
 const Gantt = ({ name, ganttData, dateFormat, vscode }: {
   name: string,
   ganttData: GanttData,
@@ -267,6 +300,15 @@ const Gantt = ({ name, ganttData, dateFormat, vscode }: {
   const [timelineViewportWidth, setTimelineViewportWidth] = useState(0);
   const [labelWidth, setLabelWidth] = useState(LABEL_WIDTH);
   const [measuredTaskRectById, setMeasuredTaskRectById] = useState<Map<string, Rect>>(new Map());
+  const [draftScheduleByTaskId, setDraftScheduleByTaskId] = useState<Map<string, DraftSchedule>>(new Map());
+  const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null);
+  const [hoverIntent, setHoverIntent] = useState<DragIntent>(null);
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [activeMode, setActiveMode] = useState<DragIntent>(null);
+  const activeInteractionRef = useRef<ActiveInteraction | null>(null);
+  const chartTasksRef = useRef<Array<GanttTask & { safeStartMs: number, safeEndMs: number }>>([]);
+  const draftScheduleByTaskIdRef = useRef<Map<string, DraftSchedule>>(new Map());
+  const suppressClickTaskIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!scrollXRef.current) {
@@ -301,14 +343,21 @@ const Gantt = ({ name, ganttData, dateFormat, vscode }: {
 
   const canvasWidth = labelWidth + timelineWidth;
 
+  useEffect(() => {
+    setDraftScheduleByTaskId(new Map());
+  }, [ganttData]);
+
   const chartTasks = useMemo(() => {
     const tasks = Array.isArray(ganttData.tasks) ? ganttData.tasks : [];
     return tasks.map((task) => {
       const startMs = toTime(task.start);
       const endMs = toTime(task.end);
       const dueMs = toTime(task.metadata && task.metadata.due ? task.metadata.due : (task.due || null));
-      const safeStartMs = Number.isNaN(startMs) ? safeFromMs : startMs;
-      const safeEndMs = Number.isNaN(endMs) ? safeStartMs : Math.max(safeStartMs, endMs);
+      const draftSchedule = draftScheduleByTaskId.get(task.id);
+      const baseStartMs = Number.isNaN(startMs) ? safeFromMs : startMs;
+      const baseEndMs = Number.isNaN(endMs) ? baseStartMs : Math.max(baseStartMs, endMs);
+      const safeStartMs = draftSchedule ? draftSchedule.startMs : baseStartMs;
+      const safeEndMs = draftSchedule ? Math.max(draftSchedule.startMs, draftSchedule.endMs) : baseEndMs;
       const startRatio = clamp((safeStartMs - safeFromMs) / span, 0, 1);
       const endRatio = clamp((safeEndMs - safeFromMs) / span, 0, 1);
       const startPercent = startRatio * 100;
@@ -326,7 +375,7 @@ const Gantt = ({ name, ganttData, dateFormat, vscode }: {
         isPastDueInTimeline,
       };
     });
-  }, [ganttData.tasks, safeFromMs, span]);
+  }, [ganttData.tasks, safeFromMs, span, draftScheduleByTaskId]);
 
   const taskRects = useMemo<TaskRect[]>(() => {
     return chartTasks.map((task, index) => {
@@ -397,6 +446,14 @@ const Gantt = ({ name, ganttData, dateFormat, vscode }: {
     return new Map(chartTasks.map((task, index) => [task.id, index]));
   }, [chartTasks]);
 
+  useEffect(() => {
+    chartTasksRef.current = chartTasks;
+  }, [chartTasks]);
+
+  useEffect(() => {
+    draftScheduleByTaskIdRef.current = draftScheduleByTaskId;
+  }, [draftScheduleByTaskId]);
+
   const dependencyPaths = useMemo(() => {
     if (!timelineWidth || chartTasks.length === 0 || taskRects.length === 0) {
       return [];
@@ -448,11 +505,232 @@ const Gantt = ({ name, ganttData, dateFormat, vscode }: {
   );
 
   const openTask = (task: GanttTask) => {
+    if (suppressClickTaskIdRef.current === task.id) {
+      suppressClickTaskIdRef.current = null;
+      return;
+    }
+
     vscode.postMessage({
       command: 'kanbn.task',
       taskId: task.id,
       columnName: task.column,
     });
+  };
+
+  const getDragCapabilities = (task: GanttTask) => {
+    const leftLocked = hasDate(task.started);
+    const rightLocked = hasDate(task.completed);
+    return {
+      leftLocked,
+      rightLocked,
+      canDrag: !leftLocked && !rightLocked,
+      canResizeLeft: !leftLocked,
+      canResizeRight: !rightLocked,
+    };
+  };
+
+  const getIntentFromPointer = (
+    task: GanttTask,
+    barBounds: DOMRect,
+    clientX: number,
+  ): DragIntent => {
+    const capabilities = getDragCapabilities(task);
+    const localX = clamp(clientX - barBounds.left, 0, barBounds.width);
+    const edgeThreshold = Math.min(INTERACTION_EDGE_THRESHOLD, Math.max(4, Math.floor(barBounds.width / 3)));
+
+    if (capabilities.canResizeLeft && localX <= edgeThreshold) {
+      return 'resize-left';
+    }
+
+    if (capabilities.canResizeRight && localX >= barBounds.width - edgeThreshold) {
+      return 'resize-right';
+    }
+
+    if (capabilities.canDrag) {
+      return 'drag';
+    }
+
+    return null;
+  };
+
+  const persistTaskSchedule = useCallback((
+    task: GanttTask,
+    mode: DragMode,
+    startMs: number,
+    endMs: number,
+  ) => {
+    const nextPayload: {
+      command: string,
+      taskId: string,
+      plannedStart?: string,
+      plannedFinish?: string,
+    } = {
+      command: 'kanbn.gantt.updatePlannedDates',
+      taskId: task.id,
+    };
+
+    const existingPlannedStartMs = parsePlannedTime(task, 'plannedStart');
+    const existingPlannedFinishMs = parsePlannedTime(task, 'plannedFinish');
+
+    if (mode === 'drag' || mode === 'resize-left') {
+      if (Number.isNaN(existingPlannedStartMs) || Math.abs(existingPlannedStartMs - startMs) > 1000) {
+        nextPayload.plannedStart = toIso(startMs);
+      }
+    }
+
+    if (mode === 'drag' || mode === 'resize-right') {
+      if (Number.isNaN(existingPlannedFinishMs) || Math.abs(existingPlannedFinishMs - endMs) > 1000) {
+        nextPayload.plannedFinish = toIso(endMs);
+      }
+    }
+
+    if (!nextPayload.plannedStart && !nextPayload.plannedFinish) {
+      return;
+    }
+
+    vscode.postMessage(nextPayload);
+  }, [vscode]);
+
+  useEffect(() => {
+    const onMouseMove = (event: MouseEvent) => {
+      const interaction = activeInteractionRef.current;
+      if (!interaction) {
+        return;
+      }
+
+      const minDurationMs = Math.max(1, (MIN_BAR_PIXEL_WIDTH / Math.max(1, timelineWidth)) * span);
+      const deltaPixels = event.clientX - interaction.startClientX;
+      const deltaMs = (deltaPixels / Math.max(1, timelineWidth)) * span;
+      const moved = Math.abs(deltaPixels) > DRAG_START_THRESHOLD;
+      if (moved && !interaction.didMove) {
+        interaction.didMove = true;
+      }
+
+      let nextStartMs = interaction.initialStartMs;
+      let nextEndMs = interaction.initialEndMs;
+
+      if (interaction.mode === 'drag') {
+        const duration = Math.max(minDurationMs, interaction.initialEndMs - interaction.initialStartMs);
+        nextStartMs = clamp(interaction.initialStartMs + deltaMs, safeFromMs, safeToMs - duration);
+        nextEndMs = nextStartMs + duration;
+      } else if (interaction.mode === 'resize-left') {
+        nextStartMs = clamp(interaction.initialStartMs + deltaMs, safeFromMs, interaction.initialEndMs - minDurationMs);
+      } else {
+        nextEndMs = clamp(interaction.initialEndMs + deltaMs, interaction.initialStartMs + minDurationMs, safeToMs);
+      }
+
+      setDraftScheduleByTaskId((previous) => {
+        const current = previous.get(interaction.taskId);
+        if (current && current.startMs === nextStartMs && current.endMs === nextEndMs) {
+          return previous;
+        }
+
+        const next = new Map(previous);
+        next.set(interaction.taskId, {
+          startMs: nextStartMs,
+          endMs: nextEndMs,
+        });
+        return next;
+      });
+    };
+
+    const onMouseUp = () => {
+      const interaction = activeInteractionRef.current;
+      if (!interaction) {
+        return;
+      }
+
+      const task = chartTasksRef.current.find((t) => t.id === interaction.taskId);
+      const draft = draftScheduleByTaskIdRef.current.get(interaction.taskId);
+      if (task && draft && interaction.didMove) {
+        suppressClickTaskIdRef.current = interaction.taskId;
+        persistTaskSchedule(task, interaction.mode, draft.startMs, draft.endMs);
+      }
+
+      activeInteractionRef.current = null;
+      setActiveTaskId(null);
+      setActiveMode(null);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [persistTaskSchedule, safeFromMs, safeToMs, span, timelineWidth]);
+
+  const handleBarMouseDown = (task: GanttTask, event: React.MouseEvent<HTMLButtonElement>) => {
+    if (event.button !== 0) {
+      return;
+    }
+
+    const intent = getIntentFromPointer(task, event.currentTarget.getBoundingClientRect(), event.clientX);
+    if (!intent) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const activeChartTask = chartTasks.find((t) => t.id === task.id);
+    if (!activeChartTask) {
+      return;
+    }
+
+    activeInteractionRef.current = {
+      taskId: task.id,
+      mode: intent,
+      startClientX: event.clientX,
+      initialStartMs: activeChartTask.safeStartMs,
+      initialEndMs: activeChartTask.safeEndMs,
+      didMove: false,
+    };
+    setActiveTaskId(task.id);
+    setActiveMode(intent);
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = intent === 'drag' ? 'grabbing' : 'ew-resize';
+  };
+
+  const handleBarMouseMove = (task: GanttTask, event: React.MouseEvent<HTMLButtonElement>) => {
+    if (activeInteractionRef.current) {
+      return;
+    }
+
+    const intent = getIntentFromPointer(task, event.currentTarget.getBoundingClientRect(), event.clientX);
+    setHoveredTaskId(task.id);
+    setHoverIntent(intent);
+  };
+
+  const handleBarMouseLeave = () => {
+    if (activeInteractionRef.current) {
+      return;
+    }
+    setHoveredTaskId(null);
+    setHoverIntent(null);
+  };
+
+  const getBarCursor = (task: GanttTask): string | undefined => {
+    if (activeTaskId === task.id) {
+      if (activeMode === 'drag') {
+        return 'grabbing';
+      }
+      if (activeMode === 'resize-left' || activeMode === 'resize-right') {
+        return 'ew-resize';
+      }
+      return undefined;
+    }
+
+    if (hoveredTaskId !== task.id || !hoverIntent) {
+      return undefined;
+    }
+
+    if (hoverIntent === 'drag') {
+      return 'grab';
+    }
+
+    return 'ew-resize';
   };
 
   return (
@@ -570,10 +848,14 @@ const Gantt = ({ name, ganttData, dateFormat, vscode }: {
                           !hasDate(task.completed) && !hasDate(task.started) ? 'kanbn-gantt-bar-not-started' : null,
                           task.isPastDueInTimeline ? 'kanbn-gantt-bar-overdue' : null,
                         ].filter((i) => !!i).join(' ')}
+                        onMouseDown={(event) => handleBarMouseDown(task, event)}
+                        onMouseMove={(event) => handleBarMouseMove(task, event)}
+                        onMouseLeave={handleBarMouseLeave}
                         onClick={() => openTask(task)}
                         style={{
                           left: `${task.startPercent}%`,
                           width: `${task.widthPercent}%`,
+                          cursor: getBarCursor(task),
                         }}
                         title={`${task.id}\n${formatDate(task.safeStartMs, dateFormat)} -> ${formatDate(task.safeEndMs, dateFormat)}`}
                       >

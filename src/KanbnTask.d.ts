@@ -12,6 +12,8 @@ declare type KanbnTask = {
     created?: string,
     updated?: string,
     started?: string,
+    plannedStart?: string,
+    plannedFinish?: string,
     due?: string,
     completed?: string,
     assigned?: string,

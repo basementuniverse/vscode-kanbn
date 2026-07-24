@@ -137,6 +137,54 @@ export default class KanbnGanttPanel {
               message.columnName
             );
             return;
+
+          // Persist gantt drag/resize updates
+          case "kanbn.gantt.updatePlannedDates": {
+            const task = await this._kanbn.getTask(message.taskId);
+            if (!task || typeof task !== "object") {
+              return;
+            }
+
+            if (!task.metadata || typeof task.metadata !== "object") {
+              task.metadata = {};
+            }
+
+            let hasChanges = false;
+
+            if (typeof message.plannedStart === "string") {
+              const plannedStartDate = new Date(Date.parse(message.plannedStart));
+              if (!Number.isNaN(plannedStartDate.getTime())) {
+                const currentValue = task.metadata.plannedStart instanceof Date
+                  ? task.metadata.plannedStart.getTime()
+                  : (task.metadata.plannedStart ? Date.parse(task.metadata.plannedStart) : NaN);
+                if (Number.isNaN(currentValue) || Math.abs(currentValue - plannedStartDate.getTime()) > 1000) {
+                  task.metadata.plannedStart = plannedStartDate;
+                  hasChanges = true;
+                }
+              }
+            }
+
+            if (typeof message.plannedFinish === "string") {
+              const plannedFinishDate = new Date(Date.parse(message.plannedFinish));
+              if (!Number.isNaN(plannedFinishDate.getTime())) {
+                const currentValue = task.metadata.plannedFinish instanceof Date
+                  ? task.metadata.plannedFinish.getTime()
+                  : (task.metadata.plannedFinish ? Date.parse(task.metadata.plannedFinish) : NaN);
+                if (Number.isNaN(currentValue) || Math.abs(currentValue - plannedFinishDate.getTime()) > 1000) {
+                  task.metadata.plannedFinish = plannedFinishDate;
+                  hasChanges = true;
+                }
+              }
+            }
+
+            if (!hasChanges) {
+              return;
+            }
+
+            await this._kanbn.updateTask(message.taskId, task);
+            KanbnGanttPanel.update();
+            return;
+          }
         }
       },
       null,
