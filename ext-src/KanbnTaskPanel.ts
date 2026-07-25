@@ -185,6 +185,10 @@ export default class KanbnTaskPanel {
             this._panel.title = message.title;
             return;
 
+          case "kanbn.openLink":
+            await this._openMarkdownLink(message.href);
+            return;
+
           // Create a task
           case "kanbn.create":
             await this._kanbn.createTask(
@@ -253,6 +257,43 @@ export default class KanbnTaskPanel {
       if (x) {
         x.dispose();
       }
+    }
+  }
+
+  private async _openMarkdownLink(href: string) {
+    if (!href || href.charAt(0) === '#') {
+      return;
+    }
+
+    try {
+      const trimmedHref = href.trim();
+      const prefixedPath = /^(workspace|project):/i.test(trimmedHref)
+        ? trimmedHref.replace(/^(workspace|project):/i, '').replace(/^[\\/]+/, '')
+        : null;
+
+      if (prefixedPath !== null) {
+        const fileUri = vscode.Uri.file(path.resolve(this._workspacePath, prefixedPath));
+        await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(fileUri));
+        return;
+      }
+
+      if (/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(trimmedHref)) {
+        const uri = vscode.Uri.parse(trimmedHref);
+        if (uri.scheme === 'http' || uri.scheme === 'https' || uri.scheme === 'mailto' || uri.scheme === 'tel') {
+          await (vscode.env as any).openExternal(uri);
+          return;
+        }
+
+        if (uri.scheme === 'file') {
+          await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(uri));
+          return;
+        }
+      }
+
+      const fileUri = vscode.Uri.file(path.resolve(this._workspacePath, this._kanbnFolderName, trimmedHref));
+      await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(fileUri));
+    } catch (error) {
+      vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
     }
   }
 

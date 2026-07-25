@@ -28,8 +28,8 @@ interface KanbnTaskValidationInput extends KanbnTaskValidationOutput {
   id: string
 }
 
-const components = {
-  code({ node, inline, className, children, ...props }) {
+const createMarkdownComponents = (vscode: VSCodeApi) => ({
+  code({ node, inline, className, children, ...props }: any) {
     const match = /language-(\w+)/.exec(className || '');
     return !inline && match ? (
       <SyntaxHighlighter
@@ -43,15 +43,51 @@ const components = {
     ) : (
       <code className={className} children={children} {...props} />
     );
-  }
-};
+  },
+  a(props: any) {
+    const { href, children, ...rest } = props;
+    return (
+      <button
+        type="button"
+        className={rest.className}
+        onClick={(event) => {
+          if (!href || href.charAt(0) === '#') {
+            return;
+          }
 
-const Markdown = props => (<ReactMarkdown {...{
-  remarkPlugins: [remarkMath],
-  rehypePlugins: [rehypeKatex],
-  components,
-  ...props,
-}} />);
+          event.preventDefault();
+          vscode.postMessage({
+            command: 'kanbn.openLink',
+            href,
+          });
+        }}
+        {...rest}
+        style={{
+          appearance: 'none',
+          background: 'none',
+          border: 0,
+          color: 'var(--vscode-textLink-foreground)',
+          cursor: 'pointer',
+          font: 'inherit',
+          padding: 0,
+          textDecoration: 'underline',
+          textAlign: 'left',
+        }}
+      >
+        {children}
+      </button>
+    );
+  }
+});
+
+const Markdown = ({ vscode, children, ...props }) => (<ReactMarkdown
+  remarkPlugins={[remarkMath]}
+  rehypePlugins={[rehypeKatex]}
+  components={createMarkdownComponents(vscode)}
+  {...props}
+>
+  {children}
+</ReactMarkdown>);
 
 const toPercent = (value: number | undefined) => `${Math.round((value || 0) * 100)}%`;
 
@@ -399,7 +435,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                         as={TextareaAutosize}
                         name="description"
                       />
-                      : <Markdown className="kanbn-task-editor-description-preview" children={values.description} />
+                      : <Markdown vscode={vscode} className="kanbn-task-editor-description-preview" children={values.description} />
                   }
                   <ErrorMessage
                     className="kanbn-task-editor-field-errors"
@@ -596,7 +632,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                                         name={`comments.${index}.text`}
                                       />
                                     </React.Fragment>
-                                    : <Markdown className="kanbn-task-editor-comment-text" children={comment.text} />
+                                    : <Markdown vscode={vscode} className="kanbn-task-editor-comment-text" children={comment.text} />
                                 }
                               </div>
                             </div>
