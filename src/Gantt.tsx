@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import formatDate from 'dateformat';
+import { paramCase } from '@basementuniverse/kanbn/src/utility';
 import VSCodeApi from './VSCodeApi';
 
 type GanttTask = {
@@ -288,9 +289,13 @@ const parsePlannedTime = (task: GanttTask, field: 'plannedStart' | 'plannedFinis
   return toTime(task[field] || null);
 };
 
-const Gantt = ({ name, ganttData, dateFormat, vscode }: {
+const toColumnClassName = (columnName: string): string => `kanbn-column-${paramCase(columnName)}`;
+
+const Gantt = ({ name, ganttData, startedColumns, completedColumns, dateFormat, vscode }: {
   name: string,
   ganttData: GanttData,
+  startedColumns: string[],
+  completedColumns: string[],
   dateFormat: string,
   vscode: VSCodeApi,
 }) => {
@@ -349,6 +354,9 @@ const Gantt = ({ name, ganttData, dateFormat, vscode }: {
 
   const chartTasks = useMemo(() => {
     const tasks = Array.isArray(ganttData.tasks) ? ganttData.tasks : [];
+    const startedColumnSet = new Set(startedColumns || []);
+    const completedColumnSet = new Set(completedColumns || []);
+
     return tasks.map((task) => {
       const startMs = toTime(task.start);
       const endMs = toTime(task.end);
@@ -364,6 +372,13 @@ const Gantt = ({ name, ganttData, dateFormat, vscode }: {
       const endPercent = endRatio * 100;
       const widthPercent = Math.max(0.8, endPercent - startPercent);
       const isPastDueInTimeline = !Number.isNaN(dueMs) && safeEndMs > dueMs;
+      const inStartedColumn = startedColumnSet.has(task.column);
+      const inCompletedColumn = completedColumnSet.has(task.column);
+      const isCompleted = hasDate(task.completed) || inCompletedColumn;
+      const isStarted = !isCompleted && (hasDate(task.started) || inStartedColumn);
+      const statusClassName = isCompleted
+        ? 'kanbn-gantt-bar-completed'
+        : (isStarted ? 'kanbn-gantt-bar-started' : 'kanbn-gantt-bar-not-started');
 
       return {
         ...task,
@@ -373,9 +388,11 @@ const Gantt = ({ name, ganttData, dateFormat, vscode }: {
         endPercent,
         widthPercent,
         isPastDueInTimeline,
+        statusClassName,
+        columnClassName: toColumnClassName(task.column),
       };
     });
-  }, [ganttData.tasks, safeFromMs, span, draftScheduleByTaskId]);
+  }, [ganttData.tasks, safeFromMs, span, draftScheduleByTaskId, startedColumns, completedColumns]);
 
   const taskRects = useMemo<TaskRect[]>(() => {
     return chartTasks.map((task, index) => {
@@ -827,7 +844,11 @@ const Gantt = ({ name, ganttData, dateFormat, vscode }: {
             </div>
               {
                 chartTasks.map((task) => (
-                  <div key={task.id} className="kanbn-gantt-row">
+                  <div key={task.id} className={[
+                    'kanbn-gantt-row',
+                    task.columnClassName,
+                    `kanbn-gantt-row-${task.columnClassName}`,
+                  ].join(' ')}>
                     <button
                       type="button"
                       className="kanbn-gantt-task-name"
@@ -843,9 +864,8 @@ const Gantt = ({ name, ganttData, dateFormat, vscode }: {
                         ref={setBarElementRef(task.id)}
                         className={[
                           'kanbn-gantt-bar',
-                          hasDate(task.completed) ? 'kanbn-gantt-bar-completed' : null,
-                          !hasDate(task.completed) && hasDate(task.started) ? 'kanbn-gantt-bar-started' : null,
-                          !hasDate(task.completed) && !hasDate(task.started) ? 'kanbn-gantt-bar-not-started' : null,
+                          task.statusClassName,
+                          `kanbn-gantt-bar-${task.columnClassName}`,
                           task.isPastDueInTimeline ? 'kanbn-gantt-bar-overdue' : null,
                         ].filter((i) => !!i).join(' ')}
                         onMouseDown={(event) => handleBarMouseDown(task, event)}

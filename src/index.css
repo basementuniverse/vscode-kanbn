@@ -172,7 +172,7 @@ Board styles
 
 .kanbn-column-task-list {
     margin: 0 8px;
-    border-left: 4px var(--vscode-activityBar-inactiveForeground) solid;
+    border-left: 4px var(--kanbn-column-accent, var(--vscode-activityBar-inactiveForeground)) solid;
     min-height: 46px;
     height: 100%;
     transition: border-color .5s ease-in-out;
@@ -183,19 +183,19 @@ Board styles
 }
 
 .kanbn-column-backlog .kanbn-column-task-list {
-    border-color: #36d;
+    --kanbn-column-accent: #36d;
 }
 
 .kanbn-column-in-progress .kanbn-column-task-list {
-    border-color: #194;
+    --kanbn-column-accent: #194;
 }
 
 .kanbn-column-todo .kanbn-column-task-list {
-    border-color: #eb1;
+    --kanbn-column-accent: #eb1;
 }
 
 .kanbn-column-done .kanbn-column-task-list {
-    border-color: #e83;
+    --kanbn-column-accent: #e83;
 }
 
 /*-----------------------------------------------------------------------------
@@ -698,6 +698,8 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
 .kanbn-task-editor-description-preview {
     padding: .5em;
     border: 1px var(--vscode-input-background) solid;
+    min-height: 90px;
+    overflow: auto;
 }
 
 .kanbn-task-editor-button-edit-description {
@@ -824,9 +826,13 @@ Gantt chart styles
 
 .kanbn-gantt {
     --kanbn-gantt-label-width: 240px;
+    --kanbn-gantt-bar-border-default: var(--vscode-activityBar-inactiveForeground);
+    --kanbn-gantt-bar-border-started: #194;
+    --kanbn-gantt-bar-border-completed: #e83;
+    --kanbn-gantt-bar-border-not-started: #36d;
     flex: 1;
     min-height: 300px;
-    width: 100%;
+    width: 99.9%;
     min-width: 0;
     overflow-x: hidden;
     display: flex;
@@ -902,7 +908,10 @@ Gantt chart styles
     height: 26px;
     box-sizing: border-box;
     border: none;
-    border-left: 4px solid var(--vscode-activityBar-inactiveForeground);
+    border-left: 4px solid var(
+        --kanbn-gantt-bar-border-color,
+        var(--kanbn-column-accent, var(--kanbn-gantt-bar-status-color, var(--kanbn-gantt-bar-border-default)))
+    );
     border-radius: 3px;
     text-align: left;
     padding: 0 8px 0 6px;
@@ -922,15 +931,42 @@ Gantt chart styles
 }
 
 .kanbn-gantt-bar-completed {
-    border-left-color: #e83;
+    --kanbn-gantt-bar-status-color: var(--kanbn-gantt-bar-border-completed);
 }
 
 .kanbn-gantt-bar-started {
-    border-left-color: #194;
+    --kanbn-gantt-bar-status-color: var(--kanbn-gantt-bar-border-started);
 }
 
 .kanbn-gantt-bar-not-started {
-    border-left-color: #36d;
+    --kanbn-gantt-bar-status-color: var(--kanbn-gantt-bar-border-not-started);
+}
+
+.kanbn-column-backlog,
+.kanbn-gantt-row-kanbn-column-backlog {
+    --kanbn-column-accent: #36d;
+}
+
+.kanbn-column-in-progress,
+.kanbn-gantt-row-kanbn-column-in-progress {
+    --kanbn-column-accent: #194;
+}
+
+.kanbn-column-todo,
+.kanbn-gantt-row-kanbn-column-todo {
+    --kanbn-column-accent: #eb1;
+}
+
+.kanbn-column-done,
+.kanbn-gantt-row-kanbn-column-done {
+    --kanbn-column-accent: #e83;
+}
+
+.kanbn-gantt-row[class*="kanbn-column-"] .kanbn-gantt-bar {
+    border-left-color: var(
+        --kanbn-gantt-bar-border-color,
+        var(--kanbn-column-accent, var(--kanbn-gantt-bar-status-color, var(--kanbn-gantt-bar-border-default)))
+    );
 }
 
 body.vscode-light .kanbn-gantt-bar {

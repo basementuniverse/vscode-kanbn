@@ -205,6 +205,32 @@ Here's an example of a task card style using some of the above features:
 
 ### Gantt chart
 
+You can customize Gantt bar accent colors using CSS variables in `board.css`:
+
+```css
+.kanbn-gantt {
+    --kanbn-gantt-bar-border-default: #888;
+    --kanbn-gantt-bar-border-not-started: #36d;
+    --kanbn-gantt-bar-border-started: #194;
+    --kanbn-gantt-bar-border-completed: #e83;
+}
+```
+
+You can also style bars by column by reusing each column's param-case class. For example:
+
+```css
+.kanbn-column-testing,
+.kanbn-gantt-row-kanbn-column-testing {
+    --kanbn-column-accent: #b45cff;
+}
+
+.kanbn-gantt-bar-kanbn-column-testing {
+    border-left-width: 6px;
+}
+```
+
+`startedColumns` and `completedColumns` project options are now applied to Gantt bar status styling, so tasks in those columns will use started/completed status styles even if date fields are not set.
+
 - `kanbn-gantt`
 - `kanbn-gantt-warning`
 - `kanbn-gantt-scroll-x`
@@ -216,9 +242,11 @@ Here's an example of a task card style using some of the above features:
 - `kanbn-gantt-dependency-line`
 - `kanbn-gantt-arrow-head`
 - `kanbn-gantt-row`
+- `kanbn-gantt-row-kanbn-column-{Column name in param-case}`
 - `kanbn-gantt-task-name`
 - `kanbn-gantt-row-timeline`
 - `kanbn-gantt-bar`
+- `kanbn-gantt-bar-kanbn-column-{Column name in param-case}`
 - `kanbn-gantt-bar-completed`
 - `kanbn-gantt-bar-started`
 - `kanbn-gantt-bar-not-started`

@@ -94,6 +94,16 @@ function App() {
 
       case 'gantt':
         setName(event.data.index.name);
+        setStartedColumns(
+          event.data.index && event.data.index.options && event.data.index.options.startedColumns
+            ? event.data.index.options.startedColumns
+            : []
+        );
+        setCompletedColumns(
+          event.data.index && event.data.index.options && event.data.index.options.completedColumns
+            ? event.data.index.options.completedColumns
+            : []
+        );
         setGanttData(event.data.ganttData);
         break;
     }
@@ -157,6 +167,8 @@ function App() {
         <Gantt
           name={name}
           ganttData={ganttData}
+          startedColumns={startedColumns}
+          completedColumns={completedColumns}
           dateFormat={dateFormat}
           vscode={vscode}
         />
