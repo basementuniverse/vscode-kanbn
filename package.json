@@ -89,6 +89,24 @@
           "default": true,
           "description": "Show notifications when a task is created, updated or deleted."
         },
+        "kanbn.autoSave": {
+          "type": "string",
+          "enum": [
+            "inherit",
+            "off",
+            "afterDelay",
+            "onFocusChange",
+            "onWindowChange"
+          ],
+          "default": "inherit",
+          "description": "Control how the Kanbn task editor auto-saves changes. 'inherit' follows the workspace 'files.autoSave' setting."
+        },
+        "kanbn.autoSaveDelay": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 0,
+          "description": "Delay in milliseconds before the Kanbn task editor auto-saves changes when using 'afterDelay'."
+        },
         "kanbn.showSprintButton": {
           "type": "boolean",
           "default": false,

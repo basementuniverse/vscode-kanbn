@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Formik, Form, Field, ErrorMessage, FieldArray } from 'formik';
 import formatDate from 'dateformat';
 import VSCodeApi from './VSCodeApi';
@@ -27,6 +27,31 @@ interface KanbnTaskValidationOutput {
 interface KanbnTaskValidationInput extends KanbnTaskValidationOutput {
   id: string
 }
+
+type AutoSaveMode = 'off' | 'afterDelay' | 'onFocusChange' | 'onWindowChange';
+type SaveStatus = 'idle' | 'saving' | 'saved';
+
+const AUTO_SAVE_STATUS_DURATION = 1500;
+
+const hasValidationErrors = (errors: any): boolean => {
+  if (!errors) {
+    return false;
+  }
+
+  if (typeof errors === 'string') {
+    return !!errors;
+  }
+
+  if (Array.isArray(errors)) {
+    return errors.some(error => hasValidationErrors(error));
+  }
+
+  if (typeof errors === 'object') {
+    return Object.values(errors).some(error => hasValidationErrors(error));
+  }
+
+  return false;
+};
 
 const createMarkdownComponents = (vscode: VSCodeApi) => ({
   code({ node, inline, className, children, ...props }: any) {
@@ -147,7 +172,141 @@ const getHistoryEventDescription = (historyEvent: any) => {
   }
 };
 
-const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFormat, panelUuid, vscode }: {
+const createInitialTaskData = (
+  task: KanbnTask | null,
+  columnName: string,
+  customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string' }[],
+) => ({
+  id: task ? task.id : '',
+  name: task ? task.name : '',
+  description: task ? task.description : '',
+  column: columnName,
+  progress: task ? task.progress : 0,
+  metadata: {
+    created: (task && 'created' in task.metadata) ? task.metadata.created : new Date(),
+    updated: (task && 'updated' in task.metadata) ? task.metadata.updated : null,
+    started: (task && 'started' in task.metadata) ? formatDate(task.metadata.started!, 'yyyy-mm-dd') : '',
+    plannedStart: (task && 'plannedStart' in task.metadata) ? formatDate(task.metadata.plannedStart as string | number | Date, 'yyyy-mm-dd') : '',
+    plannedFinish: (task && 'plannedFinish' in task.metadata) ? formatDate(task.metadata.plannedFinish as string | number | Date, 'yyyy-mm-dd') : '',
+    due: (task && 'due' in task.metadata) ? formatDate(task.metadata.due!, 'yyyy-mm-dd') : '',
+    completed: (task && 'completed' in task.metadata) ? formatDate(task.metadata.completed!, 'yyyy-mm-dd') : '',
+    assigned: (task && 'assigned' in task.metadata) ? task.metadata.assigned : (gitUsername() || ''),
+    tags: (task && 'tags' in task.metadata) ? (task.metadata.tags || []) : [],
+    ...Object.fromEntries(
+      customFields.map(customField => [
+        customField.name,
+        (task && customField.name in task.metadata)
+          ? (customField.type === 'date'
+            ? formatDate(task.metadata[customField.name], 'yyyy-mm-dd')
+            : task.metadata[customField.name]
+          ) : null,
+      ]),
+    )
+  },
+  relations: task ? task.relations : [],
+  subTasks: task ? task.subTasks : [],
+  comments: task ? task.comments : [],
+  history: task ? (task.history || []) : []
+});
+
+const TaskEditorAutoSave = ({
+  autoSaveMode,
+  autoSaveDelay,
+  dirty,
+  errors,
+  isSubmitting,
+  isValid,
+  submitForm,
+  onSaving,
+}: {
+  autoSaveMode: AutoSaveMode,
+  autoSaveDelay: number,
+  dirty: boolean,
+  errors: any,
+  isSubmitting: boolean,
+  isValid: boolean,
+  submitForm: () => Promise<any>,
+  onSaving: () => void,
+}) => {
+  useEffect(() => {
+    if (autoSaveMode !== 'afterDelay' || !dirty || isSubmitting || !isValid || hasValidationErrors(errors)) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      onSaving();
+      submitForm();
+    }, Math.max(0, autoSaveDelay));
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [autoSaveDelay, autoSaveMode, dirty, errors, isSubmitting, isValid, onSaving, submitForm]);
+
+  useEffect(() => {
+    if (autoSaveMode !== 'onFocusChange') {
+      return undefined;
+    }
+
+    const handleWindowBlur = () => {
+      if (!dirty || isSubmitting || !isValid || hasValidationErrors(errors)) {
+        return;
+      }
+
+      onSaving();
+      submitForm();
+    };
+
+    window.addEventListener('blur', handleWindowBlur);
+    return () => {
+      window.removeEventListener('blur', handleWindowBlur);
+    };
+  }, [autoSaveMode, dirty, errors, isSubmitting, isValid, onSaving, submitForm]);
+
+  useEffect(() => {
+    if (autoSaveMode !== 'onWindowChange') {
+      return undefined;
+    }
+
+    const submitIfNeeded = () => {
+      if (!dirty || isSubmitting || !isValid || hasValidationErrors(errors)) {
+        return;
+      }
+
+      onSaving();
+      submitForm();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        submitIfNeeded();
+      }
+    };
+
+    window.addEventListener('blur', submitIfNeeded);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('blur', submitIfNeeded);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [autoSaveMode, dirty, errors, isSubmitting, isValid, onSaving, submitForm]);
+
+  return null;
+};
+
+const TaskEditor = ({
+  task,
+  tasks,
+  columnName,
+  columnNames,
+  customFields,
+  dateFormat,
+  panelUuid,
+  autoSaveMode,
+  autoSaveDelay,
+  vscode,
+}: {
   task: KanbnTask | null,
   tasks: Record<string, KanbnTask>,
   columnName: string,
@@ -155,41 +314,12 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
   customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string' }[],
   dateFormat: string,
   panelUuid: string,
+  autoSaveMode: AutoSaveMode,
+  autoSaveDelay: number,
   vscode: VSCodeApi
 }) => {
   const editing = task !== null;
-  const [taskData, setTaskData] = useState({
-    id: task ? task.id : '',
-    name: task ? task.name : '',
-    description: task ? task.description : '',
-    column: columnName,
-    progress: task ? task.progress : 0,
-    metadata: {
-      created: (task && 'created' in task.metadata) ? task.metadata.created : new Date(),
-      updated: (task && 'updated' in task.metadata) ? task.metadata.updated : null,
-      started: (task && 'started' in task.metadata) ? formatDate(task.metadata.started!, 'yyyy-mm-dd') : '',
-      plannedStart: (task && 'plannedStart' in task.metadata) ? formatDate(task.metadata.plannedStart as string | number | Date, 'yyyy-mm-dd') : '',
-      plannedFinish: (task && 'plannedFinish' in task.metadata) ? formatDate(task.metadata.plannedFinish as string | number | Date, 'yyyy-mm-dd') : '',
-      due: (task && 'due' in task.metadata) ? formatDate(task.metadata.due!, 'yyyy-mm-dd') : '',
-      completed: (task && 'completed' in task.metadata) ? formatDate(task.metadata.completed!, 'yyyy-mm-dd') : '',
-      assigned: (task && 'assigned' in task.metadata) ? task.metadata.assigned : (gitUsername() || ''),
-      tags: (task && 'tags' in task.metadata) ? (task.metadata.tags || []) : [],
-      ...Object.fromEntries(
-        customFields.map(customField => [
-          customField.name,
-          (task && customField.name in task.metadata)
-            ? (customField.type === 'date'
-              ? formatDate(task.metadata[customField.name], 'yyyy-mm-dd')
-              : task.metadata[customField.name]
-            ) : null,
-        ]),
-      )
-    },
-    relations: task ? task.relations : [],
-    subTasks: task ? task.subTasks : [],
-    comments: task ? task.comments : [],
-    history: task ? (task.history || []) : []
-  });
+  const [taskData, setTaskData] = useState(createInitialTaskData(task, columnName, customFields));
   const [editingDescription, setEditingDescription] = useState(!editing);
   const [editingComment, setEditingComment] = useState(-1);
   const [showPlannedDates, setShowPlannedDates] = useState(Boolean(
@@ -198,29 +328,45 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
       ('plannedFinish' in task.metadata && task.metadata.plannedFinish)
     )
   ));
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const saveStatusTimeoutRef = useRef<number | null>(null);
 
-  // Called when the name field is changed
+  useEffect(() => () => {
+    if (saveStatusTimeoutRef.current !== null) {
+      window.clearTimeout(saveStatusTimeoutRef.current);
+    }
+  }, []);
+
+  const scheduleSaveStatusReset = () => {
+    if (saveStatusTimeoutRef.current !== null) {
+      window.clearTimeout(saveStatusTimeoutRef.current);
+    }
+
+    saveStatusTimeoutRef.current = window.setTimeout(() => {
+      setSaveStatus('idle');
+      saveStatusTimeoutRef.current = null;
+    }, AUTO_SAVE_STATUS_DURATION);
+  };
+
   const handleUpdateName = ({ target: { value } }, values) => {
     const id = paramCase(value);
 
-    // Update the id preview
     setTaskData({
       ...taskData,
       id
     });
 
-    // Update values
     values.id = id;
 
-    // Update the webview panel title
     vscode.postMessage({
       command: 'kanbn.updatePanelTitle',
       title: value || 'Untitled task'
     });
   };
 
-  // Called when the form is submitted
   const handleSubmit = (values, setSubmitting, resetForm) => {
+    setSaveStatus('saving');
+
     if (editing) {
       vscode.postMessage({
         command: 'kanbn.update',
@@ -237,12 +383,14 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
         panelUuid
       });
     }
+
     setTaskData(values);
     resetForm({ values });
     setSubmitting(false);
+    setSaveStatus('saved');
+    scheduleSaveStatusReset();
   };
 
-  // Called when the delete task button is clicked
   const handleRemoveTask = values => {
     vscode.postMessage({
       command: 'kanbn.delete',
@@ -252,7 +400,6 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
     });
   };
 
-  // Called when the archive task button is clicked
   const handleArchiveTask = values => {
     vscode.postMessage({
       command: 'kanbn.archive',
@@ -260,9 +407,8 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
       taskData: values,
       panelUuid
     });
-  }
+  };
 
-  // Check if a task's due date is in the past
   const checkOverdue = (values: { metadata: { due?: string } }) => {
     if ('due' in values.metadata && values.metadata.due !== undefined) {
       return Date.parse(values.metadata.due) < (new Date()).getTime();
@@ -270,7 +416,6 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
     return false;
   };
 
-  // Validate form data
   const validate = (values: KanbnTaskValidationInput): KanbnTaskValidationOutput | {} => {
     let hasErrors = false;
     const errors: KanbnTaskValidationOutput = {
@@ -282,19 +427,16 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
       comments: []
     };
 
-    // Task name cannot be empty
     if (!values.name) {
       errors.name = 'Task name is required.';
       hasErrors = true;
     }
 
-    // Check if the id is already in use
-    if (taskData.id in tasks && tasks[taskData.id].uuid !== (task ? task.uuid : '')) {
+    if (values.id in tasks && tasks[values.id].uuid !== (task ? task.uuid : '')) {
       errors.name = 'There is already a task with the same name or id.';
       hasErrors = true;
     }
 
-    // Tag names cannot be empty
     for (let i = 0; i < values.metadata.tags.length; i++) {
       if (!values.metadata.tags[i]) {
         errors.metadata.tags[i] = 'Tag cannot be empty.';
@@ -302,7 +444,6 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
       }
     }
 
-    // Sub-tasks text cannot be empty
     for (let i = 0; i < values.subTasks.length; i++) {
       if (!values.subTasks[i].text) {
         errors.subTasks[i] = {
@@ -312,7 +453,6 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
       }
     }
 
-    // Comments text cannot be empty
     for (let i = 0; i < values.comments.length; i++) {
       if (!values.comments[i].text) {
         errors.comments[i] = {
@@ -323,6 +463,34 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
     }
 
     return hasErrors ? errors : {};
+  };
+
+  const getSaveStatusText = (dirty: boolean) => {
+    if (saveStatus === 'saving') {
+      return 'Saving...';
+    }
+
+    if (dirty) {
+      return autoSaveMode === 'off' ? 'Unsaved changes, auto-save off' : 'Unsaved changes';
+    }
+
+    if (saveStatus === 'saved') {
+      return autoSaveMode === 'off' ? 'Saved manually' : 'Saved';
+    }
+
+    if (autoSaveMode === 'off') {
+      return 'Auto-save off';
+    }
+
+    if (autoSaveMode === 'afterDelay') {
+      return `Auto-save after ${Math.max(0, autoSaveDelay)}ms`;
+    }
+
+    if (autoSaveMode === 'onFocusChange') {
+      return 'Auto-save on focus change';
+    }
+
+    return 'Auto-save on window change';
   };
 
   return (
@@ -336,54 +504,76 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
       >
         {({
           dirty,
+          errors,
           values,
           handleChange,
           setFieldValue,
-          isSubmitting
+          isSubmitting,
+          isValid,
+          submitForm,
         }) => (
           <Form>
-            <h1 className="kanbn-task-editor-title">
-              {editing ? 'Update task' : 'Create new task'}
-              {dirty && <span className="kanbn-task-editor-dirty">*</span>}
-            </h1>
-            <div className="kanbn-task-editor-buttons kanbn-task-editor-main-buttons">
-              {editing && <button
-                type="button"
-                className="kanbn-task-editor-button kanbn-task-editor-button-delete"
-                title="Delete task"
-                onClick={() => {
-                  handleRemoveTask(values);
-                }}
-              >
-                <i className="codicon codicon-trash"></i>Delete
-              </button>}
-              {editing && <button
-                type="button"
-                className="kanbn-task-editor-button kanbn-task-editor-button-archive"
-                title="Archive task"
-                onClick={() => {
-                  handleArchiveTask(values);
-                }}
-              >
-                <i className="codicon codicon-archive"></i>Archive
-              </button>}
-              <button
-                type="submit"
-                className="kanbn-task-editor-button kanbn-task-editor-button-submit"
-                title="Save task"
-                disabled={isSubmitting}
-              >
-                <i className="codicon codicon-save"></i>Save
-              </button>
+            <TaskEditorAutoSave
+              autoSaveMode={autoSaveMode}
+              autoSaveDelay={autoSaveDelay}
+              dirty={dirty}
+              errors={errors}
+              isSubmitting={isSubmitting}
+              isValid={isValid}
+              submitForm={submitForm}
+              onSaving={() => setSaveStatus('saving')}
+            />
+            <div className="kanbn-task-editor-header">
+              <div className="kanbn-task-editor-header-main">
+                <h1 className="kanbn-task-editor-title">
+                  {editing ? 'Update task' : 'Create new task'}
+                  {dirty && <span className="kanbn-task-editor-dirty">*</span>}
+                </h1>
+                <span className="kanbn-task-editor-save-status">{getSaveStatusText(dirty)}</span>
+              </div>
+              <div className="kanbn-task-editor-header-dates">
+                {editing && <span className="kanbn-task-editor-dates">
+                  {
+                    [
+                      'created' in task!.metadata ? `Created ${formatDate(task!.metadata.created, dateFormat)}` : null,
+                      'updated' in task!.metadata ? `Updated ${formatDate(task!.metadata.updated, dateFormat)}` : null
+                    ].filter(i => i).join(', ')
+                  }
+                </span>}
+              </div>
+              <div className="kanbn-task-editor-header-buttons">
+                <div className="kanbn-task-editor-buttons kanbn-task-editor-main-buttons">
+                  {editing && <button
+                    type="button"
+                    className="kanbn-task-editor-button kanbn-task-editor-button-delete"
+                    title="Delete task"
+                    onClick={() => {
+                      handleRemoveTask(values);
+                    }}
+                  >
+                    <i className="codicon codicon-trash"></i>Delete
+                  </button>}
+                  {editing && <button
+                    type="button"
+                    className="kanbn-task-editor-button kanbn-task-editor-button-archive"
+                    title="Archive task"
+                    onClick={() => {
+                      handleArchiveTask(values);
+                    }}
+                  >
+                    <i className="codicon codicon-archive"></i>Archive
+                  </button>}
+                  <button
+                    type="submit"
+                    className="kanbn-task-editor-button kanbn-task-editor-button-submit"
+                    title="Save task"
+                    disabled={isSubmitting}
+                  >
+                    <i className="codicon codicon-save"></i>Save
+                  </button>
+                </div>
+              </div>
             </div>
-            {editing && <span className="kanbn-task-editor-dates">
-              {
-                [
-                  'created' in task!.metadata ? `Created ${formatDate(task!.metadata.created, dateFormat)}` : null,
-                  'updated' in task!.metadata ? `Updated ${formatDate(task!.metadata.updated, dateFormat)}` : null
-                ].filter(i => i).join(', ')
-              }
-            </span>}
             <div className="kanbn-task-editor-form">
               <div className="kanbn-task-editor-column-left">
                 <div className="kanbn-task-editor-field kanbn-task-editor-field-name">
@@ -603,7 +793,7 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                                 <button
                                   type="button"
                                   className="kanbn-task-editor-button kanbn-task-editor-button-edit"
-                                  title={editingComment === index ? "View comment" : "Edit comment"}
+                                  title={editingComment === index ? 'View comment' : 'Edit comment'}
                                   onClick={() => {
                                     setEditingComment(editingComment !== index ? index : -1);
                                   }}
@@ -773,7 +963,6 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                     onClick={() => setShowPlannedDates(!showPlannedDates)}
                   >
                     <i className={`codicon ${showPlannedDates ? 'codicon-chevron-up' : 'codicon-chevron-down'}`}></i>
-                    {/* {showPlannedDates ? 'Hide planned dates' : 'Show planned dates'} */}
                   </button>
                 </div>
                 {

@@ -360,18 +360,59 @@ Task editor styles
     margin-top: 0;
 }
 
+.kanbn-task-editor-header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px 12px;
+    margin-bottom: 4px;
+}
+
+.kanbn-task-editor-header-main {
+    align-items: baseline;
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    min-width: 0;
+}
+
+.kanbn-task-editor-header-dates {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    min-width: 0;
+}
+
+.kanbn-task-editor-header-buttons {
+    align-items: flex-end;
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: 6px;
+    margin-left: auto;
+}
+
 .kanbn-task-editor-dirty {
     margin-left: 8px;
     color: #f22;
 }
 
+.kanbn-task-editor-save-status {
+    color: var(--vscode-descriptionForeground);
+    opacity: 0.75;
+    font-size: 0.9em;
+}
+
 .kanbn-task-editor-dates {
+    display: block;
     font-size: var(--vscode-font-size);
     font-style: italic;
     font-weight: normal;
     opacity: 0.8;
-    float: right;
     margin: 2px;
+    text-align: right;
 }
 
 .kanbn-task-editor-form {
@@ -481,9 +522,8 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
 }
 
 .kanbn-task-editor-main-buttons {
-    float: right;
-    position: relative;
-    top: -0.5em;
+    margin-left: 0;
+    position: static;
 }
 
 .kanbn-task-editor-button {

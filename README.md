@@ -49,8 +49,11 @@ The following configuration settings are available:
 
 - `kanbn.showUninitialisedStatusBarItem` when set to `true`, the status bar item will be displayed in workspaces where Kanbn has not yet been initialised. If set to `false`, Kanbn can still be initialised using the `Kanbn: Initialise Kanbn` command.
 - `kanbn.showTaskNotifications` when set to `true`, notifications will be displayed when a task is created, updated or deleted.
+- `kanbn.autoSave` can be set to `inherit`, `off`, `afterDelay`, `onWindowChange` or `onWindowChangeWithoutDelay`. This setting controls when task edits will be automatically saved. If set to `inherit`, the setting will be inherited from the global VS Code settings.
+- `kanbn.autoSaveDelay` when `kanbn.autoSave` is set to `afterDelay`, this setting controls the delay (in milliseconds) before task edits are automatically saved.
 - `kanbn.showSprintButton` when set to `true`, a 'Start sprint` button will will appear above the Kanbn board. This button will show the current sprint name if a sprint is currently active, and can be used to start a new sprint.
 - `kanbn.showBurndownButton` when set to `true`, a 'Show burndown chart` button will appear above the Kanbn board.
+- `kanbn.showGanttButton` when set to `true`, a 'Show Gantt chart` button will appear above the Kanbn board.
 
 ## Filtering the Kanbn board
 

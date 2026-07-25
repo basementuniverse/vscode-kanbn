@@ -26,6 +26,8 @@ function App() {
   const [columnName, setColumnName] = useState('');
   const [columnNames, setColumnNames] = useState([] as string[]);
   const [panelUuid, setPanelUuid] = useState('');
+  const [autoSaveMode, setAutoSaveMode] = useState('off');
+  const [autoSaveDelay, setAutoSaveDelay] = useState(1000);
   const [showBurndownButton, setShowBurndownButton] = useState(false);
   const [showGanttButton, setShowGanttButton] = useState(false);
   const [showSprintButton, setShowSprintButton] = useState(false);
@@ -40,6 +42,7 @@ function App() {
     cycleFallbackTaskIds: [],
     tasks: []
   });
+  const taskKey = `${panelUuid}:${(task as any) && (task as any).uuid ? (task as any).uuid : 'new'}`;
 
   const processMessage = useCallback(event => {
     const tasks = event.data.tasks
@@ -79,6 +82,8 @@ function App() {
         setColumnNames(Object.keys(event.data.index.columns));
         setCustomFields(event.data.customFields);
         setPanelUuid(event.data.panelUuid);
+        setAutoSaveMode(event.data.autoSaveMode || 'off');
+        setAutoSaveDelay(event.data.autoSaveDelay || 1000);
         break;
 
       case 'burndown':
@@ -142,6 +147,7 @@ function App() {
       {
         type === 'task' &&
         <TaskEditor
+          key={taskKey}
           task={task as KanbnTask|null}
           tasks={tasks}
           columnName={columnName}
@@ -149,6 +155,8 @@ function App() {
           customFields={customFields}
           dateFormat={dateFormat}
           panelUuid={panelUuid}
+          autoSaveMode={autoSaveMode as 'off' | 'afterDelay' | 'onFocusChange' | 'onWindowChange'}
+          autoSaveDelay={autoSaveDelay}
           vscode={vscode}
         />
       }

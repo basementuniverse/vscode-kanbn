@@ -4,6 +4,42 @@ import getNonce from "./getNonce";
 import { v4 as uuidv4 } from "uuid";
 import type { KanbnApi } from "./KanbnApi";
 
+type KanbnAutoSaveMode = "off" | "afterDelay" | "onFocusChange" | "onWindowChange";
+type KanbnAutoSaveSetting = KanbnAutoSaveMode | "inherit";
+
+function normalizeAutoSaveMode(value: unknown): KanbnAutoSaveMode {
+  switch (value) {
+    case "afterDelay":
+    case "onFocusChange":
+    case "onWindowChange":
+      return value;
+    default:
+      return "off";
+  }
+}
+
+function getTaskEditorAutoSaveSettings() {
+  const kanbnConfiguration = vscode.workspace.getConfiguration("kanbn");
+  const filesConfiguration = vscode.workspace.getConfiguration("files");
+  const kanbnAutoSave = kanbnConfiguration.get<KanbnAutoSaveSetting>("autoSave", "inherit");
+  const inheritedMode = normalizeAutoSaveMode(filesConfiguration.get("autoSave", "off"));
+  const autoSaveMode = kanbnAutoSave === "inherit"
+    ? inheritedMode
+    : normalizeAutoSaveMode(kanbnAutoSave);
+  const defaultDelay = Number(kanbnConfiguration.get("autoSaveDelay", 1000));
+  const inheritedDelay = Number(filesConfiguration.get("autoSaveDelay", defaultDelay));
+  const autoSaveDelay = autoSaveMode === "afterDelay" && kanbnAutoSave === "inherit"
+    ? inheritedDelay
+    : defaultDelay;
+
+  return {
+    autoSaveMode,
+    autoSaveDelay: Number.isFinite(autoSaveDelay) && autoSaveDelay >= 0
+      ? autoSaveDelay
+      : 1000,
+  };
+}
+
 function transformTaskData(
   taskData: any,
   customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string'}[]
@@ -81,6 +117,7 @@ function transformTaskData(
 export default class KanbnTaskPanel {
   private static readonly viewType = "react";
   private static panels: Record<string, KanbnTaskPanel> = {};
+  private static taskIdToPanelUuid: Record<string, string> = {};
 
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionPath: string;
@@ -90,7 +127,41 @@ export default class KanbnTaskPanel {
   private readonly _panelUuid: string;
   private _taskId: string | null;
   private _columnName: string | null;
+  private _isDisposed = false;
   private _disposables: vscode.Disposable[] = [];
+
+  private static getPanelForTask(taskId: string) {
+    const panelUuid = KanbnTaskPanel.taskIdToPanelUuid[taskId];
+    if (!panelUuid) {
+      return null;
+    }
+
+    const panel = KanbnTaskPanel.panels[panelUuid];
+    if (!panel || panel._isDisposed) {
+      delete KanbnTaskPanel.taskIdToPanelUuid[taskId];
+      return null;
+    }
+
+    return panel;
+  }
+
+  private static registerTaskId(taskId: string | null, panelUuid: string) {
+    if (!taskId) {
+      return;
+    }
+
+    KanbnTaskPanel.taskIdToPanelUuid[taskId] = panelUuid;
+  }
+
+  private static unregisterTaskId(taskId: string | null, panelUuid: string) {
+    if (!taskId) {
+      return;
+    }
+
+    if (KanbnTaskPanel.taskIdToPanelUuid[taskId] === panelUuid) {
+      delete KanbnTaskPanel.taskIdToPanelUuid[taskId];
+    }
+  }
 
   public static async show(
     extensionPath: string,
@@ -101,6 +172,16 @@ export default class KanbnTaskPanel {
     columnName: string | null
   ) {
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
+
+    if (taskId) {
+      const existingPanel = KanbnTaskPanel.getPanelForTask(taskId);
+      if (existingPanel) {
+        existingPanel._columnName = columnName;
+        existingPanel._panel.reveal(column || existingPanel._panel.viewColumn);
+        await existingPanel.update();
+        return;
+      }
+    }
 
     // Create a new panel
     const panelUuid = uuidv4();
@@ -115,7 +196,8 @@ export default class KanbnTaskPanel {
       panelUuid
     );
     KanbnTaskPanel.panels[panelUuid] = taskPanel;
-    taskPanel.update();
+    KanbnTaskPanel.registerTaskId(taskId, panelUuid);
+    await taskPanel.update();
   }
 
   private constructor(
@@ -168,7 +250,7 @@ export default class KanbnTaskPanel {
 
     // Listen for when the panel is disposed
     // This happens when the user closes the panel or when the panel is closed programatically
-    this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
+    this._panel.onDidDispose(() => this._cleanup(), null, this._disposables);
 
     // Handle messages from the webview
     this._panel.webview.onDidReceiveMessage(
@@ -195,9 +277,12 @@ export default class KanbnTaskPanel {
               transformTaskData(message.taskData, message.customFields),
               message.taskData.column
             );
-            KanbnTaskPanel.panels[message.panelUuid]._taskId = message.taskData.id;
-            KanbnTaskPanel.panels[message.panelUuid]._columnName = message.taskData.column;
-            KanbnTaskPanel.panels[message.panelUuid].update();
+            KanbnTaskPanel.bindPanelToTask(
+              message.panelUuid,
+              message.taskData.id,
+              message.taskData.column
+            );
+            await KanbnTaskPanel.panels[message.panelUuid]?.update();
             if (vscode.workspace.getConfiguration("kanbn").get("showTaskNotifications")) {
               vscode.window.showInformationMessage(`Created task '${message.taskData.name}'.`);
             }
@@ -210,9 +295,12 @@ export default class KanbnTaskPanel {
               transformTaskData(message.taskData, message.customFields),
               message.taskData.column
             );
-            KanbnTaskPanel.panels[message.panelUuid]._taskId = message.taskData.id;
-            KanbnTaskPanel.panels[message.panelUuid]._columnName = message.taskData.column;
-            KanbnTaskPanel.panels[message.panelUuid].update();
+            KanbnTaskPanel.bindPanelToTask(
+              message.panelUuid,
+              message.taskData.id,
+              message.taskData.column
+            );
+            await KanbnTaskPanel.panels[message.panelUuid]?.update();
             if (vscode.workspace.getConfiguration("kanbn").get("showTaskNotifications")) {
               vscode.window.showInformationMessage(`Updated task '${message.taskData.name}'.`);
             }
@@ -225,8 +313,7 @@ export default class KanbnTaskPanel {
               .then(async (value) => {
                 if (value === "Yes") {
                   await this._kanbn.deleteTask(message.taskId, true);
-                  KanbnTaskPanel.panels[message.panelUuid].dispose();
-                  delete KanbnTaskPanel.panels[message.panelUuid];
+                  KanbnTaskPanel.panels[message.panelUuid]?.dispose();
                   if (vscode.workspace.getConfiguration("kanbn").get("showTaskNotifications")) {
                     vscode.window.showInformationMessage(`Deleted task '${message.taskData.name}'.`);
                   }
@@ -237,8 +324,7 @@ export default class KanbnTaskPanel {
           // Archive a task and close the webview panel
           case 'kanbn.archive':
             await this._kanbn.archiveTask(message.taskId);
-            KanbnTaskPanel.panels[message.panelUuid].dispose();
-            delete KanbnTaskPanel.panels[message.panelUuid];
+            KanbnTaskPanel.panels[message.panelUuid]?.dispose();
             if (vscode.workspace.getConfiguration("kanbn").get("showTaskNotifications")) {
               vscode.window.showInformationMessage(`Archived task '${message.taskData.name}'.`);
             }
@@ -250,8 +336,36 @@ export default class KanbnTaskPanel {
     );
   }
 
+  private static bindPanelToTask(panelUuid: string, taskId: string | null, columnName: string | null) {
+    const panel = KanbnTaskPanel.panels[panelUuid];
+    if (!panel) {
+      return;
+    }
+
+    KanbnTaskPanel.unregisterTaskId(panel._taskId, panelUuid);
+    panel._taskId = taskId;
+    panel._columnName = columnName;
+    KanbnTaskPanel.registerTaskId(taskId, panelUuid);
+  }
+
   public dispose() {
+    if (this._isDisposed) {
+      return;
+    }
+
     this._panel.dispose();
+    this._cleanup();
+  }
+
+  private _cleanup() {
+    if (this._isDisposed) {
+      return;
+    }
+
+    this._isDisposed = true;
+    KanbnTaskPanel.unregisterTaskId(this._taskId, this._panelUuid);
+    delete KanbnTaskPanel.panels[this._panelUuid];
+
     while (this._disposables.length) {
       const x = this._disposables.pop();
       if (x) {
@@ -302,7 +416,7 @@ export default class KanbnTaskPanel {
     try {
       index = await this._kanbn.getIndex();
     } catch (error) {
-      vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
+      vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
       return;
     }
     let tasks: any[];
@@ -312,7 +426,7 @@ export default class KanbnTaskPanel {
         ...this._kanbn.hydrateTask(index, task),
       }));
     } catch (error) {
-      vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
+      vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
       return;
     }
     let task = null;
@@ -335,6 +449,7 @@ export default class KanbnTaskPanel {
       columnName: this._columnName,
       dateFormat: this._kanbn.getDateFormat(index),
       panelUuid: this._panelUuid,
+      ...getTaskEditorAutoSaveSettings(),
     });
   }
 
