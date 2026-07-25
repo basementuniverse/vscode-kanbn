@@ -714,6 +714,23 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
     margin: .5em 1em .5em 0;
 }
 
+.kanbn-task-editor-buttons-show-planned-dates {
+    position: relative;
+}
+
+.kanbn-task-editor-button-show-planned-dates {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 0 0 0 0.5em;
+    margin: 0;
+}
+
+.kanbn-task-editor-button-show-planned-dates:hover,
+.kanbn-task-editor-button-show-planned-dates:active {
+    background-color: transparent;
+}
+
 /*-----------------------------------------------------------------------------
 Burndown chart styles
 -----------------------------------------------------------------------------*/

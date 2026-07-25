@@ -156,6 +156,12 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
   });
   const [editingDescription, setEditingDescription] = useState(!editing);
   const [editingComment, setEditingComment] = useState(-1);
+  const [showPlannedDates, setShowPlannedDates] = useState(Boolean(
+    task && (
+      ('plannedStart' in task.metadata && task.metadata.plannedStart) ||
+      ('plannedFinish' in task.metadata && task.metadata.plannedFinish)
+    )
+  ));
 
   // Called when the name field is changed
   const handleUpdateName = ({ target: { value } }, values) => {
@@ -722,58 +728,75 @@ const TaskEditor = ({ task, tasks, columnName, columnNames, customFields, dateFo
                     name="metadata.due"
                   />
                 </div>
-                <div className="kanbn-task-editor-field kanbn-task-editor-field-planned-start">
-                  <label className="kanbn-task-editor-field-label">
-                    <p>Planned start date</p>
-                    <div className="kanbn-task-editor-date-input-wrap">
-                      <Field
-                        className="kanbn-task-editor-field-input"
-                        type="date"
+                <div className="kanbn-task-editor-buttons kanbn-task-editor-buttons-show-planned-dates">
+                  <button
+                    type="button"
+                    className="kanbn-task-editor-button kanbn-task-editor-button-edit kanbn-task-editor-button-show-planned-dates"
+                    title={showPlannedDates ? 'Hide planned dates' : 'Show planned dates'}
+                    aria-label={showPlannedDates ? 'Hide planned dates' : 'Show planned dates'}
+                    onClick={() => setShowPlannedDates(!showPlannedDates)}
+                  >
+                    <i className={`codicon ${showPlannedDates ? 'codicon-chevron-up' : 'codicon-chevron-down'}`}></i>
+                    {/* {showPlannedDates ? 'Hide planned dates' : 'Show planned dates'} */}
+                  </button>
+                </div>
+                {
+                  showPlannedDates &&
+                  <React.Fragment>
+                    <div className="kanbn-task-editor-field kanbn-task-editor-field-planned-start">
+                      <label className="kanbn-task-editor-field-label">
+                        <p>Planned start date</p>
+                        <div className="kanbn-task-editor-date-input-wrap">
+                          <Field
+                            className="kanbn-task-editor-field-input"
+                            type="date"
+                            name="metadata.plannedStart"
+                          />
+                          <button
+                            type="button"
+                            className="kanbn-task-editor-button kanbn-task-editor-button-edit kanbn-task-editor-button-date-clear"
+                            title="Clear planned start date"
+                            aria-label="Clear planned start date"
+                            onClick={() => setFieldValue('metadata.plannedStart', '')}
+                          >
+                            <i className="codicon codicon-close"></i>
+                          </button>
+                        </div>
+                      </label>
+                      <ErrorMessage
+                        className="kanbn-task-editor-field-errors"
+                        component="div"
                         name="metadata.plannedStart"
                       />
-                      <button
-                        type="button"
-                        className="kanbn-task-editor-button kanbn-task-editor-button-edit kanbn-task-editor-button-date-clear"
-                        title="Clear planned start date"
-                        aria-label="Clear planned start date"
-                        onClick={() => setFieldValue('metadata.plannedStart', '')}
-                      >
-                        <i className="codicon codicon-close"></i>
-                      </button>
                     </div>
-                  </label>
-                  <ErrorMessage
-                    className="kanbn-task-editor-field-errors"
-                    component="div"
-                    name="metadata.plannedStart"
-                  />
-                </div>
-                <div className="kanbn-task-editor-field kanbn-task-editor-field-planned-finish">
-                  <label className="kanbn-task-editor-field-label">
-                    <p>Planned finish date</p>
-                    <div className="kanbn-task-editor-date-input-wrap">
-                      <Field
-                        className="kanbn-task-editor-field-input"
-                        type="date"
+                    <div className="kanbn-task-editor-field kanbn-task-editor-field-planned-finish">
+                      <label className="kanbn-task-editor-field-label">
+                        <p>Planned finish date</p>
+                        <div className="kanbn-task-editor-date-input-wrap">
+                          <Field
+                            className="kanbn-task-editor-field-input"
+                            type="date"
+                            name="metadata.plannedFinish"
+                          />
+                          <button
+                            type="button"
+                            className="kanbn-task-editor-button kanbn-task-editor-button-edit kanbn-task-editor-button-date-clear"
+                            title="Clear planned finish date"
+                            aria-label="Clear planned finish date"
+                            onClick={() => setFieldValue('metadata.plannedFinish', '')}
+                          >
+                            <i className="codicon codicon-close"></i>
+                          </button>
+                        </div>
+                      </label>
+                      <ErrorMessage
+                        className="kanbn-task-editor-field-errors"
+                        component="div"
                         name="metadata.plannedFinish"
                       />
-                      <button
-                        type="button"
-                        className="kanbn-task-editor-button kanbn-task-editor-button-edit kanbn-task-editor-button-date-clear"
-                        title="Clear planned finish date"
-                        aria-label="Clear planned finish date"
-                        onClick={() => setFieldValue('metadata.plannedFinish', '')}
-                      >
-                        <i className="codicon codicon-close"></i>
-                      </button>
                     </div>
-                  </label>
-                  <ErrorMessage
-                    className="kanbn-task-editor-field-errors"
-                    component="div"
-                    name="metadata.plannedFinish"
-                  />
-                </div>
+                  </React.Fragment>
+                }
                 <div className="kanbn-task-editor-field kanbn-task-editor-field-completed">
                   <label className="kanbn-task-editor-field-label">
                     <p>Completed date</p>
