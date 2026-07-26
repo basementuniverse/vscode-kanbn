@@ -1,3 +1,13 @@
+# 1.0.0
+
+* Updated kanbn dependency and added support for new kanbn features
+* Added interactive Gantt charts
+* Added event history to tasks
+* Fixed links not working in task descriptions, we can now link to local files and folders using relative paths, and to external websites using absolute paths
+* Added auto-save for tasks (see README for configuration settings)
+* Fixed idempotent task opening - if a task is already open, it will now be focused instead of opening a new instance of the same task
+* Fixed some rendering issues, e.g. overflow on description preview panel
+
 # 0.11.0
 
 * KaTeX support in task markdown (description and comments) using `$$...$$` for blocks and `$...$` for inline
