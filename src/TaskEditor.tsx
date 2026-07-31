@@ -32,6 +32,79 @@ type AutoSaveMode = 'off' | 'afterDelay' | 'onFocusChange' | 'onWindowChange';
 type SaveStatus = 'idle' | 'saving' | 'saved';
 
 const AUTO_SAVE_STATUS_DURATION = 1500;
+const AUTO_SAVE_ENABLED_FOR_NEW_TASKS = false;
+
+const EDITING_DESCRIPTION_STORAGE_PREFIX = 'kanbn.taskEditor.editingDescription.';
+const PENDING_FOCUS_STORAGE_PREFIX = 'kanbn.taskEditor.pendingFocus.';
+
+type SavedFocus = {
+  name?: string,
+  id?: string,
+  selectionStart?: number,
+  selectionEnd?: number,
+};
+
+const escapeAttributeValue = (value: string): string => value.replace(/"/g, '\\"');
+
+const readSavedFocus = (): SavedFocus | null => {
+  const activeElement = document.activeElement;
+
+  if (!(activeElement instanceof HTMLInputElement)
+    && !(activeElement instanceof HTMLTextAreaElement)
+    && !(activeElement instanceof HTMLSelectElement)) {
+    return null;
+  }
+
+  const name = activeElement.getAttribute('name') || undefined;
+  const id = activeElement.id || undefined;
+
+  if (!name && !id) {
+    return null;
+  }
+
+  const savedFocus: SavedFocus = {
+    name,
+    id,
+  };
+
+  if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement) {
+    savedFocus.selectionStart = activeElement.selectionStart === null ? undefined : activeElement.selectionStart;
+    savedFocus.selectionEnd = activeElement.selectionEnd === null ? undefined : activeElement.selectionEnd;
+  }
+
+  return savedFocus;
+};
+
+const tryRestoreFocus = (savedFocus: SavedFocus | null) => {
+  if (!savedFocus) {
+    return;
+  }
+
+  let target: Element | null = null;
+
+  if (savedFocus.name) {
+    target = document.querySelector(`[name="${escapeAttributeValue(savedFocus.name)}"]`);
+  }
+
+  if (!target && savedFocus.id) {
+    target = document.getElementById(savedFocus.id);
+  }
+
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  target.focus();
+
+  if ((target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)
+    && savedFocus.selectionStart !== undefined
+    && savedFocus.selectionEnd !== undefined) {
+    const valueLength = target.value.length;
+    const selectionStart = Math.min(savedFocus.selectionStart, valueLength);
+    const selectionEnd = Math.min(savedFocus.selectionEnd, valueLength);
+    target.setSelectionRange(selectionStart, selectionEnd);
+  }
+};
 
 const hasValidationErrors = (errors: any): boolean => {
   if (!errors) {
@@ -210,41 +283,45 @@ const createInitialTaskData = (
 });
 
 const TaskEditorAutoSave = ({
+  enabled,
   autoSaveMode,
   autoSaveDelay,
   dirty,
   errors,
   isSubmitting,
   isValid,
-  submitForm,
+  values,
+  onAutoSave,
   onSaving,
 }: {
+  enabled: boolean,
   autoSaveMode: AutoSaveMode,
   autoSaveDelay: number,
   dirty: boolean,
   errors: any,
   isSubmitting: boolean,
   isValid: boolean,
-  submitForm: () => Promise<any>,
+  values: any,
+  onAutoSave: (values: any) => void,
   onSaving: () => void,
 }) => {
   useEffect(() => {
-    if (autoSaveMode !== 'afterDelay' || !dirty || isSubmitting || !isValid || hasValidationErrors(errors)) {
+    if (!enabled || autoSaveMode !== 'afterDelay' || !dirty || isSubmitting || !isValid || hasValidationErrors(errors)) {
       return undefined;
     }
 
     const timeoutId = window.setTimeout(() => {
       onSaving();
-      submitForm();
+      onAutoSave(values);
     }, Math.max(0, autoSaveDelay));
 
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [autoSaveDelay, autoSaveMode, dirty, errors, isSubmitting, isValid, onSaving, submitForm]);
+  }, [autoSaveDelay, autoSaveMode, dirty, enabled, errors, isSubmitting, isValid, onAutoSave, onSaving, values]);
 
   useEffect(() => {
-    if (autoSaveMode !== 'onFocusChange') {
+    if (!enabled || autoSaveMode !== 'onFocusChange') {
       return undefined;
     }
 
@@ -254,17 +331,17 @@ const TaskEditorAutoSave = ({
       }
 
       onSaving();
-      submitForm();
+      onAutoSave(values);
     };
 
     window.addEventListener('blur', handleWindowBlur);
     return () => {
       window.removeEventListener('blur', handleWindowBlur);
     };
-  }, [autoSaveMode, dirty, errors, isSubmitting, isValid, onSaving, submitForm]);
+  }, [autoSaveMode, dirty, enabled, errors, isSubmitting, isValid, onAutoSave, onSaving, values]);
 
   useEffect(() => {
-    if (autoSaveMode !== 'onWindowChange') {
+    if (!enabled || autoSaveMode !== 'onWindowChange') {
       return undefined;
     }
 
@@ -274,7 +351,7 @@ const TaskEditorAutoSave = ({
       }
 
       onSaving();
-      submitForm();
+      onAutoSave(values);
     };
 
     const handleVisibilityChange = () => {
@@ -290,7 +367,7 @@ const TaskEditorAutoSave = ({
       window.removeEventListener('blur', submitIfNeeded);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [autoSaveMode, dirty, errors, isSubmitting, isValid, onSaving, submitForm]);
+  }, [autoSaveMode, dirty, enabled, errors, isSubmitting, isValid, onAutoSave, onSaving, values]);
 
   return null;
 };
@@ -319,8 +396,18 @@ const TaskEditor = ({
   vscode: VSCodeApi
 }) => {
   const editing = task !== null;
+  const autoSaveEnabled = (editing || AUTO_SAVE_ENABLED_FOR_NEW_TASKS) && autoSaveMode !== 'off';
   const [taskData, setTaskData] = useState(createInitialTaskData(task, columnName, customFields));
-  const [editingDescription, setEditingDescription] = useState(!editing);
+  const [editingDescription, setEditingDescription] = useState(() => {
+    const storageKey = `${EDITING_DESCRIPTION_STORAGE_PREFIX}${panelUuid}`;
+    const storedValue = window.sessionStorage.getItem(storageKey);
+
+    if (storedValue !== null) {
+      return storedValue === '1';
+    }
+
+    return !editing;
+  });
   const [editingComment, setEditingComment] = useState(-1);
   const [showPlannedDates, setShowPlannedDates] = useState(Boolean(
     task && (
@@ -330,6 +417,35 @@ const TaskEditor = ({
   ));
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const saveStatusTimeoutRef = useRef<number | null>(null);
+  const pendingFocusRestoreRef = useRef<SavedFocus | null>(null);
+
+  useEffect(() => {
+    const storageKey = `${EDITING_DESCRIPTION_STORAGE_PREFIX}${panelUuid}`;
+    window.sessionStorage.setItem(storageKey, editingDescription ? '1' : '0');
+  }, [editingDescription, panelUuid]);
+
+  useEffect(() => {
+    const storageKey = `${PENDING_FOCUS_STORAGE_PREFIX}${panelUuid}`;
+    const serializedFocus = window.sessionStorage.getItem(storageKey);
+
+    if (!serializedFocus) {
+      return;
+    }
+
+    let savedFocus: SavedFocus | null = null;
+
+    try {
+      savedFocus = JSON.parse(serializedFocus);
+    } catch (error) {
+      savedFocus = null;
+    }
+
+    window.sessionStorage.removeItem(storageKey);
+
+    window.requestAnimationFrame(() => {
+      tryRestoreFocus(savedFocus);
+    });
+  }, [panelUuid]);
 
   useEffect(() => () => {
     if (saveStatusTimeoutRef.current !== null) {
@@ -364,8 +480,42 @@ const TaskEditor = ({
     });
   };
 
+  const handleAutoSave = (values) => {
+    if (!editing) {
+      return;
+    }
+
+    setSaveStatus('saving');
+
+    const savedFocus = readSavedFocus();
+    pendingFocusRestoreRef.current = savedFocus;
+    window.sessionStorage.setItem(`${PENDING_FOCUS_STORAGE_PREFIX}${panelUuid}`, JSON.stringify(savedFocus));
+
+    vscode.postMessage({
+      command: 'kanbn.update',
+      taskId: task!.id,
+      taskData: values,
+      customFields,
+      panelUuid
+    });
+
+    setTaskData(values);
+
+    window.setTimeout(() => {
+      tryRestoreFocus(pendingFocusRestoreRef.current);
+      pendingFocusRestoreRef.current = null;
+    }, 0);
+
+    setSaveStatus('saved');
+    scheduleSaveStatusReset();
+  };
+
   const handleSubmit = (values, setSubmitting, resetForm) => {
     setSaveStatus('saving');
+
+    const savedFocus = readSavedFocus();
+    pendingFocusRestoreRef.current = savedFocus;
+    window.sessionStorage.setItem(`${PENDING_FOCUS_STORAGE_PREFIX}${panelUuid}`, JSON.stringify(savedFocus));
 
     if (editing) {
       vscode.postMessage({
@@ -387,6 +537,12 @@ const TaskEditor = ({
     setTaskData(values);
     resetForm({ values });
     setSubmitting(false);
+
+    window.setTimeout(() => {
+      tryRestoreFocus(pendingFocusRestoreRef.current);
+      pendingFocusRestoreRef.current = null;
+    }, 0);
+
     setSaveStatus('saved');
     scheduleSaveStatusReset();
   };
@@ -471,14 +627,14 @@ const TaskEditor = ({
     }
 
     if (dirty) {
-      return autoSaveMode === 'off' ? 'Unsaved changes, auto-save off' : 'Unsaved changes';
+      return !autoSaveEnabled ? 'Unsaved changes, auto-save off' : 'Unsaved changes';
     }
 
     if (saveStatus === 'saved') {
-      return autoSaveMode === 'off' ? 'Saved manually' : 'Saved';
+      return !autoSaveEnabled ? 'Saved manually' : 'Saved';
     }
 
-    if (autoSaveMode === 'off') {
+    if (!autoSaveEnabled) {
       return 'Auto-save off';
     }
 
@@ -514,13 +670,15 @@ const TaskEditor = ({
         }) => (
           <Form>
             <TaskEditorAutoSave
+              enabled={autoSaveEnabled}
               autoSaveMode={autoSaveMode}
               autoSaveDelay={autoSaveDelay}
               dirty={dirty}
               errors={errors}
               isSubmitting={isSubmitting}
               isValid={isValid}
-              submitForm={submitForm}
+              values={values}
+              onAutoSave={handleAutoSave}
               onSaving={() => setSaveStatus('saving')}
             />
             <div className="kanbn-task-editor-header">
