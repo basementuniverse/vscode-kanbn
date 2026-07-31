@@ -1,3 +1,8 @@
+# 1.1.0
+
+* Fixed autosave issues in Task Editor, now saves shortly after the user stops typing, will not autosave when creating a new task, and will not defocus inputs when autosaving
+* Fixed various filter issues in the Burndown and Gantt chart views
+
 # 1.0.0
 
 * Updated kanbn dependency and added support for new kanbn features
