@@ -15,7 +15,44 @@ export default class KanbnGanttPanel {
   private readonly _workspacePath: string;
   private readonly _kanbn: KanbnApi;
   private readonly _kanbnFolderName: string;
+  private startDate: string = '';
+  private endDate: string = '';
   private _disposables: vscode.Disposable[] = [];
+
+  private static parseDate(value: any): Date | null {
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value;
+    }
+
+    if (typeof value === "string") {
+      const parsed = new Date(Date.parse(value));
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    return null;
+  }
+
+  private static getGanttDateFilter(): Date[] | null {
+    if (!KanbnGanttPanel.currentPanel) {
+      return null;
+    }
+
+    const startDate = KanbnGanttPanel.parseDate(KanbnGanttPanel.currentPanel.startDate);
+    const endDate = KanbnGanttPanel.parseDate(KanbnGanttPanel.currentPanel.endDate);
+    if (startDate && endDate) {
+      return [startDate, endDate];
+    }
+
+    if (startDate) {
+      return [startDate];
+    }
+
+    if (endDate) {
+      return [endDate];
+    }
+
+    return null;
+  }
 
   public static async createOrShow(
     extensionPath: string,
@@ -46,15 +83,21 @@ export default class KanbnGanttPanel {
       try {
         index = await KanbnGanttPanel.currentPanel._kanbn.getIndex();
       } catch (error) {
-        vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
+        vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
         return;
       }
 
       let ganttData: any;
       try {
-        ganttData = await (KanbnGanttPanel.currentPanel._kanbn as any).gantt(null, null, null, null);
+        const dateFilter = KanbnGanttPanel.getGanttDateFilter();
+        ganttData = await (KanbnGanttPanel.currentPanel._kanbn as any).gantt(
+          null,
+          null,
+          dateFilter,
+          null,
+        );
       } catch (error) {
-        vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
+        vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
         return;
       }
 
@@ -136,6 +179,13 @@ export default class KanbnGanttPanel {
               message.taskId,
               message.columnName
             );
+            return;
+
+          // Refresh the gantt chart
+          case 'kanbn.refreshGanttData':
+            this.startDate = message.startDate;
+            this.endDate = message.endDate;
+            KanbnGanttPanel.update();
             return;
 
           // Persist gantt drag/resize updates

@@ -99,6 +99,11 @@ function App() {
 
       case 'gantt':
         setName(event.data.index.name);
+        setSprints(
+          event.data.index && event.data.index.options && event.data.index.options.sprints
+            ? event.data.index.options.sprints
+            : []
+        );
         setStartedColumns(
           event.data.index && event.data.index.options && event.data.index.options.startedColumns
             ? event.data.index.options.startedColumns

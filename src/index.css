@@ -1101,6 +1101,22 @@ body.vscode-high-contrast .kanbn-gantt-bar {
     stroke-opacity: 0.85;
 }
 
+.kanbn-gantt-dependency-line.kanbn-gantt-dependency-line-external {
+    stroke-opacity: 0.45;
+}
+
+.kanbn-gantt-dependency-line.kanbn-gantt-dependency-line-external-tail {
+    stroke-dasharray: 2 3;
+    stroke-opacity: 0.55;
+}
+
+.kanbn-gantt-dependency-ellipsis {
+    fill: var(--vscode-editor-foreground);
+    fill-opacity: 0.55;
+    font-size: 9px;
+    font-family: var(--vscode-font-family);
+}
+
 .kanbn-gantt-arrow-head {
     fill: var(--vscode-editor-foreground);
 }

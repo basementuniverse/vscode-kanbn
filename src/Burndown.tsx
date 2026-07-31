@@ -27,17 +27,24 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
   vscode: VSCodeApi
 }) => {
   const hasSprints = sprints.length > 0;
+  const latestSprintName = hasSprints ? sprints[sprints.length - 1].name : '';
   const [sprintMode, setSprintMode] = useState(hasSprints);
-  const [sprint, setSprint] = useState((sprintMode && hasSprints) ? sprints[sprints.length - 1].name : '');
+  const [sprint, setSprint] = useState((sprintMode && hasSprints) ? latestSprintName : '');
+  const fallbackStartDate = burndownData.series.length > 0
+    ? formatDate(burndownData.series[0].from, 'yyyy-mm-dd')
+    : '';
+  const fallbackEndDate = burndownData.series.length > 0
+    ? formatDate(burndownData.series[0].to, 'yyyy-mm-dd')
+    : '';
   const [startDate, setStartDate] = useState(
     (sprintMode && burndownData.series.length > 0)
       ? ''
-      : formatDate(burndownData.series[0].from, 'yyyy-mm-dd')
+      : fallbackStartDate
   );
   const [endDate, setEndDate] = useState(
     (sprintMode && burndownData.series.length > 0)
       ? ''
-      : formatDate(burndownData.series[0].to, 'yyyy-mm-dd')
+      : fallbackEndDate
   );
 
   const refreshBurndownData = useRef(debounce(500, settings => {
@@ -130,6 +137,24 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
         }
       )
     );
+  };
+
+  const hasActiveFilters = sprintMode
+    ? sprint !== latestSprintName
+    : (startDate !== '' || endDate !== '');
+
+  const handleClearFilters = () => {
+    const clearedFilters = {
+      sprintMode: true,
+      sprint: latestSprintName,
+      startDate: '',
+      endDate: '',
+    };
+    setSprintMode(clearedFilters.sprintMode);
+    setSprint(clearedFilters.sprint);
+    setStartDate(clearedFilters.startDate);
+    setEndDate(clearedFilters.endDate);
+    refreshBurndownData(clearedFilters);
   };
 
   const chartData = burndownData.series.length > 0
@@ -225,6 +250,17 @@ const Burndown = ({ name, sprints, burndownData, dateFormat, vscode }: {
               >
                 <i className="codicon codicon-clock"></i>
               </button>
+              {
+                hasActiveFilters &&
+                <button
+                  type="button"
+                  className="kanbn-header-button kanbn-header-button-clear-filter"
+                  onClick={handleClearFilters}
+                  title="Clear chart filters"
+                >
+                  <i className="codicon codicon-clear-all"></i>
+                </button>
+              }
             </form>
           </div>
         </h1>

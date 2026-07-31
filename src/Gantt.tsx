@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import formatDate from 'dateformat';
 import { paramCase } from '@basementuniverse/kanbn/src/utility';
+import { debounce } from 'throttle-debounce';
 import VSCodeApi from './VSCodeApi';
 
 type GanttTask = {
@@ -22,6 +23,8 @@ type GanttTask = {
     type?: string,
     task?: string,
   }>,
+  externalIncomingDependencies?: string[],
+  externalOutgoingDependents?: string[],
   started?: string | false,
   completed?: string | false,
   blocked?: boolean,
@@ -47,6 +50,7 @@ const TARGET_TOP_APPROACH_GAP = 12;
 const INTERACTION_EDGE_THRESHOLD = 7;
 const MIN_BAR_PIXEL_WIDTH = 14;
 const DRAG_START_THRESHOLD = 2;
+const EXTERNAL_TRAIL_LENGTH = 16;
 
 const toTime = (value: string | Date | null | undefined): number => {
   if (!value) {
@@ -168,6 +172,9 @@ type DependencyPath = {
   path: string,
   isNonForward: boolean,
   isBlocks: boolean,
+  isExternal: boolean,
+  trailPath?: string,
+  ellipsis?: Point,
 };
 
 type DragMode = 'drag' | 'resize-left' | 'resize-right';
@@ -239,6 +246,69 @@ const buildSimpleDependencyPath = (sourceRect: Rect, targetRect: Rect): { path: 
   return path ? { path, isNonForward: true } : null;
 };
 
+const buildExternalIncomingDependencyPath = (targetRect: Rect): { path: string, trailPath: string, ellipsis: Point } | null => {
+  const targetAnchor = anchorOnRectCenterEdge(targetRect, 'w');
+  const sourceAnchor = {
+    x: 0,
+    y: targetAnchor.y,
+  };
+  const bendX = Math.max(sourceAnchor.x + EXTERNAL_TRAIL_LENGTH, targetAnchor.x - 12);
+
+  const points = [
+    sourceAnchor,
+    { x: bendX, y: sourceAnchor.y },
+    targetAnchor,
+  ];
+  const path = pointsToPath(points);
+  const trailPath = pointsToPath([
+    sourceAnchor,
+    { x: Math.min(targetAnchor.x, sourceAnchor.x + EXTERNAL_TRAIL_LENGTH), y: sourceAnchor.y },
+  ]);
+
+  if (!path || !trailPath) {
+    return null;
+  }
+
+  return {
+    path,
+    trailPath,
+    ellipsis: {
+      x: sourceAnchor.x + 1,
+      y: sourceAnchor.y - 4,
+    },
+  };
+};
+
+const buildExternalOutgoingDependencyPath = (sourceRect: Rect, timelineWidth: number): { path: string, trailPath: string, ellipsis: Point } | null => {
+  const sourceAnchor = anchorOnRectCenterEdge(sourceRect, 'e');
+  const targetAnchor = {
+    x: timelineWidth,
+    y: sourceAnchor.y,
+  };
+
+  const path = pointsToPath([
+    sourceAnchor,
+    targetAnchor,
+  ]);
+  const trailPath = pointsToPath([
+    sourceAnchor,
+    { x: Math.min(timelineWidth, sourceAnchor.x + EXTERNAL_TRAIL_LENGTH), y: sourceAnchor.y },
+  ]);
+
+  if (!path || !trailPath) {
+    return null;
+  }
+
+  return {
+    path,
+    trailPath,
+    ellipsis: {
+      x: sourceAnchor.x + 2,
+      y: sourceAnchor.y - 4,
+    },
+  };
+};
+
 const getXAxisPlacements = (fromMs: number, toMs: number, width: number, dateFormat: string) => {
   const safeWidth = Math.max(1, width);
   const maxLabels = Math.max(2, Math.min(8, Math.floor(safeWidth / 120) + 1));
@@ -291,6 +361,24 @@ const parsePlannedTime = (task: GanttTask, field: 'plannedStart' | 'plannedFinis
 
 const toColumnClassName = (columnName: string): string => `kanbn-column-${paramCase(columnName)}`;
 
+const formatDateInput = (value: string | null): string => {
+  if (!value) {
+    return '';
+  }
+
+  const valueMs = toTime(value);
+  if (Number.isNaN(valueMs)) {
+    return '';
+  }
+
+  return formatDate(new Date(valueMs), 'yyyy-mm-dd');
+};
+
+type GanttFilters = {
+  startDate: string,
+  endDate: string,
+};
+
 const Gantt = ({ name, ganttData, startedColumns, completedColumns, dateFormat, vscode }: {
   name: string,
   ganttData: GanttData,
@@ -306,6 +394,10 @@ const Gantt = ({ name, ganttData, startedColumns, completedColumns, dateFormat, 
   const [labelWidth, setLabelWidth] = useState(LABEL_WIDTH);
   const [measuredTaskRectById, setMeasuredTaskRectById] = useState<Map<string, Rect>>(new Map());
   const [draftScheduleByTaskId, setDraftScheduleByTaskId] = useState<Map<string, DraftSchedule>>(new Map());
+  const [filters, setFilters] = useState<GanttFilters>({
+    startDate: formatDateInput(ganttData.from),
+    endDate: formatDateInput(ganttData.to),
+  });
   const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null);
   const [hoverIntent, setHoverIntent] = useState<DragIntent>(null);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
@@ -314,6 +406,19 @@ const Gantt = ({ name, ganttData, startedColumns, completedColumns, dateFormat, 
   const chartTasksRef = useRef<Array<GanttTask & { safeStartMs: number, safeEndMs: number }>>([]);
   const draftScheduleByTaskIdRef = useRef<Map<string, DraftSchedule>>(new Map());
   const suppressClickTaskIdRef = useRef<string | null>(null);
+  const refreshGanttData = useRef(debounce(500, (settings: GanttFilters) => {
+    vscode.postMessage({
+      command: 'kanbn.refreshGanttData',
+      ...settings,
+    });
+  })).current;
+
+  const defaultStartDate = formatDateInput(ganttData.from);
+  const defaultEndDate = formatDateInput(ganttData.to);
+  const hasActiveFilters = (
+    (filters.startDate !== '' && filters.startDate !== defaultStartDate) ||
+    (filters.endDate !== '' && filters.endDate !== defaultEndDate)
+  );
 
   useEffect(() => {
     if (!scrollXRef.current) {
@@ -351,6 +456,15 @@ const Gantt = ({ name, ganttData, startedColumns, completedColumns, dateFormat, 
   useEffect(() => {
     setDraftScheduleByTaskId(new Map());
   }, [ganttData]);
+
+  useEffect(() => {
+    if (!filters.startDate && !filters.endDate) {
+      setFilters({
+        startDate: formatDateInput(ganttData.from),
+        endDate: formatDateInput(ganttData.to),
+      });
+    }
+  }, [filters.startDate, filters.endDate, ganttData.from, ganttData.to]);
 
   const chartTasks = useMemo(() => {
     const tasks = Array.isArray(ganttData.tasks) ? ganttData.tasks : [];
@@ -479,9 +593,32 @@ const Gantt = ({ name, ganttData, startedColumns, completedColumns, dateFormat, 
     const linePaths: DependencyPath[] = [];
 
     chartTasks.forEach((task, targetIndex) => {
+      const sourceTaskRect = taskRects[targetIndex];
+      const sourceRect = measuredTaskRectById.get(task.id) || (sourceTaskRect ? sourceTaskRect.rect : null);
+
       (task.dependencies || []).forEach((dependencyId) => {
         const sourceIndex = taskIndexById.get(dependencyId);
         if (sourceIndex === undefined) {
+          if ((task.externalIncomingDependencies || []).includes(dependencyId)) {
+            const targetTaskRect = taskRects[targetIndex];
+            if (!targetTaskRect) {
+              return;
+            }
+
+            const targetRect = measuredTaskRectById.get(task.id) || targetTaskRect.rect;
+            const route = buildExternalIncomingDependencyPath(targetRect);
+            if (route) {
+              linePaths.push({
+                key: `${dependencyId}-${task.id}-external-incoming`,
+                path: route.path,
+                isNonForward: false,
+                isBlocks: false,
+                isExternal: true,
+                trailPath: route.trailPath,
+                ellipsis: route.ellipsis,
+              });
+            }
+          }
           return;
         }
 
@@ -503,6 +640,26 @@ const Gantt = ({ name, ganttData, startedColumns, completedColumns, dateFormat, 
             path: route.path,
             isNonForward: route.isNonForward,
             isBlocks: !!sourceTask && hasBlocksRelation(sourceTask, task.id),
+            isExternal: false,
+          });
+        }
+      });
+
+      (task.externalOutgoingDependents || []).forEach((dependentId) => {
+        if (!sourceRect) {
+          return;
+        }
+
+        const route = buildExternalOutgoingDependencyPath(sourceRect, timelineWidth);
+        if (route) {
+          linePaths.push({
+            key: `${task.id}-${dependentId}-external-outgoing`,
+            path: route.path,
+            isNonForward: false,
+            isBlocks: true,
+            isExternal: true,
+            trailPath: route.trailPath,
+            ellipsis: route.ellipsis,
           });
         }
       });
@@ -750,11 +907,65 @@ const Gantt = ({ name, ganttData, startedColumns, completedColumns, dateFormat, 
     return 'ew-resize';
   };
 
+  const updateFilters = (nextFilters: GanttFilters) => {
+    setFilters(nextFilters);
+    refreshGanttData(nextFilters);
+  };
+
+  const handleChangeStartDate = (event: React.ChangeEvent<HTMLInputElement>) => {
+    updateFilters({
+      ...filters,
+      startDate: event.target.value,
+    });
+  };
+
+  const handleChangeEndDate = (event: React.ChangeEvent<HTMLInputElement>) => {
+    updateFilters({
+      ...filters,
+      endDate: event.target.value,
+    });
+  };
+
+  const handleClearFilters = () => {
+    const clearedFilters = {
+      startDate: '',
+      endDate: '',
+    };
+    updateFilters(clearedFilters);
+  };
+
   return (
     <div className="kanbn-gantt-page">
       <div className="kanbn-header">
         <h1 className="kanbn-header-name">
           <p>{name}</p>
+          <div className="kanbn-burndown-settings">
+            <form>
+              <input
+                type="date"
+                value={filters.startDate}
+                className="kanbn-burndown-settings-input kanbn-burndown-settings-start-date"
+                onChange={handleChangeStartDate}
+              />
+              <input
+                type="date"
+                value={filters.endDate}
+                className="kanbn-burndown-settings-input kanbn-burndown-settings-end-date"
+                onChange={handleChangeEndDate}
+              />
+              {
+                hasActiveFilters &&
+                <button
+                  type="button"
+                  className="kanbn-header-button kanbn-header-button-clear-filter"
+                  onClick={handleClearFilters}
+                  title="Clear chart filters"
+                >
+                  <i className="codicon codicon-clear-all"></i>
+                </button>
+              }
+            </form>
+          </div>
         </h1>
       </div>
 
@@ -826,9 +1037,40 @@ const Gantt = ({ name, ganttData, startedColumns, completedColumns, dateFormat, 
                           'kanbn-gantt-dependency-line',
                           dependencyPath.isNonForward ? 'kanbn-gantt-dependency-line-non-forward' : null,
                           dependencyPath.isBlocks ? 'kanbn-gantt-dependency-line-blocks' : null,
+                          dependencyPath.isExternal ? 'kanbn-gantt-dependency-line-external' : null,
                         ].filter((i) => !!i).join(' ')}
                         markerEnd={dependencyPath.isBlocks ? 'url(#kanbn-gantt-arrow-blocks)' : 'url(#kanbn-gantt-arrow-default)'}
                       />
+                    ))
+                  }
+                  {
+                    dependencyPaths.map((dependencyPath) => (
+                      dependencyPath.trailPath
+                        ? <path
+                            key={`${dependencyPath.key}-trail`}
+                            d={dependencyPath.trailPath}
+                            className={[
+                              'kanbn-gantt-dependency-line',
+                              'kanbn-gantt-dependency-line-external',
+                              'kanbn-gantt-dependency-line-external-tail',
+                              dependencyPath.isBlocks ? 'kanbn-gantt-dependency-line-blocks' : null,
+                            ].filter((i) => !!i).join(' ')}
+                          />
+                        : null
+                    ))
+                  }
+                  {
+                    dependencyPaths.map((dependencyPath) => (
+                      dependencyPath.ellipsis
+                        ? <text
+                            key={`${dependencyPath.key}-ellipsis`}
+                            x={dependencyPath.ellipsis.x}
+                            y={dependencyPath.ellipsis.y}
+                            className="kanbn-gantt-dependency-ellipsis"
+                          >
+                            ...
+                          </text>
+                        : null
                     ))
                   }
                 </svg>
