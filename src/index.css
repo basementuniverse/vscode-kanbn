@@ -27,6 +27,8 @@ Board styles
     flex: 2;
     margin: 0;
     padding: 4px 0;
+    position: relative;
+    top: 3px;
 }
 
 .kanbn-filter {
@@ -358,6 +360,8 @@ Task editor styles
     display: inline-block;
     font-size: 1.5em;
     margin-top: 0;
+    position: relative;
+    top: 3px;
 }
 
 .kanbn-task-editor-header {
@@ -383,6 +387,8 @@ Task editor styles
     flex-wrap: wrap;
     gap: 4px 8px;
     min-width: 0;
+    position: relative;
+    top: -1px;
 }
 
 .kanbn-task-editor-header-buttons {
@@ -402,7 +408,9 @@ Task editor styles
 .kanbn-task-editor-save-status {
     color: var(--vscode-descriptionForeground);
     opacity: 0.75;
-    font-size: 0.9em;
+    font-size: 0.75em;
+    position: relative;
+    top: 4px;
 }
 
 .kanbn-task-editor-dates {
