@@ -53,7 +53,8 @@ Board styles
     border: 1px transparent solid;
 }
 
-.kanbn-filter-input:hover, .kanbn-filter-input:focus {
+.kanbn-filter-input:hover,
+.kanbn-filter-input:focus {
     border-color: var(--vscode-input-border);
 }
 
@@ -91,7 +92,8 @@ Board styles
     border-color: var(--vscode-button-hoverBackground);
 }
 
-.kanbn-header-button:hover, .kanbn-header-button:active {
+.kanbn-header-button:hover,
+.kanbn-header-button:active {
     background-color: var(--vscode-button-hoverBackground);
 }
 
@@ -148,7 +150,8 @@ Board styles
     border-color: var(--vscode-button-hoverBackground);
 }
 
-.kanbn-column-button:hover, .kanbn-column-button:active {
+.kanbn-column-button:hover,
+.kanbn-column-button:active {
     background-color: var(--vscode-button-hoverBackground);
 }
 
@@ -177,7 +180,7 @@ Board styles
     border-left: 4px var(--kanbn-column-accent, var(--vscode-activityBar-inactiveForeground)) solid;
     min-height: 46px;
     height: 100%;
-    transition: border-color .5s ease-in-out;
+    transition: border-color 0.5s ease-in-out;
 }
 
 .kanbn-column-task-list.drag-over {
@@ -325,7 +328,7 @@ body.vscode-dark .kanbn-task {
     height: 6px;
     background-color: #3c7;
     opacity: 0.7;
-    transition: width .5s ease-in-out;
+    transition: width 0.5s ease-in-out;
 }
 
 .kanbn-task-data-updated {
@@ -413,6 +416,12 @@ Task editor styles
     top: 4px;
 }
 
+@media (max-width: 600px) {
+    .kanbn-task-editor-save-status {
+        display: none;
+    }
+}
+
 .kanbn-task-editor-dates {
     display: block;
     font-size: var(--vscode-font-size);
@@ -421,6 +430,12 @@ Task editor styles
     opacity: 0.8;
     margin: 2px;
     text-align: right;
+}
+
+@media (max-width: 900px) {
+    .kanbn-task-editor-dates {
+        display: none;
+    }
 }
 
 .kanbn-task-editor-form {
@@ -472,7 +487,7 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
     border: 1px transparent solid;
 }
 
-.kanbn-task-editor-field-input[type=date] {
+.kanbn-task-editor-field-input[type="date"] {
     padding: 6px 8px;
 }
 
@@ -480,7 +495,7 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
     position: relative;
 }
 
-.kanbn-task-editor-date-input-wrap .kanbn-task-editor-field-input[type=date] {
+.kanbn-task-editor-date-input-wrap .kanbn-task-editor-field-input[type="date"] {
     padding-right: 20px;
 }
 
@@ -521,7 +536,8 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
     resize: vertical;
 }
 
-.kanbn-task-editor-field-input:hover, .kanbn-task-editor-field-input:focus {
+.kanbn-task-editor-field-input:hover,
+.kanbn-task-editor-field-input:focus {
     border-color: var(--vscode-input-border);
 }
 
@@ -554,7 +570,8 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
     border-color: var(--vscode-button-hoverBackground);
 }
 
-.kanbn-task-editor-button:hover, .kanbn-task-editor-button:active {
+.kanbn-task-editor-button:hover,
+.kanbn-task-editor-button:active {
     background-color: var(--vscode-button-hoverBackground);
 }
 
@@ -562,7 +579,8 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
     border-color: #f22;
 }
 
-.kanbn-task-editor-button-delete:hover, .kanbn-task-editor-button-delete:active {
+.kanbn-task-editor-button-delete:hover,
+.kanbn-task-editor-button-delete:active {
     background-color: #f22;
 }
 
@@ -667,21 +685,21 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
 
 .kanbn-task-editor-comment-text {
     position: relative;
-    padding: .5em;
+    padding: 0.5em;
     background-color: var(--vscode-input-background);
     min-height: 90px;
     white-space: pre-wrap;
 }
 
 .kanbn-task-editor-comment-text::after {
-	content: "";
-	position: absolute;
-	height: 16px;
-	width: 24px;
-	bottom: -15px;
-	left: 95%;
-	background-color: var(--vscode-input-background);
-	clip-path: polygon(0 0, 100% 0, 100% 100%);
+    content: "";
+    position: absolute;
+    height: 16px;
+    width: 24px;
+    bottom: -15px;
+    left: 95%;
+    background-color: var(--vscode-input-background);
+    clip-path: polygon(0 0, 100% 0, 100% 100%);
 }
 
 .kanbn-task-editor-field-history {
@@ -744,7 +762,7 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
 }
 
 .kanbn-task-editor-description-preview {
-    padding: .5em;
+    padding: 0.5em;
     border: 1px var(--vscode-input-background) solid;
     min-height: 90px;
     overflow: auto;
@@ -758,8 +776,8 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
     float: left;
     width: auto;
     position: relative;
-    top: -.2em;
-    margin: .5em 1em .5em 0;
+    top: -0.2em;
+    margin: 0.5em 1em 0.5em 0;
 }
 
 .kanbn-task-editor-buttons-show-planned-dates {
@@ -815,7 +833,7 @@ Burndown chart styles
     border: 1px transparent solid;
 }
 
-.kanbn-burndown-settings-input[type=date] {
+.kanbn-burndown-settings-input[type="date"] {
     padding: 6px 8px;
     margin-left: 8px;
 }
@@ -973,10 +991,11 @@ Gantt chart styles
     height: 26px;
     box-sizing: border-box;
     border: none;
-    border-left: 4px solid var(
-        --kanbn-gantt-bar-border-color,
-        var(--kanbn-column-accent, var(--kanbn-gantt-bar-status-color, var(--kanbn-gantt-bar-border-default)))
-    );
+    border-left: 4px solid
+        var(
+            --kanbn-gantt-bar-border-color,
+            var(--kanbn-column-accent, var(--kanbn-gantt-bar-status-color, var(--kanbn-gantt-bar-border-default)))
+        );
     border-radius: 3px;
     text-align: left;
     padding: 0 8px 0 6px;
@@ -1296,7 +1315,7 @@ body.vscode-light code[class*="language-"] span.token.entity,
 body.vscode-light code[class*="language-"] span.token.url,
 body.vscode-light code.language-css span.token.string {
     color: #9a6e3a;
-    background: hsla(0, 0%, 100%, .5);
+    background: hsla(0, 0%, 100%, 0.5);
 }
 
 body.vscode-light code[class*="language-"] span.token.atrule,
