@@ -273,10 +273,15 @@ export default class KanbnTaskPanel {
 
           // Create a task
           case "kanbn.create":
-            await this._kanbn.createTask(
-              transformTaskData(message.taskData, message.customFields),
-              message.taskData.column
-            );
+            try {
+              await this._kanbn.createTask(
+                transformTaskData(message.taskData, message.customFields),
+                message.taskData.column
+              );
+            } catch (error) {
+              vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+              return;
+            }
             KanbnTaskPanel.bindPanelToTask(
               message.panelUuid,
               message.taskData.id,
@@ -290,11 +295,16 @@ export default class KanbnTaskPanel {
 
           // Update a task
           case "kanbn.update":
-            await this._kanbn.updateTask(
-              message.taskId,
-              transformTaskData(message.taskData, message.customFields),
-              message.taskData.column
-            );
+            try {
+              await this._kanbn.updateTask(
+                message.taskId,
+                transformTaskData(message.taskData, message.customFields),
+                message.taskData.column
+              );
+            } catch (error) {
+              vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+              return;
+            }
             KanbnTaskPanel.bindPanelToTask(
               message.panelUuid,
               message.taskData.id,
@@ -312,7 +322,13 @@ export default class KanbnTaskPanel {
               .showInformationMessage(`Delete task '${message.taskData.name}'?`, "Yes", "No")
               .then(async (value) => {
                 if (value === "Yes") {
-                  await this._kanbn.deleteTask(message.taskId, true);
+                  // Deleting the task file fails if other boards still reference the task
+                  try {
+                    await this._kanbn.deleteTask(message.taskId, true);
+                  } catch (error) {
+                    vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+                    return;
+                  }
                   KanbnTaskPanel.panels[message.panelUuid]?.dispose();
                   if (vscode.workspace.getConfiguration("kanbn").get("showTaskNotifications")) {
                     vscode.window.showInformationMessage(`Deleted task '${message.taskData.name}'.`);
@@ -323,7 +339,12 @@ export default class KanbnTaskPanel {
 
           // Archive a task and close the webview panel
           case 'kanbn.archive':
-            await this._kanbn.archiveTask(message.taskId);
+            try {
+              await this._kanbn.archiveTask(message.taskId);
+            } catch (error) {
+              vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+              return;
+            }
             KanbnTaskPanel.panels[message.panelUuid]?.dispose();
             if (vscode.workspace.getConfiguration("kanbn").get("showTaskNotifications")) {
               vscode.window.showInformationMessage(`Archived task '${message.taskData.name}'.`);

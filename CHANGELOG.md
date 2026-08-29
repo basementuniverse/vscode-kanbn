@@ -1,3 +1,10 @@
+# Unreleased
+
+* Updated kanbn dependency to 2.5.0 (support for the new kanbn features it adds, e.g. multiple boards, action rules and contributors, will follow separately)
+* Pinned `glob` to v7, because kanbn's `glob-promise` dependency needs it and a fresh install would otherwise resolve an incompatible v13, breaking the status bar and the archive commands
+* Raised the minimum VS Code version to 1.70, which is the first release shipping a Node version that satisfies kanbn 2.5.0's `node >= 16.13.0` requirement
+* Task create, update, delete and archive now report errors instead of failing silently
+
 # 1.1.0
 
 * Fixed autosave issues in Task Editor, now saves shortly after the user stops typing, will not autosave when creating a new task, and will not defocus inputs when autosaving

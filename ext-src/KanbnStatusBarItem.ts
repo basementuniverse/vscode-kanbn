@@ -1,4 +1,3 @@
-import { status } from '@basementuniverse/kanbn/src/main';
 import * as vscode from 'vscode';
 import type { KanbnApi } from './KanbnApi';
 
