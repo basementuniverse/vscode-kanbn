@@ -66,6 +66,11 @@
         "category": "Kanbn"
       },
       {
+        "command": "kanbn.validate",
+        "title": "Validate board",
+        "category": "Kanbn"
+      },
+      {
         "command": "kanbn.archiveTasks",
         "title": "Archive tasks",
         "category": "Kanbn"
@@ -130,7 +135,6 @@
     "@vscode/codicons": "^0.0.46-24",
     "dateformat": "^4.5.1",
     "formik": "^2.2.6",
-    "git-user-name": "^2.0.0",
     "glob": "^7.2.3",
     "param-case": "^3.0.4",
     "react": "^16.3.2",
@@ -155,7 +159,6 @@
   },
   "devDependencies": {
     "@types/dateformat": "^3.0.1",
-    "@types/git-user-name": "^2.0.0",
     "@types/jest": "^23.3.14",
     "@types/lodash": "^4.14.168",
     "@types/node": "^10.17.56",

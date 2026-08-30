@@ -4,27 +4,45 @@ import formatDate from 'dateformat';
 import { paramCase } from '@basementuniverse/kanbn/src/utility';
 import VSCodeApi from "./VSCodeApi";
 
-const TaskItem = ({ task, columnName, customFields, position, dateFormat, vscode }: {
+const TaskItem = ({
+  task,
+  columnName,
+  customFields,
+  startedField,
+  completedField,
+  position,
+  dateFormat,
+  vscode
+}: {
   task: KanbnTask,
   columnName: string,
   customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string' }[],
+  startedField: string,
+  completedField: string,
   position: number,
   dateFormat: string,
   vscode: VSCodeApi
 }) => {
   const createdDate = 'created' in task.metadata ? formatDate(task.metadata.created, dateFormat) : null;
   const updatedDate = 'updated' in task.metadata ? formatDate(task.metadata.updated, dateFormat) : null;
-  const startedDate = 'started' in task.metadata ? formatDate(task.metadata.started, dateFormat) : null;
   const dueDate = 'due' in task.metadata ? formatDate(task.metadata.due, dateFormat) : null;
-  const completedDate = 'completed' in task.metadata ? formatDate(task.metadata.completed, dateFormat) : null;
 
-  // Check if a task's due date is in the past
-  const checkOverdue = (task: KanbnTask) => {
-    if ('due' in task.metadata && task.metadata.due !== undefined) {
-      return Date.parse(task.metadata.due) < (new Date()).getTime();
-    }
-    return false;
-  };
+  // A board can point its started/completed state at custom metadata fields, so read the fields this
+  // board actually uses rather than assuming 'started' and 'completed'
+  const startedDate = startedField in task.metadata
+    ? formatDate(task.metadata[startedField], dateFormat)
+    : null;
+  const completedDate = completedField in task.metadata
+    ? formatDate(task.metadata[completedField], dateFormat)
+    : null;
+
+  // Those fields are already shown as this board's started/completed dates, so showing them again in
+  // the custom field list would just be the same date twice
+  const stateFields = [startedField, completedField];
+
+  // Kanbn computes this during hydration, and only attaches dueData to a task with a due date. A
+  // completed task is never overdue, however late it was
+  const checkOverdue = (task: KanbnTask) => !!(task.dueData && task.dueData.overdue);
 
   return (
     <Draggable
@@ -83,7 +101,10 @@ const TaskItem = ({ task, columnName, customFields, position, dateFormat, vscode
             }
             {
               customFields.map(customField => {
-                if (customField.name in task.metadata) {
+                if (
+                  customField.name in task.metadata &&
+                  stateFields.indexOf(customField.name) === -1
+                ) {
                   return (
                     <div className={[
                       'kanbn-task-data kanbn-task-data-custom-field',

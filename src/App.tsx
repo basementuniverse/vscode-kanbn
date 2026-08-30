@@ -19,6 +19,20 @@ function App() {
   const [startedColumns, setStartedColumns] = useState([]);
   const [completedColumns, setCompletedColumns] = useState([]);
   const [columnSorting, setColumnSorting] = useState({});
+  const [boards, setBoards] = useState([] as Array<{ slug: string, name: string, main: boolean }>);
+  const [boardSlug, setBoardSlug] = useState('');
+  const [startedField, setStartedField] = useState('started');
+  const [completedField, setCompletedField] = useState('completed');
+  const [taskBoards, setTaskBoards] = useState({} as Record<string, string>);
+  const [contributors, setContributors] = useState(
+    [] as Array<{ name: string, displayName: string, colour?: string }>
+  );
+  const [currentUser, setCurrentUser] = useState('');
+  const [simpleTasks, setSimpleTasks] = useState(
+    [] as Array<{ column: string, position: number, text: string, raw: string }>
+  );
+  const [filteredTaskIds, setFilteredTaskIds] = useState<string[] | null>(null);
+  const [filterError, setFilterError] = useState<string | null>(null);
   const [customFields, setCustomFields] = useState([]);
   const [dateFormat, setDateFormat] = useState('');
   const [task, setTask] = useState({});
@@ -63,6 +77,16 @@ function App() {
         setCompletedColumns(event.data.completedColumns);
         setColumnSorting(event.data.columnSorting);
         setCustomFields(event.data.customFields);
+        setBoards(event.data.boards || []);
+        setBoardSlug(event.data.boardSlug || '');
+        setStartedField(event.data.startedField || 'started');
+        setCompletedField(event.data.completedField || 'completed');
+        setSimpleTasks(event.data.simpleTasks || []);
+        setFilteredTaskIds(
+          event.data.filteredTaskIds === undefined ? null : event.data.filteredTaskIds
+        );
+        setFilterError(event.data.filterError === undefined ? null : event.data.filterError);
+        setContributors(event.data.contributors || []);
         setShowBurndownButton(event.data.showBurndownButton);
         setShowGanttButton(event.data.showGanttButton);
         setShowSprintButton(event.data.showSprintButton);
@@ -78,6 +102,10 @@ function App() {
       case 'task':
         setTask(event.data.task);
         setTasks(tasks);
+        setTaskBoards(event.data.taskBoards || {});
+        setContributors(event.data.contributors || []);
+        setCurrentUser(event.data.currentUser || '');
+        setBoardSlug(event.data.boardSlug || '');
         setColumnName(event.data.columnName);
         setColumnNames(Object.keys(event.data.index.columns));
         setCustomFields(event.data.customFields);
@@ -104,16 +132,6 @@ function App() {
             ? event.data.index.options.sprints
             : []
         );
-        setStartedColumns(
-          event.data.index && event.data.index.options && event.data.index.options.startedColumns
-            ? event.data.index.options.startedColumns
-            : []
-        );
-        setCompletedColumns(
-          event.data.index && event.data.index.options && event.data.index.options.completedColumns
-            ? event.data.index.options.completedColumns
-            : []
-        );
         setGanttData(event.data.ganttData);
         break;
     }
@@ -128,6 +146,12 @@ function App() {
     };
   });
 
+  // Tell the extension we're listening. Messages posted before this point are lost - postMessage
+  // isn't buffered - and the panel would sit empty until something else triggered a refresh
+  useEffect(() => {
+    vscode.postMessage({ command: 'kanbn.webviewReady' });
+  }, []);
+
   return (
     <React.Fragment>
       {
@@ -141,6 +165,14 @@ function App() {
           completedColumns={completedColumns}
           columnSorting={columnSorting}
           customFields={customFields}
+          boards={boards}
+          boardSlug={boardSlug}
+          startedField={startedField}
+          completedField={completedField}
+          simpleTasks={simpleTasks}
+          filteredTaskIds={filteredTaskIds}
+          filterError={filterError}
+          contributors={contributors}
           dateFormat={dateFormat}
           showBurndownButton={showBurndownButton}
           showGanttButton={showGanttButton}
@@ -158,6 +190,10 @@ function App() {
           columnName={columnName}
           columnNames={columnNames}
           customFields={customFields}
+          taskBoards={taskBoards}
+          contributors={contributors}
+          currentUser={currentUser}
+          boardSlug={boardSlug}
           dateFormat={dateFormat}
           panelUuid={panelUuid}
           autoSaveMode={autoSaveMode as 'off' | 'afterDelay' | 'onFocusChange' | 'onWindowChange'}
@@ -180,8 +216,6 @@ function App() {
         <Gantt
           name={name}
           ganttData={ganttData}
-          startedColumns={startedColumns}
-          completedColumns={completedColumns}
           dateFormat={dateFormat}
           vscode={vscode}
         />

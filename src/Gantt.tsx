@@ -379,11 +379,9 @@ type GanttFilters = {
   endDate: string,
 };
 
-const Gantt = ({ name, ganttData, startedColumns, completedColumns, dateFormat, vscode }: {
+const Gantt = ({ name, ganttData, dateFormat, vscode }: {
   name: string,
   ganttData: GanttData,
-  startedColumns: string[],
-  completedColumns: string[],
   dateFormat: string,
   vscode: VSCodeApi,
 }) => {
@@ -468,8 +466,6 @@ const Gantt = ({ name, ganttData, startedColumns, completedColumns, dateFormat, 
 
   const chartTasks = useMemo(() => {
     const tasks = Array.isArray(ganttData.tasks) ? ganttData.tasks : [];
-    const startedColumnSet = new Set(startedColumns || []);
-    const completedColumnSet = new Set(completedColumns || []);
 
     return tasks.map((task) => {
       const startMs = toTime(task.start);
@@ -486,10 +482,12 @@ const Gantt = ({ name, ganttData, startedColumns, completedColumns, dateFormat, 
       const endPercent = endRatio * 100;
       const widthPercent = Math.max(0.8, endPercent - startPercent);
       const isPastDueInTimeline = !Number.isNaN(dueMs) && safeEndMs > dueMs;
-      const inStartedColumn = startedColumnSet.has(task.column);
-      const inCompletedColumn = completedColumnSet.has(task.column);
-      const isCompleted = hasDate(task.completed) || inCompletedColumn;
-      const isStarted = !isCompleted && (hasDate(task.started) || inStartedColumn);
+
+      // State comes from the dates alone. Since kanbn 2.0 the column a task sits in no longer stands
+      // in for a date - it's what causes one to be written, not a substitute for it. Kanbn has
+      // already resolved these against the board's own startedField and completedField
+      const isCompleted = hasDate(task.completed);
+      const isStarted = !isCompleted && hasDate(task.started);
       const statusClassName = isCompleted
         ? 'kanbn-gantt-bar-completed'
         : (isStarted ? 'kanbn-gantt-bar-started' : 'kanbn-gantt-bar-not-started');
@@ -506,7 +504,7 @@ const Gantt = ({ name, ganttData, startedColumns, completedColumns, dateFormat, 
         columnClassName: toColumnClassName(task.column),
       };
     });
-  }, [ganttData.tasks, safeFromMs, span, draftScheduleByTaskId, startedColumns, completedColumns]);
+  }, [ganttData.tasks, safeFromMs, span, draftScheduleByTaskId]);
 
   const taskRects = useMemo<TaskRect[]>(() => {
     return chartTasks.map((task, index) => {

@@ -3,7 +3,6 @@ import { Formik, Form, Field, ErrorMessage, FieldArray } from 'formik';
 import formatDate from 'dateformat';
 import VSCodeApi from './VSCodeApi';
 import { paramCase } from '@basementuniverse/kanbn/src/utility';
-import gitUsername from 'git-user-name';
 import ReactMarkdown from 'react-markdown';
 import TextareaAutosize from 'react-textarea-autosize';
 import remarkMath from 'remark-math';
@@ -34,6 +33,7 @@ type SaveStatus = 'idle' | 'saving' | 'saved';
 const AUTO_SAVE_STATUS_DURATION = 1500;
 const AUTO_SAVE_ENABLED_FOR_NEW_TASKS = false;
 
+const CONTRIBUTORS_LIST_ID = 'kanbn-contributors';
 const EDITING_DESCRIPTION_STORAGE_PREFIX = 'kanbn.taskEditor.editingDescription.';
 const PENDING_FOCUS_STORAGE_PREFIX = 'kanbn.taskEditor.pendingFocus.';
 
@@ -249,6 +249,7 @@ const createInitialTaskData = (
   task: KanbnTask | null,
   columnName: string,
   customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string' }[],
+  currentUser: string,
 ) => ({
   id: task ? task.id : '',
   name: task ? task.name : '',
@@ -263,7 +264,7 @@ const createInitialTaskData = (
     plannedFinish: (task && 'plannedFinish' in task.metadata) ? formatDate(task.metadata.plannedFinish as string | number | Date, 'yyyy-mm-dd') : '',
     due: (task && 'due' in task.metadata) ? formatDate(task.metadata.due!, 'yyyy-mm-dd') : '',
     completed: (task && 'completed' in task.metadata) ? formatDate(task.metadata.completed!, 'yyyy-mm-dd') : '',
-    assigned: (task && 'assigned' in task.metadata) ? task.metadata.assigned : (gitUsername() || ''),
+    assigned: (task && 'assigned' in task.metadata) ? task.metadata.assigned : currentUser,
     tags: (task && 'tags' in task.metadata) ? (task.metadata.tags || []) : [],
     ...Object.fromEntries(
       customFields.map(customField => [
@@ -378,6 +379,10 @@ const TaskEditor = ({
   columnName,
   columnNames,
   customFields,
+  taskBoards,
+  contributors,
+  currentUser,
+  boardSlug,
   dateFormat,
   panelUuid,
   autoSaveMode,
@@ -389,6 +394,10 @@ const TaskEditor = ({
   columnName: string,
   columnNames: string[],
   customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string' }[],
+  taskBoards: Record<string, string>,
+  contributors: Array<{ name: string, displayName: string, colour?: string }>,
+  currentUser: string,
+  boardSlug: string,
   dateFormat: string,
   panelUuid: string,
   autoSaveMode: AutoSaveMode,
@@ -397,7 +406,9 @@ const TaskEditor = ({
 }) => {
   const editing = task !== null;
   const autoSaveEnabled = (editing || AUTO_SAVE_ENABLED_FOR_NEW_TASKS) && autoSaveMode !== 'off';
-  const [taskData, setTaskData] = useState(createInitialTaskData(task, columnName, customFields));
+  const [taskData, setTaskData] = useState(
+    createInitialTaskData(task, columnName, customFields, currentUser)
+  );
   const [editingDescription, setEditingDescription] = useState(() => {
     const storageKey = `${EDITING_DESCRIPTION_STORAGE_PREFIX}${panelUuid}`;
     const storedValue = window.sessionStorage.getItem(storageKey);
@@ -669,6 +680,19 @@ const TaskEditor = ({
           submitForm,
         }) => (
           <Form>
+            {
+              // Autocomplete for the fields that name a person. A datalist suggests without
+              // restricting, which matches kanbn: assigned and comment author are free text and are
+              // never validated against the contributor list
+              contributors.length > 0 &&
+              <datalist id={CONTRIBUTORS_LIST_ID}>
+                {contributors.map(contributor => (
+                  <option key={contributor.name} value={contributor.name}>
+                    {contributor.displayName !== contributor.name ? contributor.displayName : ''}
+                  </option>
+                ))}
+              </datalist>
+            }
             <TaskEditorAutoSave
               enabled={autoSaveEnabled}
               autoSaveMode={autoSaveMode}
@@ -923,6 +947,7 @@ const TaskEditor = ({
                                         className="kanbn-task-editor-field-input"
                                         name={`comments.${index}.author`}
                                         placeholder="Comment author"
+                                        list={contributors.length ? CONTRIBUTORS_LIST_ID : undefined}
                                       />
                                       <ErrorMessage
                                         className="kanbn-task-editor-field-errors"
@@ -992,7 +1017,7 @@ const TaskEditor = ({
                             className="kanbn-task-editor-button kanbn-task-editor-button-add"
                             title="Add comment"
                             onClick={() => {
-                              push({ text: '', date: new Date(), author: gitUsername() || '' });
+                              push({ text: '', date: new Date(), author: currentUser });
                               setEditingComment(values.comments.length);
                             }}
                           >
@@ -1053,6 +1078,30 @@ const TaskEditor = ({
                     name="column"
                   />
                 </div>
+                {
+                  // A task file is shared between boards, so it can sit in a different column on
+                  // each one. Read-only: membership is changed by moving the task on that board
+                  Object.keys(taskBoards).length > 1 &&
+                  <div className="kanbn-task-editor-field kanbn-task-editor-field-boards">
+                    <label className="kanbn-task-editor-field-label">
+                      <p>On boards</p>
+                    </label>
+                    <ul className="kanbn-task-editor-boards">
+                      {Object.entries(taskBoards).map(([slug, column]) => (
+                        <li
+                          key={slug}
+                          className={[
+                            'kanbn-task-editor-board',
+                            slug === boardSlug ? 'kanbn-task-editor-board-current' : null
+                          ].filter(i => i).join(' ')}
+                        >
+                          <span className="kanbn-task-editor-board-name">{slug}</span>
+                          <span className="kanbn-task-editor-board-column">{column}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                }
                 <div className="kanbn-task-editor-field kanbn-task-editor-field-assigned">
                   <label className="kanbn-task-editor-field-label">
                     <p>Assigned to</p>
@@ -1060,6 +1109,7 @@ const TaskEditor = ({
                       className="kanbn-task-editor-field-input"
                       name="metadata.assigned"
                       placeholder="Assigned to"
+                      list={contributors.length ? CONTRIBUTORS_LIST_ID : undefined}
                     />
                   </label>
                   <ErrorMessage

@@ -18,8 +18,23 @@ export default class KanbnStatusBarItem {
     if (this._statusBarItem === undefined) {
       return;
     }
-    if (await this._kanbn.initialised()) {
-      const status = (await this._kanbn.status(true)) as {
+    if (await this._kanbn.workspaceInitialised()) {
+      // Resolve the target board exactly as the CLI does - KANBN_BOARD, then defaultBoard, then the
+      // main board - rather than assuming the main board is the interesting one
+      let board = this._kanbn;
+      let boardName: string | null = null;
+      try {
+        const slug = await this._kanbn.resolveBoardSlug(await this._kanbn.resolveTargetBoard());
+        board = this._kanbn.board(slug);
+        const boards = await this._kanbn.listBoards();
+        if (boards.length > 1) {
+          boardName = (boards.find((b) => b.slug === slug) ?? { name: slug }).name;
+        }
+      } catch (error) {
+        board = this._kanbn;
+      }
+
+      const status = (await board.status(true)) as {
         tasks: number,
         columnTasks: Record<string, number>,
         startedTasks?: number,
@@ -28,9 +43,10 @@ export default class KanbnStatusBarItem {
       const text = [
         `$(project) ${status.tasks}`
       ];
-      let tooltip = [];
+      let tooltip: string[] = boardName !== null ? [boardName] : [];
       if (status.tasks > 0) {
         tooltip = [
+          ...tooltip,
           `${status.tasks} task${status.tasks === 1 ? '' : 's'}`
         ];
         if ('startedTasks' in status && status.startedTasks! > 0) {

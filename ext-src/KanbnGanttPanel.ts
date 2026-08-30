@@ -3,10 +3,11 @@ import * as vscode from "vscode";
 import getNonce from "./getNonce";
 import KanbnTaskPanel from "./KanbnTaskPanel";
 import type { KanbnApi } from "./KanbnApi";
+import { reportActionWarnings } from "./KanbnOutput";
 
 export default class KanbnGanttPanel {
-  public static currentPanel: KanbnGanttPanel | undefined;
-  private static latestUpdateId = 0;
+  // One panel per board, keyed by resolved board slug - gantt charts are board-scoped
+  private static panels: Record<string, KanbnGanttPanel> = {};
 
   private static readonly viewType = "react";
 
@@ -15,8 +16,10 @@ export default class KanbnGanttPanel {
   private readonly _workspacePath: string;
   private readonly _kanbn: KanbnApi;
   private readonly _kanbnFolderName: string;
+  private readonly _boardSlug: string;
   private startDate: string = '';
   private endDate: string = '';
+  private _latestUpdateId = 0;
   private _disposables: vscode.Disposable[] = [];
 
   private static parseDate(value: any): Date | null {
@@ -32,13 +35,9 @@ export default class KanbnGanttPanel {
     return null;
   }
 
-  private static getGanttDateFilter(): Date[] | null {
-    if (!KanbnGanttPanel.currentPanel) {
-      return null;
-    }
-
-    const startDate = KanbnGanttPanel.parseDate(KanbnGanttPanel.currentPanel.startDate);
-    const endDate = KanbnGanttPanel.parseDate(KanbnGanttPanel.currentPanel.endDate);
+  private getDateFilter(): Date[] | null {
+    const startDate = KanbnGanttPanel.parseDate(this.startDate);
+    const endDate = KanbnGanttPanel.parseDate(this.endDate);
     if (startDate && endDate) {
       return [startDate, endDate];
     }
@@ -58,61 +57,72 @@ export default class KanbnGanttPanel {
     extensionPath: string,
     workspacePath: string,
     kanbn: KanbnApi,
-    kanbnFolderName: string
+    kanbnFolderName: string,
+    boardSlug: string
   ) {
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
-    // If we already have a panel, show it, otherwise create a new panel
-    if (KanbnGanttPanel.currentPanel) {
-      KanbnGanttPanel.currentPanel._panel.reveal(column);
+    // If this board already has a panel, show it, otherwise create a new one
+    const existingPanel = KanbnGanttPanel.panels[boardSlug];
+    if (existingPanel) {
+      existingPanel._panel.reveal(column);
     } else {
-      KanbnGanttPanel.currentPanel = new KanbnGanttPanel(
+      KanbnGanttPanel.panels[boardSlug] = new KanbnGanttPanel(
         extensionPath,
         workspacePath,
         column || vscode.ViewColumn.One,
         kanbn,
-        kanbnFolderName
+        kanbnFolderName,
+        boardSlug
       );
     }
   }
 
-  public static async update() {
-    if (KanbnGanttPanel.currentPanel) {
-      const updateId = ++KanbnGanttPanel.latestUpdateId;
-      let index: any;
-      try {
-        index = await KanbnGanttPanel.currentPanel._kanbn.getIndex();
-      } catch (error) {
-        vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
-        return;
-      }
-
-      let ganttData: any;
-      try {
-        const dateFilter = KanbnGanttPanel.getGanttDateFilter();
-        ganttData = await (KanbnGanttPanel.currentPanel._kanbn as any).gantt(
-          null,
-          null,
-          dateFilter,
-          null,
-        );
-      } catch (error) {
-        vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
-        return;
-      }
-
-      // Ignore stale async updates when multiple refreshes are triggered in quick succession.
-      if (!KanbnGanttPanel.currentPanel || updateId !== KanbnGanttPanel.latestUpdateId) {
-        return;
-      }
-
-      KanbnGanttPanel.currentPanel._panel.webview.postMessage({
-        type: "gantt",
-        index,
-        dateFormat: KanbnGanttPanel.currentPanel._kanbn.getDateFormat(index),
-        ganttData
-      });
+  public static async update(boardSlug?: string) {
+    const panels = boardSlug === undefined
+      ? Object.values(KanbnGanttPanel.panels)
+      : [KanbnGanttPanel.panels[boardSlug]].filter((panel) => panel !== undefined);
+    for (const panel of panels) {
+      await panel.refresh();
     }
+  }
+
+  private async refresh() {
+    const updateId = ++this._latestUpdateId;
+    let index: any;
+    try {
+      index = await this._kanbn.getIndex();
+    } catch (error) {
+      vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      return;
+    }
+
+    let ganttData: any;
+    try {
+      ganttData = await (this._kanbn as any).gantt(
+        null,
+        null,
+        this.getDateFilter(),
+        null,
+      );
+    } catch (error) {
+      vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      return;
+    }
+
+    // Ignore stale async updates when several refreshes are triggered in quick succession, and give
+    // up entirely if this panel was closed while its data was loading
+    if (!KanbnGanttPanel.panels[this._boardSlug] || updateId !== this._latestUpdateId) {
+      return;
+    }
+
+    this._panel.webview.postMessage({
+      type: "gantt",
+      index,
+      boardSlug: this._boardSlug,
+      dateFormat: this._kanbn.getDateFormat(index),
+      ganttData
+    });
   }
 
   private constructor(
@@ -120,12 +130,14 @@ export default class KanbnGanttPanel {
     workspacePath: string,
     column: vscode.ViewColumn,
     kanbn: KanbnApi,
-    kanbnFolderName: string
+    kanbnFolderName: string,
+    boardSlug: string
   ) {
     this._extensionPath = extensionPath;
     this._workspacePath = workspacePath;
     this._kanbn = kanbn;
     this._kanbnFolderName = kanbnFolderName;
+    this._boardSlug = boardSlug;
 
     // Create and show a new webview panel
     this._panel = vscode.window.createWebviewPanel(KanbnGanttPanel.viewType, "Gantt Chart", column, {
@@ -169,6 +181,11 @@ export default class KanbnGanttPanel {
             vscode.window.showErrorMessage(message.text);
             return;
 
+          // The webview has registered its message listener
+          case "kanbn.webviewReady":
+            await this.refresh();
+            return;
+
           // Open a task in the editor
           case "kanbn.task":
             KanbnTaskPanel.show(
@@ -177,7 +194,8 @@ export default class KanbnGanttPanel {
               this._kanbn,
               this._kanbnFolderName,
               message.taskId,
-              message.columnName
+              message.columnName,
+              this._boardSlug
             );
             return;
 
@@ -185,7 +203,7 @@ export default class KanbnGanttPanel {
           case 'kanbn.refreshGanttData':
             this.startDate = message.startDate;
             this.endDate = message.endDate;
-            KanbnGanttPanel.update();
+            KanbnGanttPanel.update(this._boardSlug);
             return;
 
           // Persist gantt drag/resize updates
@@ -232,7 +250,8 @@ export default class KanbnGanttPanel {
             }
 
             await this._kanbn.updateTask(message.taskId, task);
-            KanbnGanttPanel.update();
+            reportActionWarnings(this._kanbn, `updating ${message.taskId}`);
+            KanbnGanttPanel.update(this._boardSlug);
             return;
           }
         }
@@ -243,7 +262,7 @@ export default class KanbnGanttPanel {
   }
 
   public dispose() {
-    KanbnGanttPanel.currentPanel = undefined;
+    delete KanbnGanttPanel.panels[this._boardSlug];
 
     // Clean up our resources
     this._panel.dispose();

@@ -1350,3 +1350,308 @@ body.vscode-light code[class*="language-"] span.token.important,
 body.vscode-light code[class*="language-"] span.token.variable {
     color: #ee9900;
 }
+
+/* Board switcher, shown in the board header when a workspace has more than one board */
+.kanbn-header-board-select {
+    outline: none;
+    border: 1px transparent solid;
+    background-color: var(--vscode-dropdown-background);
+    color: var(--vscode-dropdown-foreground);
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    padding: 8px;
+    margin-right: 8px;
+    max-width: 180px;
+}
+
+.kanbn-header-board-select:focus {
+    border-color: var(--vscode-focusBorder);
+}
+
+/* Read-only list of the boards a task appears on, and its column on each */
+.kanbn-task-editor-boards {
+    list-style: none;
+    margin: 8px 0;
+    padding: 0;
+}
+
+.kanbn-task-editor-board {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 8px;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-descriptionForeground);
+    border-left: 2px transparent solid;
+}
+
+.kanbn-task-editor-board + .kanbn-task-editor-board {
+    margin-top: 2px;
+}
+
+.kanbn-task-editor-board-current {
+    border-left-color: var(--vscode-focusBorder);
+    color: var(--vscode-input-foreground);
+}
+
+.kanbn-task-editor-board-column {
+    opacity: 0.8;
+}
+
+/* ---- Board header controls and filter panel ---- */
+
+.kanbn-header-controls {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    white-space: nowrap;
+}
+
+.kanbn-filter-bar {
+    display: flex;
+    width: 100%;
+}
+
+.kanbn-header-button-filter-active {
+    background-color: var(--vscode-inputValidation-infoBorder, var(--vscode-button-background));
+}
+
+.kanbn-filter-count {
+    font-size: 0.75em;
+    margin-left: 4px;
+    font-family: var(--vscode-font-family);
+}
+
+/* Active filters, shown as removable chips under the search box */
+.kanbn-filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    margin-top: 6px;
+    white-space: normal;
+}
+
+.kanbn-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--vscode-font-family);
+    font-size: 0.72em;
+    padding: 3px 7px;
+    border: 1px solid var(--vscode-input-border, var(--vscode-activityBar-inactiveForeground));
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    cursor: pointer;
+}
+
+.kanbn-filter-chip:hover {
+    border-color: var(--vscode-focusBorder);
+}
+
+.kanbn-filter-chip .codicon {
+    font-size: 11px !important;
+    opacity: 0.7;
+}
+
+.kanbn-filter-chip-error {
+    color: var(--vscode-inputValidation-errorForeground, var(--vscode-errorForeground));
+    border-color: var(--vscode-inputValidation-errorBorder, var(--vscode-errorForeground));
+    cursor: default;
+}
+
+.kanbn-filter-shortcut {
+    padding: 3px 8px;
+    font-family: var(--vscode-font-family);
+    font-size: 1em;
+    color: var(--vscode-input-foreground);
+    background-color: var(--vscode-input-background);
+    border: 1px solid var(--vscode-input-border, transparent);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.kanbn-filter-shortcut:hover {
+    border-color: var(--vscode-focusBorder);
+}
+
+.kanbn-filter-summary {
+    font-family: var(--vscode-font-family);
+    font-size: 0.72em;
+    color: var(--vscode-descriptionForeground);
+    margin-left: 2px;
+}
+
+/* The filter panel itself */
+.kanbn-filter-panel {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 20;
+    margin-top: 6px;
+    width: 340px;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 12px 14px;
+    background-color: var(--vscode-editorWidget-background, var(--vscode-input-background));
+    border: 1px solid var(--vscode-widget-border, var(--vscode-input-border));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    white-space: normal;
+}
+
+.kanbn-filter-group + .kanbn-filter-group {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--vscode-widget-border, var(--vscode-input-border));
+}
+
+.kanbn-filter-group-title {
+    font-family: var(--vscode-font-family);
+    font-size: 0.72em;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--vscode-descriptionForeground);
+    margin: 0 0 8px;
+    font-weight: 600;
+}
+
+.kanbn-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 0.8em;
+    font-family: var(--vscode-font-family);
+}
+
+.kanbn-filter-label {
+    flex: 0 0 40%;
+    color: var(--vscode-foreground);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.kanbn-filter-range {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.kanbn-filter-range-sep,
+.kanbn-filter-suffix {
+    color: var(--vscode-descriptionForeground);
+}
+
+.kanbn-filter-input-small {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding: 4px 6px;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    font-family: var(--vscode-font-family);
+    font-size: 1em;
+    border: 1px solid var(--vscode-input-border, transparent);
+}
+
+.kanbn-filter-input-small:focus {
+    border-color: var(--vscode-focusBorder);
+    outline: none;
+}
+
+.kanbn-filter-input-grow {
+    flex: 1;
+}
+
+/* Any / Yes / No, because leaving a flag off is not the same as filtering on false */
+.kanbn-filter-tristate {
+    display: flex;
+    flex: 1;
+}
+
+.kanbn-filter-tristate-button {
+    flex: 1;
+    padding: 3px 0;
+    font-family: var(--vscode-font-family);
+    font-size: 1em;
+    color: var(--vscode-input-foreground);
+    background-color: var(--vscode-input-background);
+    border: 1px solid var(--vscode-input-border, transparent);
+    cursor: pointer;
+}
+
+.kanbn-filter-tristate-button + .kanbn-filter-tristate-button {
+    border-left: none;
+}
+
+.kanbn-filter-tristate-button:focus-visible {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.kanbn-filter-tristate-button-active {
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+}
+
+.kanbn-filter-checklist {
+    flex: 1;
+    max-height: 108px;
+    overflow-y: auto;
+    border: 1px solid var(--vscode-input-border, transparent);
+    background-color: var(--vscode-input-background);
+    padding: 4px 6px;
+}
+
+.kanbn-filter-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 1px 0;
+    cursor: pointer;
+}
+
+.kanbn-filter-check input {
+    margin: 0;
+}
+
+/* ---- Simple tasks: lines written straight into the board file ---- */
+
+/* Line up with the task cards above. A card sits 20px in: the task list is inset 8px and draws a
+   4px accent rail, then the card adds 8px of its own. Mirroring those three offsets - with the rail
+   reserved but transparent - puts a simple task on exactly the same left and right edges */
+.kanbn-column-simple-tasks {
+    margin: 8px 8px 0;
+    border-left: 4px transparent solid;
+}
+
+.kanbn-simple-task {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 5px 8px;
+    margin: 0 8px 8px;
+    font-size: 0.9em;
+    color: var(--vscode-descriptionForeground);
+    background-color: var(--vscode-input-background);
+    border-left: 2px dashed var(--vscode-activityBar-inactiveForeground);
+    opacity: 0.75;
+    cursor: default;
+}
+
+.kanbn-simple-task .codicon {
+    font-size: 12px !important;
+    position: relative;
+    top: 2px;
+}
+
+.kanbn-simple-task-text {
+    overflow-wrap: anywhere;
+}
+
+.kanbn-simple-task-checked .kanbn-simple-task-text {
+    text-decoration: line-through;
+}

@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import getNonce from "./getNonce";
 import { v4 as uuidv4 } from "uuid";
 import type { KanbnApi } from "./KanbnApi";
+import { reportActionWarnings } from "./KanbnOutput";
 
 type KanbnAutoSaveMode = "off" | "afterDelay" | "onFocusChange" | "onWindowChange";
 type KanbnAutoSaveSetting = KanbnAutoSaveMode | "inherit";
@@ -122,9 +123,13 @@ export default class KanbnTaskPanel {
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionPath: string;
   private readonly _workspacePath: string;
-  private readonly _kanbn: KanbnApi;
   private readonly _kanbnFolderName: string;
   private readonly _panelUuid: string;
+
+  // A task file is shared between boards - only its column is board-specific - so one task gets one
+  // panel however many boards it's on, re-pointed at whichever board it was last opened from
+  private _kanbn: KanbnApi;
+  private _boardSlug: string;
   private _taskId: string | null;
   private _columnName: string | null;
   private _isDisposed = false;
@@ -169,13 +174,18 @@ export default class KanbnTaskPanel {
     kanbn: KanbnApi,
     kanbnFolderName: string,
     taskId: string | null,
-    columnName: string | null
+    columnName: string | null,
+    boardSlug: string
   ) {
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
     if (taskId) {
       const existingPanel = KanbnTaskPanel.getPanelForTask(taskId);
       if (existingPanel) {
+        // Opening the same task from another board re-points the panel at that board rather than
+        // opening a second editor over the same file
+        existingPanel._kanbn = kanbn;
+        existingPanel._boardSlug = boardSlug;
         existingPanel._columnName = columnName;
         existingPanel._panel.reveal(column || existingPanel._panel.viewColumn);
         await existingPanel.update();
@@ -193,7 +203,8 @@ export default class KanbnTaskPanel {
       kanbnFolderName,
       taskId,
       columnName,
-      panelUuid
+      panelUuid,
+      boardSlug
     );
     KanbnTaskPanel.panels[panelUuid] = taskPanel;
     KanbnTaskPanel.registerTaskId(taskId, panelUuid);
@@ -208,7 +219,8 @@ export default class KanbnTaskPanel {
     kanbnFolderName: string,
     taskId: string | null,
     columnName: string | null,
-    panelUuid: string
+    panelUuid: string,
+    boardSlug: string
   ) {
     this._extensionPath = extensionPath;
     this._workspacePath = workspacePath;
@@ -217,6 +229,7 @@ export default class KanbnTaskPanel {
     this._taskId = taskId;
     this._columnName = columnName;
     this._panelUuid = panelUuid;
+    this._boardSlug = boardSlug;
 
     // Create and show a new webview panel
     this._panel = vscode.window.createWebviewPanel(KanbnTaskPanel.viewType, "New task", column, {
@@ -262,6 +275,11 @@ export default class KanbnTaskPanel {
             vscode.window.showErrorMessage(message.text);
             return;
 
+          // The webview has registered its message listener
+          case "kanbn.webviewReady":
+            await this.update();
+            return;
+
           // Update the task webview panel title
           case "kanbn.updatePanelTitle":
             this._panel.title = message.title;
@@ -278,6 +296,7 @@ export default class KanbnTaskPanel {
                 transformTaskData(message.taskData, message.customFields),
                 message.taskData.column
               );
+              reportActionWarnings(this._kanbn, `saving ${message.taskData.id}`);
             } catch (error) {
               vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
               return;
@@ -301,6 +320,7 @@ export default class KanbnTaskPanel {
                 transformTaskData(message.taskData, message.customFields),
                 message.taskData.column
               );
+              reportActionWarnings(this._kanbn, `saving ${message.taskData.id}`);
             } catch (error) {
               vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
               return;
@@ -317,30 +337,68 @@ export default class KanbnTaskPanel {
             return;
 
           // Delete a task and close the webview panel
-          case "kanbn.delete":
-            vscode.window
-              .showInformationMessage(`Delete task '${message.taskData.name}'?`, "Yes", "No")
-              .then(async (value) => {
-                if (value === "Yes") {
-                  // Deleting the task file fails if other boards still reference the task
-                  try {
-                    await this._kanbn.deleteTask(message.taskId, true);
-                  } catch (error) {
-                    vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
-                    return;
-                  }
-                  KanbnTaskPanel.panels[message.panelUuid]?.dispose();
-                  if (vscode.workspace.getConfiguration("kanbn").get("showTaskNotifications")) {
-                    vscode.window.showInformationMessage(`Deleted task '${message.taskData.name}'.`);
-                  }
-                }
-              });
+          case "kanbn.delete": {
+            const taskName = message.taskData.name;
+
+            // A task file is shared, so on a multi-board workspace "delete" is two different
+            // operations and the user has to say which one they mean
+            let otherBoards: string[] = [];
+            try {
+              otherBoards = Object.keys(await this._kanbn.findTaskBoards(message.taskId))
+                .filter((slug) => slug !== this._boardSlug);
+            } catch (error) {
+              // Fall through to the single-board flow, which reports the conflict itself
+            }
+
+            let removeFile = true;
+            let allBoards = false;
+            if (otherBoards.length) {
+              const boardList = otherBoards.join(", ");
+              const choice = await vscode.window.showWarningMessage(
+                `Task '${taskName}' is also on ${otherBoards.length === 1 ? "board" : "boards"} ${boardList}.`,
+                { modal: true },
+                "Remove from this board",
+                "Delete everywhere"
+              );
+              if (choice === undefined) {
+                return;
+              }
+              removeFile = choice === "Delete everywhere";
+              allBoards = removeFile;
+            } else {
+              const choice = await vscode.window.showInformationMessage(
+                `Delete task '${taskName}'?`,
+                "Yes",
+                "No"
+              );
+              if (choice !== "Yes") {
+                return;
+              }
+            }
+
+            try {
+              await this._kanbn.deleteTask(message.taskId, removeFile, allBoards);
+              reportActionWarnings(this._kanbn, `deleting ${message.taskId}`);
+            } catch (error) {
+              vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+              return;
+            }
+            KanbnTaskPanel.panels[message.panelUuid]?.dispose();
+            if (vscode.workspace.getConfiguration("kanbn").get("showTaskNotifications")) {
+              vscode.window.showInformationMessage(
+                removeFile
+                  ? `Deleted task '${taskName}'.`
+                  : `Removed task '${taskName}' from this board.`
+              );
+            }
             return;
+          }
 
           // Archive a task and close the webview panel
           case 'kanbn.archive':
             try {
               await this._kanbn.archiveTask(message.taskId);
+              reportActionWarnings(this._kanbn, `archiving ${message.taskId}`);
             } catch (error) {
               vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
               return;
@@ -460,12 +518,39 @@ export default class KanbnTaskPanel {
       this._columnName = Object.keys(index.columns)[0];
     }
 
+    // The boards this task is on, and the column it occupies on each. Shown read-only, so that
+    // re-pointing this panel at another board isn't a mystery
+    let taskBoards: Record<string, string> = {};
+    if (this._taskId) {
+      try {
+        taskBoards = await this._kanbn.findTaskBoards(this._taskId);
+      } catch (error) {
+        // Membership is informational - it shouldn't stop the task rendering
+      }
+    }
+
+    // Contributors are advisory - a convenience list for autocomplete, never validated against.
+    // currentUser is resolved by kanbn (KANBN_USER, then a contributor matched on git email or
+    // name, then the raw git name), so the extension writes the same value the CLI would
+    let contributors: Array<{ name: string, displayName: string, colour?: string }> = [];
+    let currentUser: string | null = null;
+    try {
+      contributors = await this._kanbn.getContributors();
+      currentUser = await this._kanbn.currentUser();
+    } catch (error) {
+      // Both are conveniences - the editor still works with free text if they can't be resolved
+    }
+
     // Send task data to the webview
     this._panel.webview.postMessage({
       type: "task",
       index,
       task,
       tasks,
+      taskBoards,
+      contributors,
+      currentUser,
+      boardSlug: this._boardSlug,
       customFields: index.options.customFields ?? [],
       columnName: this._columnName,
       dateFormat: this._kanbn.getDateFormat(index),

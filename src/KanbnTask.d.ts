@@ -8,6 +8,16 @@ declare type KanbnTask = {
   workload?: number,
   remainingWorkload?: number,
   progress?: number,
+  // Populated by kanbn's hydrateTask, but only for tasks that have a due date. 'completed' and
+  // 'overdue' are resolved against the board's own completedField, so they're the values to trust
+  dueData?: {
+    completed: boolean,
+    completedDate: string | null,
+    dueDate: string,
+    overdue: boolean,
+    dueDelta: number,
+    dueMessage: string
+  },
   metadata: {
     created?: string,
     updated?: string,

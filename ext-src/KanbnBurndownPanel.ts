@@ -4,7 +4,8 @@ import getNonce from "./getNonce";
 import type { KanbnApi } from "./KanbnApi";
 
 export default class KanbnBurndownPanel {
-  public static currentPanel: KanbnBurndownPanel | undefined;
+  // One panel per board, keyed by resolved board slug - burndown charts are board-scoped
+  private static panels: Record<string, KanbnBurndownPanel> = {};
 
   private static readonly viewType = "react";
 
@@ -13,67 +14,106 @@ export default class KanbnBurndownPanel {
   private readonly _workspacePath: string;
   private readonly _kanbn: KanbnApi;
   private readonly _kanbnFolderName: string;
+  private readonly _boardSlug: string;
   private sprintMode: boolean = true;
   private sprint: string = '';
   private startDate: string = '';
   private endDate: string = '';
   private _disposables: vscode.Disposable[] = [];
 
+  /**
+   * Whether a board can have a burndown chart at all. A board that declares no startedColumns has no
+   * notion of work in progress, and kanbn refuses to chart it rather than drawing an empty one
+   */
+  public static async canChart(kanbn: KanbnApi): Promise<string | null> {
+    let index: any;
+    try {
+      index = await kanbn.getIndex();
+    } catch (error) {
+      return error instanceof Error ? error.message : String(error);
+    }
+    const startedColumns = index.options.startedColumns ?? [];
+    if (!startedColumns.length) {
+      return `"${index.name}" declares no started columns, so it has no work in progress to burn down.`;
+    }
+    return null;
+  }
+
   public static async createOrShow(
     extensionPath: string,
     workspacePath: string,
     kanbn: KanbnApi,
-    kanbnFolderName: string
+    kanbnFolderName: string,
+    boardSlug: string
   ) {
+    const reason = await KanbnBurndownPanel.canChart(kanbn);
+    if (reason !== null) {
+      vscode.window.showInformationMessage(reason);
+      return;
+    }
+
     const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
-    // If we already have a panel, show it, otherwise create a new panel
-    if (KanbnBurndownPanel.currentPanel) {
-      KanbnBurndownPanel.currentPanel._panel.reveal(column);
+    // If this board already has a panel, show it, otherwise create a new one
+    const existingPanel = KanbnBurndownPanel.panels[boardSlug];
+    if (existingPanel) {
+      existingPanel._panel.reveal(column);
     } else {
-      KanbnBurndownPanel.currentPanel = new KanbnBurndownPanel(
+      KanbnBurndownPanel.panels[boardSlug] = new KanbnBurndownPanel(
         extensionPath,
         workspacePath,
         column || vscode.ViewColumn.One,
         kanbn,
-        kanbnFolderName
+        kanbnFolderName,
+        boardSlug
       );
     }
   }
 
-  public static async update() {
-    if (KanbnBurndownPanel.currentPanel) {
-      let index: any;
-      try {
-        index = await KanbnBurndownPanel.currentPanel._kanbn.getIndex();
-      } catch (error) {
-        vscode.window.showErrorMessage(error instanceof Error ? error.message : error);
-        return;
-      }
-      KanbnBurndownPanel.currentPanel._panel.webview.postMessage({
-        type: "burndown",
-        index,
-        dateFormat: KanbnBurndownPanel.currentPanel._kanbn.getDateFormat(index),
-        burndownData: await KanbnBurndownPanel.currentPanel._kanbn.burndown(
-          (KanbnBurndownPanel.currentPanel.sprintMode && KanbnBurndownPanel.currentPanel.sprint)
-            ? [KanbnBurndownPanel.currentPanel.sprint]
-            : null,
-          (
-            !KanbnBurndownPanel.currentPanel.sprintMode &&
-            KanbnBurndownPanel.currentPanel.startDate &&
-            KanbnBurndownPanel.currentPanel.endDate
-          )
-            ? [
-              new Date(Date.parse(KanbnBurndownPanel.currentPanel.startDate)),
-              new Date(Date.parse(KanbnBurndownPanel.currentPanel.endDate))
-            ]
-            : null,
-          null,
-          null,
-          'auto'
-        )
-      });
+  public static async update(boardSlug?: string) {
+    const panels = boardSlug === undefined
+      ? Object.values(KanbnBurndownPanel.panels)
+      : [KanbnBurndownPanel.panels[boardSlug]].filter((panel) => panel !== undefined);
+    for (const panel of panels) {
+      await panel.refresh();
     }
+  }
+
+  private async refresh() {
+    let index: any;
+    try {
+      index = await this._kanbn.getIndex();
+    } catch (error) {
+      vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      return;
+    }
+
+    let burndownData: any;
+    try {
+      burndownData = await this._kanbn.burndown(
+        (this.sprintMode && this.sprint) ? [this.sprint] : null,
+        (!this.sprintMode && this.startDate && this.endDate)
+          ? [
+            new Date(Date.parse(this.startDate)),
+            new Date(Date.parse(this.endDate))
+          ]
+          : null,
+        null,
+        null,
+        'auto'
+      );
+    } catch (error) {
+      vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      return;
+    }
+
+    this._panel.webview.postMessage({
+      type: "burndown",
+      index,
+      boardSlug: this._boardSlug,
+      dateFormat: this._kanbn.getDateFormat(index),
+      burndownData
+    });
   }
 
   private constructor(
@@ -81,12 +121,14 @@ export default class KanbnBurndownPanel {
     workspacePath: string,
     column: vscode.ViewColumn,
     kanbn: KanbnApi,
-    kanbnFolderName: string
+    kanbnFolderName: string,
+    boardSlug: string
   ) {
     this._extensionPath = extensionPath;
     this._workspacePath = workspacePath;
     this._kanbn = kanbn;
     this._kanbnFolderName = kanbnFolderName;
+    this._boardSlug = boardSlug;
 
     // Create and show a new webview panel
     this._panel = vscode.window.createWebviewPanel(KanbnBurndownPanel.viewType, "Burndown Chart", column, {
@@ -130,13 +172,18 @@ export default class KanbnBurndownPanel {
             vscode.window.showErrorMessage(message.text);
             return;
 
+          // The webview has registered its message listener
+          case "kanbn.webviewReady":
+            await this.refresh();
+            return;
+
           // Refresh the kanbn chart
           case 'kanbn.refreshBurndownData':
             this.sprintMode = message.sprintMode;
             this.sprint = message.sprint;
             this.startDate = message.startDate;
             this.endDate = message.endDate;
-            KanbnBurndownPanel.update();
+            KanbnBurndownPanel.update(this._boardSlug);
             return;
         }
       },
@@ -146,7 +193,7 @@ export default class KanbnBurndownPanel {
   }
 
   public dispose() {
-    KanbnBurndownPanel.currentPanel = undefined;
+    delete KanbnBurndownPanel.panels[this._boardSlug];
 
     // Clean up our resources
     this._panel.dispose();
