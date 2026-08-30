@@ -3,6 +3,8 @@
 * Updated kanbn dependency to 2.5.0 (support for the new kanbn features it adds, e.g. multiple boards, action rules and contributors, will follow separately)
 * Pinned `glob` to v7, because kanbn's `glob-promise` dependency needs it and a fresh install would otherwise resolve an incompatible v13, breaking the status bar and the archive commands
 * Raised the minimum VS Code version to 1.70, which is the first release shipping a Node version that satisfies kanbn 2.5.0's `node >= 16.13.0` requirement
+* Migrated the webviews from the legacy `vscode-resource:` URI scheme to `Webview.asWebviewUri` and `Webview.cspSource`. VS Code only rewrites the old scheme for extensions declaring `engines.vscode` below 1.60, so raising the engine would otherwise have left every panel blank
+* Replaced the deprecated `vscode` dev dependency (and its `postinstall` step) with `@types/vscode`
 * Task create, update, delete and archive now report errors instead of failing silently
 
 # 1.1.0

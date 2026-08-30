@@ -233,7 +233,7 @@ export default class KanbnTaskPanel {
         vscode.Uri.file(path.join(this._extensionPath, "node_modules", "@vscode", "codicons", "dist")),
       ],
     });
-    (this._panel as any).iconPath = {
+    this._panel.iconPath = {
       light: vscode.Uri.file(path.join(this._extensionPath, "resources", "task_light.svg")),
       dark: vscode.Uri.file(path.join(this._extensionPath, "resources", "task_dark.svg")),
     };
@@ -478,18 +478,15 @@ export default class KanbnTaskPanel {
     const manifest = require(path.join(this._extensionPath, "build", "asset-manifest.json"));
     const mainScript = manifest["main.js"];
     const mainStyle = manifest["main.css"];
-    const scriptUri = vscode.Uri.file(path.join(this._extensionPath, "build", mainScript)).with({
-      scheme: "vscode-resource",
-    });
-    const styleUri = vscode.Uri.file(path.join(this._extensionPath, "build", mainStyle)).with({
-      scheme: "vscode-resource",
-    });
-    const customStyleUri = vscode.Uri.file(
-      path.join(this._workspacePath, this._kanbnFolderName, "board.css")
-    ).with({ scheme: "vscode-resource" });
-    const codiconsUri = vscode.Uri.file(
-      path.join(this._extensionPath, "node_modules", "@vscode", "codicons", "dist", "codicon.css")
-    ).with({ scheme: "vscode-resource" });
+    const webview = this._panel.webview;
+    const toUri = (...segments: string[]) => webview.asWebviewUri(vscode.Uri.file(path.join(...segments)));
+    const scriptUri = toUri(this._extensionPath, "build", mainScript);
+    const styleUri = toUri(this._extensionPath, "build", mainStyle);
+    const customStyleUri = toUri(this._workspacePath, this._kanbnFolderName, "board.css");
+    const codiconsUri = toUri(
+      this._extensionPath, "node_modules", "@vscode", "codicons", "dist", "codicon.css"
+    );
+    const baseUri = toUri(this._extensionPath, "build");
 
     // Use a nonce to whitelist which scripts can be run
     const nonce = getNonce();
@@ -504,8 +501,8 @@ export default class KanbnTaskPanel {
 <link rel="stylesheet" type="text/css" href="${styleUri}">
 <link rel="stylesheet" type="text/css" href="${customStyleUri}">
 <link rel="stylesheet" type="text/css" href="${codiconsUri}">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src vscode-resource: https:; script-src 'nonce-${nonce}'; font-src vscode-resource:; style-src vscode-resource: 'unsafe-inline' http: https: data:;">
-<base href="${vscode.Uri.file(path.join(this._extensionPath, "build")).with({ scheme: "vscode-resource" })}/">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https: data:; script-src 'nonce-${nonce}'; font-src ${webview.cspSource}; style-src ${webview.cspSource} 'unsafe-inline' http: https: data:;">
+<base href="${baseUri}/">
 </head>
 <body>
 <noscript>You need to enable JavaScript to run this app.</noscript>
