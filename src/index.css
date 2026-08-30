@@ -416,6 +416,11 @@ Task editor styles
     top: 4px;
 }
 
+.kanbn-task-editor-save-status-error {
+    color: var(--vscode-editorError-foreground, var(--vscode-errorForeground));
+    opacity: 1;
+}
+
 @media (max-width: 600px) {
     .kanbn-task-editor-save-status {
         display: none;

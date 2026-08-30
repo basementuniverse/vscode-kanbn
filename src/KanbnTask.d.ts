@@ -1,6 +1,5 @@
 // Note that Date properties will be converted to strings (ISO) when a task is serialized and passed as a prop
 declare type KanbnTask = {
-  uuid?: string,
   id: string,
   name: string,
   description: string,
@@ -27,7 +26,10 @@ declare type KanbnTask = {
     due?: string,
     completed?: string,
     assigned?: string,
-    tags?: string[]
+    tags?: string[],
+    // The stored progress, if the task sets one. Distinct from the top-level `progress`, which
+    // kanbn derives from the column the task is in
+    progress?: number
   },
   relations: Array<{
     type: string,

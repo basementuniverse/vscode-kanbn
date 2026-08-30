@@ -59,7 +59,10 @@ function App() {
     cycleFallbackTaskIds: [],
     tasks: []
   });
-  const taskKey = `${panelUuid}:${(task as any) && (task as any).uuid ? (task as any).uuid : 'new'}`;
+  // Keyed on the task being edited, not on the payload it arrived in. A refresh of the same task
+  // has to reach the form that's already open so it can decide what to do with it - remounting here
+  // silently threw away whatever the user had typed since the last save
+  const taskKey = `${panelUuid}:${(task as any) && (task as any).id ? (task as any).id : 'new'}`;
 
   const processMessage = useCallback(event => {
     const tasks = event.data.tasks

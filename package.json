@@ -131,7 +131,7 @@
     }
   },
   "dependencies": {
-    "@basementuniverse/kanbn": "^2.5.0",
+    "@basementuniverse/kanbn": "^2.5.1",
     "@vscode/codicons": "^0.0.46-24",
     "dateformat": "^4.5.1",
     "formik": "^2.2.6",

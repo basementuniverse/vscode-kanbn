@@ -41,10 +41,60 @@ function getTaskEditorAutoSaveSettings() {
   };
 }
 
+const DATE_METADATA_FIELDS = ["due", "plannedStart", "plannedFinish", "started", "completed"];
+
+function parseDateInput(value: unknown): Date | null {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  const text = String(value ?? "").trim();
+  if (!text) {
+    return null;
+  }
+
+  // A date input carries a calendar day and nothing else. Date.parse() reads a bare "yyyy-mm-dd"
+  // as UTC midnight, which lands on the day before for anyone west of Greenwich
+  const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  if (parts) {
+    return new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]));
+  }
+
+  const parsed = Date.parse(text);
+  return Number.isNaN(parsed) ? null : new Date(parsed);
+}
+
+function isSameLocalDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear()
+    && a.getMonth() === b.getMonth()
+    && a.getDate() === b.getDate();
+}
+
+// The editor shows a timestamp as the calendar day it falls on, so writing back what it sends would
+// flatten the time of day out of every date the user never touched. Keep the stored timestamp
+// whenever the day on screen is still the day it belongs to
+function resolveDateField(value: unknown, original: unknown): Date | null {
+  const parsed = parseDateInput(value);
+  if (parsed === null) {
+    return null;
+  }
+
+  const originalDate = parseDateInput(original);
+  if (originalDate !== null && isSameLocalDay(originalDate, parsed)) {
+    return originalDate;
+  }
+
+  return parsed;
+}
+
 function transformTaskData(
   taskData: any,
-  customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string'}[]
+  customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string'}[],
+  originalMetadata: Record<string, any> = {}
 ) {
+  // Only the fields every task has go in here. Everything else is added below if the editor
+  // actually carries a value for it - listing them here as well wrote `assigned: ""`, `progress: 0`
+  // and `tags: []` onto tasks that had none of them
   const result = {
     id: taskData.id,
     name: taskData.name,
@@ -52,9 +102,6 @@ function transformTaskData(
     metadata: {
       created: taskData.metadata.created ? new Date(taskData.metadata.created) : new Date(),
       updated: new Date(),
-      assigned: taskData.metadata.assigned,
-      progress: taskData.progress,
-      tags: taskData.metadata.tags,
     } as any,
     relations: taskData.relations,
     subTasks: taskData.subTasks,
@@ -85,27 +132,24 @@ function transformTaskData(
   }
 
   // Add due timeline dates if present
-  if (taskData.metadata.due) {
-    result.metadata["due"] = new Date(Date.parse(taskData.metadata.due));
-  }
-  if (taskData.metadata.plannedStart) {
-    result.metadata["plannedStart"] = new Date(Date.parse(taskData.metadata.plannedStart));
-  }
-  if (taskData.metadata.plannedFinish) {
-    result.metadata["plannedFinish"] = new Date(Date.parse(taskData.metadata.plannedFinish));
-  }
-  if (taskData.metadata.started) {
-    result.metadata["started"] = new Date(Date.parse(taskData.metadata.started));
-  }
-  if (taskData.metadata.completed) {
-    result.metadata["completed"] = new Date(Date.parse(taskData.metadata.completed));
+  for (const field of DATE_METADATA_FIELDS) {
+    const value = resolveDateField(taskData.metadata[field], originalMetadata[field]);
+    if (value !== null) {
+      result.metadata[field] = value;
+    }
   }
 
   // Add custom fields
   for (let customField of customFields) {
     if (customField.name in taskData.metadata && taskData.metadata[customField.name] !== null) {
       if (customField.type === 'date') {
-        result.metadata[customField.name] = new Date(Date.parse(taskData.metadata[customField.name]));
+        const value = resolveDateField(
+          taskData.metadata[customField.name],
+          originalMetadata[customField.name]
+        );
+        if (value !== null) {
+          result.metadata[customField.name] = value;
+        }
       } else {
         result.metadata[customField.name] = taskData.metadata[customField.name];
       }
@@ -289,6 +333,25 @@ export default class KanbnTaskPanel {
             await this._openMarkdownLink(message.href);
             return;
 
+          // The editor refused to save because the form doesn't validate. The messages are already
+          // shown inline, but a field halfway down a long form is easy to miss when the only other
+          // signal is the save quietly doing nothing
+          case "kanbn.validationError": {
+            const messages: string[] = (Array.isArray(message.messages) ? message.messages : [])
+              .filter((text: unknown): text is string => typeof text === "string" && text.length > 0);
+            if (!messages.length) {
+              return;
+            }
+
+            const shown = messages.slice(0, 3);
+            const remaining = messages.length - shown.length;
+            vscode.window.showErrorMessage(
+              `Kanbn: this task can't be saved yet. ${shown.join(" ")}`
+              + (remaining > 0 ? ` (and ${remaining} more)` : "")
+            );
+            return;
+          }
+
           // Create a task
           case "kanbn.create":
             try {
@@ -315,9 +378,17 @@ export default class KanbnTaskPanel {
           // Update a task
           case "kanbn.update":
             try {
+              // The editor renders a timestamp as a calendar day, so the stored task is the only
+              // place the time of day still exists by the time the form values come back
+              let originalMetadata: Record<string, any> = {};
+              try {
+                originalMetadata = (await this._kanbn.getTask(message.taskId)).metadata ?? {};
+              } catch (error) {
+                // A task that can't be read is one updateTask will reject too - let it report
+              }
               await this._kanbn.updateTask(
                 message.taskId,
-                transformTaskData(message.taskData, message.customFields),
+                transformTaskData(message.taskData, message.customFields, originalMetadata),
                 message.taskData.column
               );
               reportActionWarnings(this._kanbn, `saving ${message.taskData.id}`);
@@ -500,10 +571,9 @@ export default class KanbnTaskPanel {
     }
     let tasks: any[];
     try {
-      tasks = (await this._kanbn.loadAllTrackedTasks(index)).map((task) => ({
-        uuid: uuidv4(),
-        ...this._kanbn.hydrateTask(index, task),
-      }));
+      tasks = (await this._kanbn.loadAllTrackedTasks(index)).map(
+        (task) => this._kanbn.hydrateTask(index, task)
+      );
     } catch (error) {
       vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
       return;

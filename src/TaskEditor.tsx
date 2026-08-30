@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Formik, Form, Field, ErrorMessage, FieldArray } from 'formik';
 import formatDate from 'dateformat';
 import VSCodeApi from './VSCodeApi';
@@ -18,6 +18,9 @@ interface KanbnTaskValidationOutput {
   },
   subTasks: Array<{
     text: string
+  }>,
+  relations: Array<{
+    task: string
   }>,
   comments: Array<{
     text: string
@@ -105,6 +108,45 @@ const tryRestoreFocus = (savedFocus: SavedFocus | null) => {
     const selectionEnd = Math.min(savedFocus.selectionEnd, valueLength);
     target.setSelectionRange(selectionStart, selectionEnd);
   }
+};
+
+// Formik keys errors by field path, which is the wrong vocabulary for a notification. These turn
+// the paths the form uses into the names the editor shows
+const VALIDATION_FIELD_LABELS: Record<string, string> = {
+  name: 'Name',
+  subTasks: 'Sub-task',
+  relations: 'Relation',
+  comments: 'Comment',
+  tags: 'Tag',
+};
+
+const describeValidationErrors = (errors: any): string[] => {
+  const messages: string[] = [];
+
+  const walk = (value: any, label: string) => {
+    if (!value) {
+      return;
+    }
+
+    if (typeof value === 'string') {
+      messages.push(label ? `${label}: ${value}` : value);
+      return;
+    }
+
+    // Sparse by design - validate() only fills in the entries that failed, and forEach skips holes
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => walk(item, `${label} ${index + 1}`));
+      return;
+    }
+
+    if (typeof value === 'object') {
+      Object.entries(value).forEach(([key, item]) => walk(item, VALIDATION_FIELD_LABELS[key] || label));
+    }
+  };
+
+  walk(errors, '');
+
+  return messages;
 };
 
 const hasValidationErrors = (errors: any): boolean => {
@@ -256,7 +298,9 @@ const createInitialTaskData = (
   name: task ? task.name : '',
   description: task ? task.description : '',
   column: columnName,
-  progress: task ? task.progress : 0,
+  // The stored progress, not the hydrated one: kanbn reports 1 for anything sitting in a completed
+  // column, and writing that back stamped `progress: 1` onto tasks that never had the field
+  progress: (task && task.metadata.progress) ? task.metadata.progress : 0,
   metadata: {
     created: (task && 'created' in task.metadata) ? task.metadata.created : new Date(),
     updated: (task && 'updated' in task.metadata) ? task.metadata.updated : null,
@@ -265,7 +309,9 @@ const createInitialTaskData = (
     plannedFinish: (task && 'plannedFinish' in task.metadata) ? formatDate(task.metadata.plannedFinish as string | number | Date, 'yyyy-mm-dd') : '',
     due: (task && 'due' in task.metadata) ? formatDate(task.metadata.due!, 'yyyy-mm-dd') : '',
     completed: (task && 'completed' in task.metadata) ? formatDate(task.metadata.completed!, 'yyyy-mm-dd') : '',
-    assigned: (task && 'assigned' in task.metadata) ? task.metadata.assigned : currentUser,
+    // Only a task being created is pre-filled with the current user. Doing it for an existing task
+    // means opening one that nobody is assigned to and saving it quietly claims it
+    assigned: task ? (task.metadata.assigned || '') : currentUser,
     tags: (task && 'tags' in task.metadata) ? (task.metadata.tags || []) : [],
     ...Object.fromEntries(
       customFields.map(customField => [
@@ -283,6 +329,84 @@ const createInitialTaskData = (
   comments: task ? task.comments : [],
   history: task ? (task.history || []) : []
 });
+
+// The extension re-sends the whole task after every save, and used to do it by replacing the
+// editor outright. The form is the user's copy of the task: a refresh is adopted only when there is
+// nothing in it that adopting would destroy, and is otherwise dropped - the next one after they
+// save picks the same data up
+const TaskEditorRefresh = ({
+  incomingValues,
+  dirty,
+  isSubmitting,
+  resetForm,
+}: {
+  incomingValues: any,
+  dirty: boolean,
+  isSubmitting: boolean,
+  resetForm: (nextState?: any) => void,
+}) => {
+  const appliedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const serialized = JSON.stringify(incomingValues);
+
+    // The first render already initialised the form from this data
+    if (appliedRef.current === null) {
+      appliedRef.current = serialized;
+      return;
+    }
+
+    if (appliedRef.current === serialized) {
+      return;
+    }
+
+    if (dirty || isSubmitting) {
+      return;
+    }
+
+    appliedRef.current = serialized;
+    resetForm({ values: incomingValues });
+  }, [dirty, incomingValues, isSubmitting, resetForm]);
+
+  return null;
+};
+
+// A submit that fails validation is a no-op in Formik: onSubmit never runs, so without this the
+// only sign that Save did nothing is an inline message that may be scrolled out of view
+const TaskEditorSubmitFeedback = ({
+  submitCount,
+  isValidating,
+  errors,
+  onInvalidSubmit,
+}: {
+  submitCount: number,
+  isValidating: boolean,
+  errors: any,
+  onInvalidSubmit: (messages: string[]) => void,
+}) => {
+  const reportedRef = useRef(0);
+
+  useEffect(() => {
+    // resetForm() puts the counter back to zero, so this tracks it rather than only growing
+    if (submitCount === 0) {
+      reportedRef.current = 0;
+      return;
+    }
+
+    if (isValidating || submitCount === reportedRef.current) {
+      return;
+    }
+
+    reportedRef.current = submitCount;
+
+    const messages = describeValidationErrors(errors);
+    if (messages.length) {
+      onInvalidSubmit(messages);
+    }
+  }, [errors, isValidating, onInvalidSubmit, submitCount]);
+
+  return null;
+};
 
 const TaskEditorAutoSave = ({
   enabled,
@@ -407,9 +531,11 @@ const TaskEditor = ({
 }) => {
   const editing = task !== null;
   const autoSaveEnabled = (editing || AUTO_SAVE_ENABLED_FOR_NEW_TASKS) && autoSaveMode !== 'off';
-  const [taskData, setTaskData] = useState(
-    createInitialTaskData(task, columnName, customFields, currentUser)
+  const incomingValues = useMemo(
+    () => createInitialTaskData(task, columnName, customFields, currentUser),
+    [columnName, currentUser, customFields, task]
   );
+  const [initialTaskData] = useState(incomingValues);
   const [editingDescription, setEditingDescription] = useState(() => {
     const storageKey = `${EDITING_DESCRIPTION_STORAGE_PREFIX}${panelUuid}`;
     const storedValue = window.sessionStorage.getItem(storageKey);
@@ -476,15 +602,8 @@ const TaskEditor = ({
     }, AUTO_SAVE_STATUS_DURATION);
   };
 
-  const handleUpdateName = ({ target: { value } }, values) => {
-    const id = paramCase(value);
-
-    setTaskData({
-      ...taskData,
-      id
-    });
-
-    values.id = id;
+  const handleUpdateName = ({ target: { value } }, setFieldValue) => {
+    setFieldValue('id', paramCase(value));
 
     vscode.postMessage({
       command: 'kanbn.updatePanelTitle',
@@ -492,7 +611,7 @@ const TaskEditor = ({
     });
   };
 
-  const handleAutoSave = (values) => {
+  const handleAutoSave = (values, resetForm) => {
     if (!editing) {
       return;
     }
@@ -511,7 +630,9 @@ const TaskEditor = ({
       panelUuid
     });
 
-    setTaskData(values);
+    // What was just sent is the new baseline. Without this the form stays dirty for the rest of the
+    // session, which both mislabels the status and blocks every refresh from the extension
+    resetForm({ values });
 
     window.setTimeout(() => {
       tryRestoreFocus(pendingFocusRestoreRef.current);
@@ -546,7 +667,6 @@ const TaskEditor = ({
       });
     }
 
-    setTaskData(values);
     resetForm({ values });
     setSubmitting(false);
 
@@ -557,6 +677,14 @@ const TaskEditor = ({
 
     setSaveStatus('saved');
     scheduleSaveStatusReset();
+  };
+
+  const handleInvalidSubmit = (messages: string[]) => {
+    setSaveStatus('idle');
+    vscode.postMessage({
+      command: 'kanbn.validationError',
+      messages
+    });
   };
 
   const handleRemoveTask = values => {
@@ -592,6 +720,7 @@ const TaskEditor = ({
         tags: []
       },
       subTasks: [],
+      relations: [],
       comments: []
     };
 
@@ -600,7 +729,12 @@ const TaskEditor = ({
       hasErrors = true;
     }
 
-    if (values.id in tasks && tasks[values.id].uuid !== (task ? task.uuid : '')) {
+    // hasOwnProperty rather than `in`: the task list is a plain object, so `in` also matches
+    // everything on Object.prototype and would reject a task legitimately named e.g. "Constructor"
+    if (
+      Object.prototype.hasOwnProperty.call(tasks, values.id)
+      && values.id !== (task ? task.id : '')
+    ) {
       errors.name = 'There is already a task with the same name or id.';
       hasErrors = true;
     }
@@ -621,6 +755,17 @@ const TaskEditor = ({
       }
     }
 
+    // A relation with no task is written out as a broken link, and reads back as a relation to
+    // nothing, so it has to be caught here rather than saved and puzzled over later
+    for (let i = 0; i < values.relations.length; i++) {
+      if (!values.relations[i].task) {
+        errors.relations[i] = {
+          task: 'Choose the task this relation points at.'
+        };
+        hasErrors = true;
+      }
+    }
+
     for (let i = 0; i < values.comments.length; i++) {
       if (!values.comments[i].text) {
         errors.comments[i] = {
@@ -633,7 +778,11 @@ const TaskEditor = ({
     return hasErrors ? errors : {};
   };
 
-  const getSaveStatusText = (dirty: boolean) => {
+  const getSaveStatusText = (dirty: boolean, validationErrorCount: number) => {
+    if (validationErrorCount > 0) {
+      return `Can't save: ${validationErrorCount} ${validationErrorCount === 1 ? 'problem' : 'problems'}`;
+    }
+
     if (saveStatus === 'saving') {
       return 'Saving...';
     }
@@ -664,7 +813,7 @@ const TaskEditor = ({
   return (
     <div className="kanbn-task-editor">
       <Formik
-        initialValues={taskData}
+        initialValues={initialTaskData}
         validate={validate}
         onSubmit={(values, { setSubmitting, resetForm }) => {
           handleSubmit(values, setSubmitting, resetForm);
@@ -678,6 +827,9 @@ const TaskEditor = ({
           setFieldValue,
           isSubmitting,
           isValid,
+          isValidating,
+          resetForm,
+          submitCount,
           submitForm,
         }) => (
           <Form>
@@ -694,6 +846,18 @@ const TaskEditor = ({
                 ))}
               </datalist>
             }
+            <TaskEditorRefresh
+              incomingValues={incomingValues}
+              dirty={dirty}
+              isSubmitting={isSubmitting}
+              resetForm={resetForm}
+            />
+            <TaskEditorSubmitFeedback
+              submitCount={submitCount}
+              isValidating={isValidating}
+              errors={errors}
+              onInvalidSubmit={handleInvalidSubmit}
+            />
             <TaskEditorAutoSave
               enabled={autoSaveEnabled}
               autoSaveMode={autoSaveMode}
@@ -703,7 +867,7 @@ const TaskEditor = ({
               isSubmitting={isSubmitting}
               isValid={isValid}
               values={values}
-              onAutoSave={handleAutoSave}
+              onAutoSave={autoSaveValues => handleAutoSave(autoSaveValues, resetForm)}
               onSaving={() => setSaveStatus('saving')}
             />
             <div className="kanbn-task-editor-header">
@@ -712,7 +876,12 @@ const TaskEditor = ({
                   {editing ? 'Update task' : 'Create new task'}
                   {dirty && <span className="kanbn-task-editor-dirty">*</span>}
                 </h1>
-                <span className="kanbn-task-editor-save-status">{getSaveStatusText(dirty)}</span>
+                <span className={[
+                  'kanbn-task-editor-save-status',
+                  hasValidationErrors(errors) ? 'kanbn-task-editor-save-status-error' : null
+                ].filter(i => i).join(' ')}>
+                  {getSaveStatusText(dirty, describeValidationErrors(errors).length)}
+                </span>
               </div>
               <div className="kanbn-task-editor-header-dates">
                 {editing && <span className="kanbn-task-editor-dates">
@@ -768,11 +937,11 @@ const TaskEditor = ({
                       placeholder="Name"
                       onChange={e => {
                         handleChange(e);
-                        handleUpdateName(e, values);
+                        handleUpdateName(e, setFieldValue);
                       }}
                     />
                   </label>
-                  <div className="kanbn-task-editor-id">{taskData.id}</div>
+                  <div className="kanbn-task-editor-id">{values.id}</div>
                   <ErrorMessage
                     className="kanbn-task-editor-field-errors"
                     component="div"
@@ -898,7 +1067,13 @@ const TaskEditor = ({
                                 as="select"
                                 name={`relations.${index}.task`}
                               >
-                                {Object.keys(tasks).map(t => <option value={t}>{t}</option>)}
+                                {
+                                  // A new relation starts with no task, and without an option to
+                                  // match it the dropdown showed the first task while holding an
+                                  // empty value - so it looked chosen and saved as a broken link
+                                }
+                                <option value="">Choose a task...</option>
+                                {Object.keys(tasks).map(t => <option key={t} value={t}>{t}</option>)}
                               </Field>
                               <ErrorMessage
                                 className="kanbn-task-editor-field-errors"
