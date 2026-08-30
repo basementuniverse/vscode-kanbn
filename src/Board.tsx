@@ -4,6 +4,7 @@ import BoardFilter, { FilterValues } from './BoardFilter';
 import SimpleTaskItem, { SimpleTask } from './SimpleTaskItem';
 import TaskItem from './TaskItem';
 import { paramCase } from '@basementuniverse/kanbn/src/utility';
+import { nameToLabel } from './labels';
 import VSCodeApi from "./VSCodeApi";
 import formatDate from 'dateformat';
 
@@ -404,7 +405,7 @@ const Board = ({
                       ].filter(i => i).join(' ')}
                       title={`Sort ${columnName}${columnIsSorted
                         ? `\nCurrently sorted by:\n${columnSortSettings.map(
-                          sorter => `${sorter.field} (${sorter.order})`
+                          sorter => `${nameToLabel(sorter.field)} (${sorter.order})`
                         ).join('\n')}`
                         : ''
                       }`}

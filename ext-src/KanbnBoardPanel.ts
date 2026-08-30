@@ -6,6 +6,7 @@ import KanbnBurndownPanel from "./KanbnBurndownPanel";
 import KanbnGanttPanel from "./KanbnGanttPanel";
 import type { KanbnApi } from "./KanbnApi";
 import { reportActionWarnings } from "./KanbnOutput";
+import { nameToLabel } from "../src/labels";
 
 // Every field kanbn can sort by. The sorter name written to the index isn't always the label, and
 // the computed values at the end are booleans, which sort false before true - so they're offered as
@@ -393,18 +394,21 @@ export default class KanbnBoardPanel {
           case "kanbn.sortColumn":
             // Load the index
             const index = await this._kanbn.getIndex();
-            let customFields = [];
+            // A board's custom fields sort by their own name, but that name is usually written as an
+            // identifier, so offer them as labels like the fields above rather than switching to raw
+            // config names partway down the list
+            const customFieldsByLabel: { [label: string]: string } = {};
             if ('customFields' in index.options) {
-              customFields = index.options.customFields.map(
-                (customField: { name: string, type: string }) => customField.name
-              );
+              for (const customField of index.options.customFields as { name: string }[]) {
+                customFieldsByLabel[nameToLabel(customField.name)] = customField.name;
+              }
             }
             // Prompt for a task property to sort by
-            const sortBy: string = await vscode.window.showQuickPick(
+            const sortBy = await vscode.window.showQuickPick(
               [
                 'None',
                 ...Object.keys(sortByFields),
-                ...customFields,
+                ...Object.keys(customFieldsByLabel),
               ],
               {
                 placeHolder: 'Sort this column by...',
@@ -446,7 +450,9 @@ export default class KanbnBoardPanel {
                     message.columnName,
                     [
                       {
-                        field: sortBy in sortByFields ? sortByFields[sortBy].field : sortBy,
+                        field: sortBy in sortByFields
+                          ? sortByFields[sortBy].field
+                          : (customFieldsByLabel[sortBy] ?? sortBy),
                         order: (sortDirection === 'Descending' || sortDirection === 'Matching first')
                           ? 'descending'
                           : 'ascending',

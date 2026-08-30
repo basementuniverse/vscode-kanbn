@@ -2,6 +2,7 @@ import React from "react";
 import { Draggable } from "react-beautiful-dnd";
 import formatDate from 'dateformat';
 import { paramCase } from '@basementuniverse/kanbn/src/utility';
+import { nameToLabel } from './labels';
 import VSCodeApi from "./VSCodeApi";
 
 const TaskItem = ({
@@ -117,12 +118,12 @@ const TaskItem = ({
                               <i className={`codicon codicon-${task.metadata[customField.name]
                                 ? 'pass-filled'
                                 : 'circle-large-outline'}`}></i>
-                              {customField.name}
+                              {nameToLabel(customField.name)}
                             </>
                           ) : (
                             <>
                               <i className="codicon codicon-json"></i>
-                              <span title={customField.name}>
+                              <span title={nameToLabel(customField.name)}>
                                 {customField.type === 'date'
                                   ? formatDate(task.metadata[customField.name], dateFormat)
                                   : task.metadata[customField.name]}

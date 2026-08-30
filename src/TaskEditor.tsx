@@ -3,6 +3,7 @@ import { Formik, Form, Field, ErrorMessage, FieldArray } from 'formik';
 import formatDate from 'dateformat';
 import VSCodeApi from './VSCodeApi';
 import { paramCase } from '@basementuniverse/kanbn/src/utility';
+import { nameToLabel, nameToLowerLabel } from './labels';
 import ReactMarkdown from 'react-markdown';
 import TextareaAutosize from 'react-textarea-autosize';
 import remarkMath from 'remark-math';
@@ -1280,11 +1281,11 @@ const TaskEditor = ({
                                 className="kanbn-task-editor-field-input kanbn-task-editor-custom-checkbox"
                                 type="checkbox"
                                 name={`metadata.${customField.name}`}
-                              /><p>{customField.name}</p>
+                              /><p>{nameToLabel(customField.name)}</p>
                             </>
                           ) : (
                             <>
-                              <p>{customField.name}</p>
+                              <p>{nameToLabel(customField.name)}</p>
                               {
                                 customField.type === 'date' &&
                                 <div className="kanbn-task-editor-date-input-wrap">
@@ -1296,8 +1297,8 @@ const TaskEditor = ({
                                   <button
                                     type="button"
                                     className="kanbn-task-editor-button kanbn-task-editor-button-edit kanbn-task-editor-button-date-clear"
-                                    title={`Clear ${customField.name}`}
-                                    aria-label={`Clear ${customField.name}`}
+                                    title={`Clear ${nameToLowerLabel(customField.name)}`}
+                                    aria-label={`Clear ${nameToLowerLabel(customField.name)}`}
                                     onClick={() => setFieldValue(`metadata.${customField.name}`, '')}
                                   >
                                     <i className="codicon codicon-close"></i>

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { nameToLabel } from './labels';
 
 export type FilterValues = Record<string, any>;
 
@@ -238,7 +239,7 @@ const BoardFilter = ({
       relation: 'Relation',
       comment: 'Comment',
     };
-    return `${named[key] || key}: ${shown}`;
+    return `${named[key] || nameToLabel(key)}: ${shown}`;
   };
 
   const numberRange = (key: string, label: string, scale = 1, suffix = '') => {
@@ -458,21 +459,21 @@ const BoardFilter = ({
                   return (
                     <TriState
                       key={field.name}
-                      label={field.name}
+                      label={nameToLabel(field.name)}
                       value={filters[field.name]}
                       onChange={value => setFilter(field.name, value)}
                     />
                   );
                 }
                 if (field.type === 'date') {
-                  return dateRow(field.name, field.name);
+                  return dateRow(field.name, nameToLabel(field.name));
                 }
                 if (field.type === 'number') {
-                  return numberRange(field.name, field.name);
+                  return numberRange(field.name, nameToLabel(field.name));
                 }
                 return (
                   <div className="kanbn-filter-row" key={field.name}>
-                    <span className="kanbn-filter-label">{field.name}</span>
+                    <span className="kanbn-filter-label">{nameToLabel(field.name)}</span>
                     <input
                       className="kanbn-filter-input-small kanbn-filter-input-grow"
                       value={filters[field.name] || ''}
