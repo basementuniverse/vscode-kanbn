@@ -87,6 +87,16 @@ customFields:
 - `assigned:testperson tag:large mycustomflag` will show tasks that are assigned to `testperson` and have a tag `Large` (search terms are case-insensitive) and have `MyCustomFlag` set to true
 - `mycustomfield:test123 some title` will show tasks that have both `some` and `title` in their name/id and have a `MyCustomField` field that contains `test123`
 
+## Views
+
+A view is a saved board layout: its own columns, lanes and filters over the same tasks, without moving anything or changing the board's columns. Views are configured in the board file (or in `kanbn.yml` / `kanbn.json`) — [check here](https://github.com/basementuniverse/kanbn/blob/master/docs/views.md) for how to write one.
+
+If a board has views configured, a picker appears in the board header next to the filter input. Select a view to show it, or 'Board' to go back to the normal board.
+
+A view is read-only. Its columns are filters with a label on them rather than the board's own columns, so there's no move that corresponds to dragging a card from one to another — tasks can't be dragged while a view is showing, and the header says so. Everything else still works: you can search and filter within a view, and clicking a task's title opens it in the task editor as usual.
+
+A view with lanes is drawn as a stack of lanes under one row of column headings, one row per lane. Tasks that don't match any lane aren't shown, and a task that matches more than one column or lane appears in each of them.
+
 ## Styling the Kanbn board
 
 This extension has been tested using various themes (light, dark and high-contrast), so it should always look somewhat presentable. However, if you'd like to set your own styles you can do so by creating a CSS file called `board.css` in the Kanbn directory. [Check here](docs/styles.md) for more information.

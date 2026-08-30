@@ -55,6 +55,23 @@ const BOOLEAN_FILTER_FIELDS = [
   'overdue', 'is-started', 'is-completed', 'in-started-column', 'in-completed-column'
 ];
 
+// A view as it's written in a board's options. Everything but the name is optional: a view with no
+// columns uses the index columns, and a view with no lanes is a single band
+type ViewColumn = {
+  name: string,
+  filters?: Record<string, any>,
+  sorters?: Array<{ field: string, filter?: string, order?: 'ascending' | 'descending' }>
+};
+
+type ViewLane = { name: string, filters?: Record<string, any> };
+
+type ViewDefinition = {
+  name: string,
+  filters?: Record<string, any>,
+  columns?: ViewColumn[],
+  lanes?: ViewLane[]
+};
+
 export default class KanbnBoardPanel {
   // One panel per board, keyed by resolved board slug, so that several boards can be open at once
   private static panels: Record<string, KanbnBoardPanel> = {};
@@ -71,6 +88,10 @@ export default class KanbnBoardPanel {
   // The structured filters this board is showing, in kanbn's own filter vocabulary. Held per panel
   // so two boards can be filtered independently
   private _filters: Record<string, any> = {};
+
+  // The name of the view this board is showing, or null for the default board. Views are a saved
+  // layout rather than a change to the board, so this is panel state and never written to disk
+  private _viewName: string | null = null;
   private _disposables: vscode.Disposable[] = [];
 
   public static createOrShow(
@@ -177,6 +198,49 @@ export default class KanbnBoardPanel {
     return result;
   }
 
+  /**
+   * Resolve a view into the columns and lanes it describes, the same way kanbn renders a board for
+   * `kanbn board --view`. Tasks come back as ids, since the webview is already sent every task
+   */
+  private resolveView(
+    index: any,
+    tasks: any[],
+    view: ViewDefinition
+  ): { headings: string[], lanes: Array<{ name: string, columns: string[][] }> } {
+    // A view without columns falls back to the index columns, one filtered to each. This is the only
+    // place hiddenColumns is consulted - a view that lists its own columns can show hidden ones
+    const columns: ViewColumn[] = view.columns ?? Object.keys(index.columns)
+      .filter((columnName) => (index.options.hiddenColumns ?? []).indexOf(columnName) === -1)
+      .map((columnName) => ({ name: columnName, filters: { column: columnName } }));
+
+    // Without lanes the whole board is a single band. Kanbn labels that lane "All tasks" because its
+    // table needs a row heading; here it's just the columns, so it goes out unnamed and undrawn
+    const lanes: ViewLane[] = (view.lanes && view.lanes.length) ? view.lanes : [{ name: '' }];
+
+    // A root filter narrows the task list before any column or lane filter is applied
+    const scopedTasks = view.filters
+      ? this._kanbn.filterAndSortTasks(index, tasks, view.filters, [])
+      : tasks;
+
+    return {
+      headings: columns.map((column) => column.name),
+      lanes: lanes.map((lane) => ({
+        name: lane.name,
+        columns: columns.map((column) => this._kanbn
+          .filterAndSortTasks(
+            index,
+            scopedTasks,
+
+            // A lane's filters are merged over the column's, so where both filter on the same field
+            // the lane wins. Filters on different fields combine with AND
+            { ...(column.filters ?? {}), ...(lane.filters ?? {}) },
+            column.sorters ?? []
+          )
+          .map((task: any) => task.id))
+      }))
+    };
+  }
+
   private async refresh() {
     let index: any;
     try {
@@ -247,6 +311,29 @@ export default class KanbnBoardPanel {
       // A convenience - the assigned filter still accepts free text without it
     }
 
+    // A view is a saved board layout: its own columns, lanes and filters over the same tasks. A
+    // board with no views configured never sees any of this
+    const viewDefinitions: ViewDefinition[] = index.options.views ?? [];
+    let view: { name: string, headings: string[], lanes: Array<{ name: string, columns: string[][] }> } | null = null;
+    let viewError: string | null = null;
+    if (this._viewName !== null) {
+      const definition = viewDefinitions.find((candidate) => candidate.name === this._viewName);
+      if (definition === undefined) {
+        // The view was renamed or removed on disk while it was being shown
+        viewError = `No view found with name "${this._viewName}".`;
+        this._viewName = null;
+      } else {
+        try {
+          view = { name: definition.name, ...this.resolveView(index, tasks, definition) };
+        } catch (error) {
+          // A view's filters come from the board file rather than from something just typed, so this
+          // is a config error. Fall back to the default board so the panel still shows something
+          viewError = error instanceof Error ? error.message : String(error);
+          this._viewName = null;
+        }
+      }
+    }
+
     this._panel.webview.postMessage({
       type: "index",
       index,
@@ -256,6 +343,9 @@ export default class KanbnBoardPanel {
       contributors,
       filteredTaskIds,
       filterError,
+      views: viewDefinitions.map((definition) => definition.name),
+      view,
+      viewError,
       boardSlug: this._boardSlug,
       hiddenColumns: index.options.hiddenColumns ?? [],
       startedColumns: index.options.startedColumns ?? [],
@@ -352,6 +442,12 @@ export default class KanbnBoardPanel {
           // Apply structured filters to this board
           case "kanbn.setFilters":
             this._filters = message.filters || {};
+            await this.refresh();
+            return;
+
+          // Show a view, or the default board when the name is empty
+          case "kanbn.setView":
+            this._viewName = message.view || null;
             await this.refresh();
             return;
 

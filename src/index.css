@@ -1655,3 +1655,97 @@ body.vscode-light code[class*="language-"] span.token.variable {
 .kanbn-simple-task-checked .kanbn-simple-task-text {
     text-decoration: line-through;
 }
+
+/* ---- Views: a saved board layout, with its own columns and lanes ---- */
+
+/* Sits with the board switcher in the board header, and only appears on a board that has views */
+.kanbn-header-view-select {
+    outline: none;
+    border: 1px transparent solid;
+    background-color: var(--vscode-dropdown-background);
+    color: var(--vscode-dropdown-foreground);
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    padding: 8px;
+    margin-right: 8px;
+    max-width: 180px;
+}
+
+.kanbn-header-view-select:focus {
+    border-color: var(--vscode-focusBorder);
+}
+
+.kanbn-view-readonly {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    align-self: stretch;
+    padding: 0 8px;
+    margin-right: 8px;
+    font-size: 0.5em;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--vscode-descriptionForeground);
+    /* background-color: var(--vscode-input-background); */
+    /* border-left: 2px var(--vscode-activityBar-inactiveForeground) solid; */
+    cursor: default;
+}
+
+.kanbn-view-readonly .codicon {
+    font-size: 12px !important;
+}
+
+.kanbn-view-error {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 8px;
+    margin-bottom: 8px;
+    color: var(--vscode-inputValidation-errorForeground, var(--vscode-foreground));
+    background-color: var(--vscode-inputValidation-errorBackground);
+    border: 1px var(--vscode-inputValidation-errorBorder) solid;
+}
+
+.kanbn-view-error .codicon {
+    font-size: 12px !important;
+}
+
+/* Lanes stack down the board, so the board itself becomes a column of rows rather than a row of
+   columns. Each lane holds one row of the same columns, under a single set of headings */
+.kanbn-board-view {
+    flex-direction: column;
+}
+
+.kanbn-view-headings,
+.kanbn-lane-columns {
+    display: flex;
+    align-items: stretch;
+}
+
+.kanbn-lane-name {
+    color: var(--vscode-editor-foreground);
+    font-size: 0.9em;
+    font-weight: bold;
+    margin: 8px 8px 0;
+    padding: 4px 0 4px 8px;
+    border-left: 4px var(--vscode-activityBar-inactiveForeground) solid;
+}
+
+.kanbn-lane-count {
+    opacity: 0.6;
+    font-weight: normal;
+    font-style: italic;
+    margin-left: 8px;
+}
+
+/* The column headings live above the lanes rather than in them, so a lane's columns are task lists
+   with nothing above them to leave room for */
+.kanbn-lane .kanbn-column-task-list-container {
+    height: auto;
+}
+
+/* Nothing here can be dragged, so the accent rail that highlights a drop target would be claiming
+   something the board can't do */
+.kanbn-lane .kanbn-column-task-list {
+    border-left-style: dashed;
+}

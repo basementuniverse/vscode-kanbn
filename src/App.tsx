@@ -33,6 +33,9 @@ function App() {
   );
   const [filteredTaskIds, setFilteredTaskIds] = useState<string[] | null>(null);
   const [filterError, setFilterError] = useState<string | null>(null);
+  const [views, setViews] = useState([] as string[]);
+  const [view, setView] = useState<BoardView | null>(null);
+  const [viewError, setViewError] = useState<string | null>(null);
   const [customFields, setCustomFields] = useState([]);
   const [dateFormat, setDateFormat] = useState('');
   const [task, setTask] = useState({});
@@ -86,6 +89,24 @@ function App() {
           event.data.filteredTaskIds === undefined ? null : event.data.filteredTaskIds
         );
         setFilterError(event.data.filterError === undefined ? null : event.data.filterError);
+        setViews(event.data.views || []);
+
+        // A view arrives as ids, since its columns and lanes are drawn from the same tasks the rest
+        // of the board is. The same task can appear in more than one cell if it matches more than
+        // one filter set, which is often the point of a view
+        setView(event.data.view
+          ? {
+            name: event.data.view.name,
+            headings: event.data.view.headings,
+            lanes: event.data.view.lanes.map(lane => ({
+              name: lane.name,
+              columns: lane.columns.map(
+                (taskIds: string[]) => taskIds.map(taskId => tasks[taskId]).filter(task => task)
+              )
+            }))
+          }
+          : null);
+        setViewError(event.data.viewError === undefined ? null : event.data.viewError);
         setContributors(event.data.contributors || []);
         setShowBurndownButton(event.data.showBurndownButton);
         setShowGanttButton(event.data.showGanttButton);
@@ -172,6 +193,9 @@ function App() {
           simpleTasks={simpleTasks}
           filteredTaskIds={filteredTaskIds}
           filterError={filterError}
+          views={views}
+          view={view}
+          viewError={viewError}
           contributors={contributors}
           dateFormat={dateFormat}
           showBurndownButton={showBurndownButton}
