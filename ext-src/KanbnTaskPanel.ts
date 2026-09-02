@@ -4,6 +4,7 @@ import getNonce from "./getNonce";
 import { v4 as uuidv4 } from "uuid";
 import type { KanbnApi } from "./KanbnApi";
 import { reportActionWarnings } from "./KanbnOutput";
+import { describeBoardError } from "./KanbnBoards";
 
 type KanbnAutoSaveMode = "off" | "afterDelay" | "onFocusChange" | "onWindowChange";
 type KanbnAutoSaveSetting = KanbnAutoSaveMode | "inherit";
@@ -566,7 +567,7 @@ export default class KanbnTaskPanel {
     try {
       index = await this._kanbn.getIndex();
     } catch (error) {
-      vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      vscode.window.showErrorMessage(await describeBoardError(this._kanbn, this._boardSlug, error));
       return;
     }
     let tasks: any[];
@@ -575,7 +576,7 @@ export default class KanbnTaskPanel {
         (task) => this._kanbn.hydrateTask(index, task)
       );
     } catch (error) {
-      vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      vscode.window.showErrorMessage(await describeBoardError(this._kanbn, this._boardSlug, error));
       return;
     }
     let task = null;

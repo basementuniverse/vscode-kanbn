@@ -4,6 +4,7 @@ import getNonce from "./getNonce";
 import KanbnTaskPanel from "./KanbnTaskPanel";
 import type { KanbnApi } from "./KanbnApi";
 import { reportActionWarnings } from "./KanbnOutput";
+import { describeBoardError } from "./KanbnBoards";
 
 export default class KanbnGanttPanel {
   // One panel per board, keyed by resolved board slug - gantt charts are board-scoped
@@ -93,7 +94,7 @@ export default class KanbnGanttPanel {
     try {
       index = await this._kanbn.getIndex();
     } catch (error) {
-      vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      vscode.window.showErrorMessage(await describeBoardError(this._kanbn, this._boardSlug, error));
       return;
     }
 

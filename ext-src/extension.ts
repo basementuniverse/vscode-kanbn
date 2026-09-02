@@ -13,6 +13,7 @@ import {
   fixableDates,
 } from "./KanbnValidate";
 import { getOutputChannel, reportActionWarnings } from "./KanbnOutput";
+import { resolveExistingBoardSlug } from "./KanbnBoards";
 
 let kanbnStatusBarItem: KanbnStatusBarItem;
 
@@ -29,7 +30,15 @@ async function pickBoard(
   kanbn: KanbnApi,
   placeHolder: string
 ): Promise<{ kanbn: KanbnApi, slug: string } | null> {
-  const defaultSlug = await kanbn.resolveBoardSlug(await kanbn.resolveTargetBoard());
+  // A target board that doesn't exist falls back to the main board rather than scoping every
+  // operation to a file that isn't there
+  const { slug: defaultSlug, missing } = await resolveExistingBoardSlug(kanbn);
+  if (missing !== null) {
+    vscode.window.showWarningMessage(
+      `Board "${missing}" doesn't exist, so Kanbn is using the main board instead. ` +
+      "Check the KANBN_BOARD environment variable and the defaultBoard option."
+    );
+  }
 
   let boards: Array<{ slug: string, name: string, description: string, main: boolean }> = [];
   try {

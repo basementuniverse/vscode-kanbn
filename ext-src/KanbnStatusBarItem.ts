@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import type { KanbnApi } from './KanbnApi';
+import { resolveExistingBoardSlug } from './KanbnBoards';
 
 export default class KanbnStatusBarItem {
   private readonly _statusBarItem: vscode.StatusBarItem;
@@ -14,17 +15,36 @@ export default class KanbnStatusBarItem {
     this._kanbn = kanbn;
   }
 
+  /**
+   * Refresh the status bar item.
+   *
+   * Never rejects: this item is how people reach the board, and the callers treat it as
+   * fire-and-forget, so a board that won't load has to leave something clickable behind rather than
+   * removing the extension from the status bar altogether
+   */
   async update(): Promise<void> {
     if (this._statusBarItem === undefined) {
       return;
     }
+    try {
+      await this.refresh();
+    } catch (error) {
+      this._statusBarItem.text = '$(project)';
+      this._statusBarItem.tooltip = `Kanbn: ${error instanceof Error ? error.message : String(error)}`;
+      this._statusBarItem.command = 'kanbn.board';
+      this._statusBarItem.show();
+    }
+  }
+
+  private async refresh(): Promise<void> {
     if (await this._kanbn.workspaceInitialised()) {
       // Resolve the target board exactly as the CLI does - KANBN_BOARD, then defaultBoard, then the
-      // main board - rather than assuming the main board is the interesting one
+      // main board - rather than assuming the main board is the interesting one. A target that
+      // doesn't exist falls back to the main board, quietly here: the commands say so out loud
       let board = this._kanbn;
       let boardName: string | null = null;
       try {
-        const slug = await this._kanbn.resolveBoardSlug(await this._kanbn.resolveTargetBoard());
+        const { slug } = await resolveExistingBoardSlug(this._kanbn);
         board = this._kanbn.board(slug);
         const boards = await this._kanbn.listBoards();
         if (boards.length > 1) {

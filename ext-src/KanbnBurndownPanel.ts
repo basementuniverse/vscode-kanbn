@@ -2,6 +2,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import getNonce from "./getNonce";
 import type { KanbnApi } from "./KanbnApi";
+import { describeBoardError } from "./KanbnBoards";
 
 export default class KanbnBurndownPanel {
   // One panel per board, keyed by resolved board slug - burndown charts are board-scoped
@@ -84,7 +85,7 @@ export default class KanbnBurndownPanel {
     try {
       index = await this._kanbn.getIndex();
     } catch (error) {
-      vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      vscode.window.showErrorMessage(await describeBoardError(this._kanbn, this._boardSlug, error));
       return;
     }
 

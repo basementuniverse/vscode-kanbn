@@ -6,6 +6,7 @@ import KanbnBurndownPanel from "./KanbnBurndownPanel";
 import KanbnGanttPanel from "./KanbnGanttPanel";
 import type { KanbnApi } from "./KanbnApi";
 import { reportActionWarnings } from "./KanbnOutput";
+import { describeBoardError } from "./KanbnBoards";
 import { nameToLabel } from "../src/labels";
 
 // Every field kanbn can sort by. The sorter name written to the index isn't always the label, and
@@ -246,7 +247,7 @@ export default class KanbnBoardPanel {
     try {
       index = await this._kanbn.getIndex();
     } catch (error) {
-      vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      vscode.window.showErrorMessage(await describeBoardError(this._kanbn, this._boardSlug, error));
       return;
     }
     let tasks: any[];
@@ -255,7 +256,7 @@ export default class KanbnBoardPanel {
         this._kanbn.hydrateTask(index, task)
       );
     } catch (error) {
-      vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      vscode.window.showErrorMessage(await describeBoardError(this._kanbn, this._boardSlug, error));
       return;
     }
 
@@ -398,10 +399,15 @@ export default class KanbnBoardPanel {
       dark: vscode.Uri.file(path.join(this._extensionPath, "resources", "project_dark.svg")),
     };
 
-    // Set the webview's title to the kanbn project name
-    this._kanbn.getIndex().then((index) => {
-      this._panel.title = index.name;
-    });
+    // Set the webview's title to the kanbn project name. The title is cosmetic and refresh() reports
+    // anything that stops the board loading, so a failure here is swallowed rather than left to
+    // surface as an unhandled rejection
+    this._kanbn.getIndex().then(
+      (index) => {
+        this._panel.title = index.name;
+      },
+      () => {}
+    );
 
     // Set the webview's initial html content
     this._panel.webview.html = this._getHtmlForWebview();
