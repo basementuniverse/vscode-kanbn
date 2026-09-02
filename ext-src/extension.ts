@@ -15,7 +15,57 @@ import {
 import { getOutputChannel, reportActionWarnings } from "./KanbnOutput";
 import { resolveExistingBoardSlug } from "./KanbnBoards";
 
-let kanbnStatusBarItem: KanbnStatusBarItem;
+// Only created when there's a workspace folder kanbn can work in
+let kanbnStatusBarItem: KanbnStatusBarItem | undefined;
+
+/**
+ * Point the node process at the workspace folder kanbn should work in, and return its path.
+ *
+ * Kanbn reads and writes board files through node's `fs`, so it needs a folder that exists on the
+ * machine the extension host is running on. That covers Remote-SSH, WSL, dev containers and
+ * Codespaces, where the extension host runs alongside the files - but not a virtual workspace,
+ * whose folder has no path on disk at all, and not a folder that has been deleted or unmounted
+ * while the window stayed open. Both used to throw straight out of `activate()`, which stopped the
+ * extension activating and left no status bar item and no explanation.
+ *
+ * @param action What the caller is trying to do, used to say why a workspace is needed, or null to
+ * fail quietly - which is what activation wants, since having no workspace open is normal
+ * @return The workspace folder path, or null if there isn't one kanbn can use
+ */
+function useWorkspaceFolder(action: string | null): string | null {
+  const folder = (vscode.workspace.workspaceFolders ?? [])[0];
+  if (folder === undefined) {
+    if (action !== null) {
+      vscode.window.showErrorMessage(`You need to open a workspace before ${action}.`);
+    }
+    return null;
+  }
+
+  if (folder.uri.scheme !== "file") {
+    if (action !== null) {
+      vscode.window.showErrorMessage(
+        `Kanbn works on board files on disk, and "${folder.name}" isn't a folder on disk ` +
+        `(${folder.uri.scheme}). Open the project locally, or through Remote-SSH, WSL, a dev ` +
+        "container or a Codespace."
+      );
+    }
+    return null;
+  }
+
+  try {
+    process.chdir(folder.uri.fsPath);
+  } catch (error) {
+    if (action !== null) {
+      vscode.window.showErrorMessage(
+        "Kanbn couldn't open the workspace folder: " +
+        (error instanceof Error ? error.message : String(error))
+      );
+    }
+    return null;
+  }
+
+  return folder.uri.fsPath;
+}
 
 /**
  * Work out which board a command should act on and return an instance scoped to it.
@@ -78,14 +128,12 @@ export async function activate(context: vscode.ExtensionContext) {
   // bar item is clicked in a workspace where Kanbn isn't already initialised.
   context.subscriptions.push(
     vscode.commands.registerCommand("kanbn.init", async () => {
-      // If no workspace folder is opened, we can't initialise kanbn
-      if (vscode.workspace.workspaceFolders === undefined) {
-        vscode.window.showErrorMessage("You need to open a workspace before initialising Kanbn.");
+      const workspacePath = useWorkspaceFolder("initialising Kanbn");
+      if (workspacePath === null) {
         return;
       }
 
-      // Set the node process directory and import kanbn
-      process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
+      // Import kanbn, now that the process is pointed at the workspace
       const kanbn = (await import("@basementuniverse/kanbn/src/main")) as unknown as KanbnApi;
 
       // If kanbn is already initialised, get the project name
@@ -111,7 +159,7 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage(`Initialised Kanbn project '${newProjectName}'.`);
         KanbnBoardPanel.update();
       }
-      kanbnStatusBarItem.update();
+      kanbnStatusBarItem?.update();
     })
   );
 
@@ -119,14 +167,12 @@ export async function activate(context: vscode.ExtensionContext) {
   // in a workspace where kanbn has already been initialised.
   context.subscriptions.push(
     vscode.commands.registerCommand("kanbn.board", async () => {
-      // If no workspace folder is opened, we can't open the kanbn board
-      if (vscode.workspace.workspaceFolders === undefined) {
-        vscode.window.showErrorMessage("You need to open a workspace before viewing the Kanbn board.");
+      const workspacePath = useWorkspaceFolder("viewing the Kanbn board");
+      if (workspacePath === null) {
         return;
       }
 
-      // Set the node process directory and import kanbn
-      process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
+      // Import kanbn, now that the process is pointed at the workspace
       const kanbn = (await import("@basementuniverse/kanbn/src/main")) as unknown as KanbnApi;
 
       // If kanbn is initialised, view the kanbn board
@@ -135,7 +181,7 @@ export async function activate(context: vscode.ExtensionContext) {
         if (target !== null) {
           KanbnBoardPanel.createOrShow(
             context.extensionPath,
-            vscode.workspace.workspaceFolders[0].uri.fsPath,
+            workspacePath,
             target.kanbn,
             await kanbn.getFolderName(),
             target.slug
@@ -145,21 +191,19 @@ export async function activate(context: vscode.ExtensionContext) {
       } else {
         vscode.window.showErrorMessage("You need to initialise Kanbn before viewing the Kanbn board.");
       }
-      kanbnStatusBarItem.update();
+      kanbnStatusBarItem?.update();
     })
   );
 
   // Register a command to add a new kanbn task.
   context.subscriptions.push(
     vscode.commands.registerCommand("kanbn.addTask", async () => {
-      // If no workspace folder is opened, we can't add a new task
-      if (vscode.workspace.workspaceFolders === undefined) {
-        vscode.window.showErrorMessage("You need to open a workspace before adding a new task.");
+      const workspacePath = useWorkspaceFolder("adding a new task");
+      if (workspacePath === null) {
         return;
       }
 
-      // Set the node process directory and import kanbn
-      process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
+      // Import kanbn, now that the process is pointed at the workspace
       const kanbn = (await import("@basementuniverse/kanbn/src/main")) as unknown as KanbnApi;
 
       // If kanbn is initialised, open the task webview
@@ -168,7 +212,7 @@ export async function activate(context: vscode.ExtensionContext) {
         if (target !== null) {
           KanbnTaskPanel.show(
             context.extensionPath,
-            vscode.workspace.workspaceFolders[0].uri.fsPath,
+            workspacePath,
             target.kanbn,
             await kanbn.getFolderName(),
             null,
@@ -185,14 +229,12 @@ export async function activate(context: vscode.ExtensionContext) {
   // Register a command to open a burndown chart.
   context.subscriptions.push(
     vscode.commands.registerCommand("kanbn.burndown", async () => {
-      // If no workspace folder is opened, we can't open the burndown chart
-      if (vscode.workspace.workspaceFolders === undefined) {
-        vscode.window.showErrorMessage("You need to open a workspace before viewing the burndown chart.");
+      const workspacePath = useWorkspaceFolder("viewing the burndown chart");
+      if (workspacePath === null) {
         return;
       }
 
-      // Set the node process directory and import kanbn
-      process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
+      // Import kanbn, now that the process is pointed at the workspace
       const kanbn = (await import("@basementuniverse/kanbn/src/main")) as unknown as KanbnApi;
 
       // If kanbn is initialised, view the burndown chart
@@ -201,7 +243,7 @@ export async function activate(context: vscode.ExtensionContext) {
         if (target !== null) {
           await KanbnBurndownPanel.createOrShow(
             context.extensionPath,
-            vscode.workspace.workspaceFolders[0].uri.fsPath,
+            workspacePath,
             target.kanbn,
             await kanbn.getFolderName(),
             target.slug
@@ -211,21 +253,19 @@ export async function activate(context: vscode.ExtensionContext) {
       } else {
         vscode.window.showErrorMessage("You need to initialise Kanbn before viewing the burndown chart.");
       }
-      kanbnStatusBarItem.update();
+      kanbnStatusBarItem?.update();
     })
   );
 
   // Register a command to open a gantt chart.
   context.subscriptions.push(
     vscode.commands.registerCommand("kanbn.gantt", async () => {
-      // If no workspace folder is opened, we can't open the gantt chart
-      if (vscode.workspace.workspaceFolders === undefined) {
-        vscode.window.showErrorMessage("You need to open a workspace before viewing the gantt chart.");
+      const workspacePath = useWorkspaceFolder("viewing the gantt chart");
+      if (workspacePath === null) {
         return;
       }
 
-      // Set the node process directory and import kanbn
-      process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
+      // Import kanbn, now that the process is pointed at the workspace
       const kanbn = (await import("@basementuniverse/kanbn/src/main")) as unknown as KanbnApi;
 
       // If kanbn is initialised, view the gantt chart
@@ -234,7 +274,7 @@ export async function activate(context: vscode.ExtensionContext) {
         if (target !== null) {
           await KanbnGanttPanel.createOrShow(
             context.extensionPath,
-            vscode.workspace.workspaceFolders[0].uri.fsPath,
+            workspacePath,
             target.kanbn,
             await kanbn.getFolderName(),
             target.slug
@@ -244,19 +284,18 @@ export async function activate(context: vscode.ExtensionContext) {
       } else {
         vscode.window.showErrorMessage("You need to initialise Kanbn before viewing the gantt chart.");
       }
-      kanbnStatusBarItem.update();
+      kanbnStatusBarItem?.update();
     })
   );
 
   // Register a command to check a board and its tasks for problems.
   context.subscriptions.push(
     vscode.commands.registerCommand("kanbn.validate", async () => {
-      if (vscode.workspace.workspaceFolders === undefined) {
-        vscode.window.showErrorMessage("You need to open a workspace before validating a Kanbn board.");
+      const workspacePath = useWorkspaceFolder("validating a Kanbn board");
+      if (workspacePath === null) {
         return;
       }
 
-      process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
       const kanbn = (await import("@basementuniverse/kanbn/src/main")) as unknown as KanbnApi;
 
       if (!(await kanbn.workspaceInitialised())) {
@@ -316,7 +355,7 @@ export async function activate(context: vscode.ExtensionContext) {
         kanbnOutputChannel.appendLine(renderFixes(fixed));
         kanbnOutputChannel.show(true);
         KanbnBoardPanel.update();
-        kanbnStatusBarItem.update();
+        kanbnStatusBarItem?.update();
       }
     })
   );
@@ -324,14 +363,12 @@ export async function activate(context: vscode.ExtensionContext) {
   // Register a command to archive tasks.
   context.subscriptions.push(
     vscode.commands.registerCommand("kanbn.archiveTasks", async () => {
-      // If no workspace folder is opened, we can't archive tasks
-      if (vscode.workspace.workspaceFolders === undefined) {
-        vscode.window.showErrorMessage("You need to open a workspace before sending tasks to the archive.");
+      const workspacePath = useWorkspaceFolder("sending tasks to the archive");
+      if (workspacePath === null) {
         return;
       }
 
-      // Set the node process directory and import kanbn
-      process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
+      // Import kanbn, now that the process is pointed at the workspace
       const kanbn = (await import("@basementuniverse/kanbn/src/main")) as unknown as KanbnApi;
 
       const target = await pickBoard(kanbn, "Archive tasks from which board?");
@@ -373,7 +410,7 @@ export async function activate(context: vscode.ExtensionContext) {
           }
         }
         KanbnBoardPanel.update();
-        kanbnStatusBarItem.update();
+        kanbnStatusBarItem?.update();
         if (vscode.workspace.getConfiguration("kanbn").get("showTaskNotifications")) {
           vscode.window.showInformationMessage(
             `Archived ${archiveTaskIds.length} task${archiveTaskIds.length === 1 ? '' : 's'}.`
@@ -386,14 +423,12 @@ export async function activate(context: vscode.ExtensionContext) {
   // Register a command to restore a task from the archive.
   context.subscriptions.push(
     vscode.commands.registerCommand("kanbn.restoreTasks", async () => {
-      // If no workspace folder is opened, we can't restore tasks from the archive
-      if (vscode.workspace.workspaceFolders === undefined) {
-        vscode.window.showErrorMessage("You need to open a workspace before restoring tasks from the archive.");
+      const workspacePath = useWorkspaceFolder("restoring tasks from the archive");
+      if (workspacePath === null) {
         return;
       }
 
-      // Set the node process directory and import kanbn
-      process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
+      // Import kanbn, now that the process is pointed at the workspace
       const kanbn = (await import("@basementuniverse/kanbn/src/main")) as unknown as KanbnApi;
 
       const target = await pickBoard(kanbn, "Restore tasks onto which board?");
@@ -483,7 +518,7 @@ export async function activate(context: vscode.ExtensionContext) {
             warnings.push(...target.kanbn.lastRestoreWarnings);
           }
           KanbnBoardPanel.update();
-          kanbnStatusBarItem.update();
+          kanbnStatusBarItem?.update();
           if (warnings.length) {
             vscode.window.showWarningMessage(
               `Some boards were skipped while restoring: ${[...new Set(warnings)].join(', ')}.`
@@ -499,19 +534,20 @@ export async function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // If a workspace folder is open, add a status bar item and start watching for file changes
-  if (vscode.workspace.workspaceFolders !== undefined) {
-    // Set the node process directory and import kanbn
-    process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
+  // If there's a workspace folder kanbn can use, add a status bar item and start watching for file
+  // changes. Failing quietly here is deliberate: a window with no folder open is an ordinary thing,
+  // and a folder kanbn can't work in explains itself when a command is run rather than nagging on
+  // startup
+  const uri = useWorkspaceFolder(null);
+  if (uri !== null) {
     const kanbn = (await import("@basementuniverse/kanbn/src/main")) as unknown as KanbnApi;
 
     // Create status bar item
     kanbnStatusBarItem = new KanbnStatusBarItem(context, kanbn);
-    kanbnStatusBarItem.update();
+    kanbnStatusBarItem?.update();
     KanbnBoardPanel.update();
 
     // Initialise file watchers
-    const uri = vscode.workspace.workspaceFolders[0].uri.fsPath;
     const kanbnFolderName = await kanbn.getFolderName();
 
     // Everything inside the kanbn folder. Board files sit at its root and task and archive files in
@@ -539,7 +575,7 @@ export async function activate(context: vscode.ExtensionContext) {
         // Kanbn memoizes the config file and the workspace options derived from it, so a change on
         // disk stays invisible until the cache is dropped
         kanbn.clearConfigCache();
-        kanbnStatusBarItem.update();
+        kanbnStatusBarItem?.update();
         KanbnBoardPanel.update();
         KanbnBurndownPanel.update();
         KanbnGanttPanel.update();
@@ -556,7 +592,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Handle configuration changes
   vscode.workspace.onDidChangeConfiguration((e) => {
-    kanbnStatusBarItem.update();
+    kanbnStatusBarItem?.update();
     KanbnBoardPanel.update();
   });
 }

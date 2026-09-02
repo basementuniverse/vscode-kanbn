@@ -37,6 +37,12 @@
   "activationEvents": [
     "onStartupFinished"
   ],
+  "capabilities": {
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "Kanbn reads and writes board files on disk, so it needs a workspace with a filesystem. Remote-SSH, WSL, dev containers and Codespaces are all fine."
+    }
+  },
   "main": "./build/ext-src/extension.js",
   "contributes": {
     "commands": [
