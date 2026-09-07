@@ -262,6 +262,27 @@ You can also style bars by column by reusing each column's param-case class. For
 - `kanbn-gantt-axis-label-text`
 - `kanbn-gantt-now-line-axis`
 
+### Rendered markdown
+
+These appear anywhere markdown is rendered — task descriptions, comments and the board description.
+
+- `kanbn-markdown-link` (links are rendered as buttons, because a webview can't navigate)
+- `kanbn-markdown-image`
+- `contains-task-list` and `task-list-item` (on lists written as `- [ ]`)
+
+### Markdown editor toolbar
+
+- `kanbn-markdown-editor`
+- `kanbn-markdown-editor-dragging` (while a file is being dragged over the input)
+- `kanbn-markdown-toolbar`
+- `kanbn-markdown-toolbar-button`
+- `kanbn-markdown-toolbar-label`
+- `kanbn-markdown-toolbar-chevron`
+- `kanbn-markdown-toolbar-separator`
+- `kanbn-markdown-toolbar-menu`
+- `kanbn-markdown-toolbar-dropdown`
+- `kanbn-markdown-toolbar-dropdown-item`
+
 ### Syntax highlighting
 
 See [index.css](https://github.com/basementuniverse/vscode-kanbn/blob/main/src/index.css) for built-in syntax highlighting styles and token class-names.

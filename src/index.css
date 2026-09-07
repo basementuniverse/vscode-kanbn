@@ -1754,3 +1754,184 @@ body.vscode-light code[class*="language-"] span.token.variable {
 .kanbn-lane .kanbn-column-task-list {
     border-left-style: dashed;
 }
+
+/* ---------------------------------------------------------------------------
+   Rendered markdown
+   --------------------------------------------------------------------------- */
+
+/* Links are rendered as buttons, because a webview can't navigate - the click is handed to the
+   extension host instead. They still need to look like links */
+.kanbn-markdown-link {
+    appearance: none;
+    background: none;
+    border: 0;
+    color: var(--vscode-textLink-foreground);
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+    text-align: left;
+    text-decoration: underline;
+    width: auto;
+}
+
+.kanbn-markdown-link:hover,
+.kanbn-markdown-link:focus {
+    color: var(--vscode-textLink-activeForeground, var(--vscode-textLink-foreground));
+    background: none;
+}
+
+.kanbn-markdown-image {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Tables, task lists and strikethrough come from remark-gfm and have no styling of their own */
+.kanbn-task-editor-description-preview table,
+.kanbn-task-editor-comment-text table,
+.kanbn-header-description table {
+    border-collapse: collapse;
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    margin: 0.5em 0;
+}
+
+.kanbn-task-editor-description-preview th,
+.kanbn-task-editor-description-preview td,
+.kanbn-task-editor-comment-text th,
+.kanbn-task-editor-comment-text td,
+.kanbn-header-description th,
+.kanbn-header-description td {
+    border: 1px solid var(--vscode-activityBar-inactiveForeground);
+    padding: 0.25em 0.5em;
+}
+
+.kanbn-task-editor-description-preview th,
+.kanbn-task-editor-comment-text th,
+.kanbn-header-description th {
+    background-color: var(--vscode-input-background);
+    font-weight: bold;
+}
+
+.kanbn-task-editor-description-preview .contains-task-list,
+.kanbn-task-editor-comment-text .contains-task-list,
+.kanbn-header-description .contains-task-list {
+    list-style: none;
+    padding-left: 1em;
+}
+
+.kanbn-task-editor-description-preview .task-list-item input,
+.kanbn-task-editor-comment-text .task-list-item input,
+.kanbn-header-description .task-list-item input {
+    margin-right: 0.5em;
+    width: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   Markdown editor toolbar
+   --------------------------------------------------------------------------- */
+
+.kanbn-markdown-editor {
+    position: relative;
+}
+
+.kanbn-markdown-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1px;
+    margin-top: 8px;
+    padding: 2px;
+    background-color: var(--vscode-input-background);
+    border: 1px solid var(--vscode-input-border, transparent);
+    border-bottom: 0;
+}
+
+/* The textarea below the toolbar carries its own top margin, which would leave the two floating
+   apart as separate boxes rather than reading as one input */
+.kanbn-markdown-editor .kanbn-task-editor-field-textarea {
+    margin-top: 0;
+}
+
+.kanbn-markdown-toolbar-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 24px;
+    padding: 0 4px;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    color: var(--vscode-foreground);
+    cursor: pointer;
+    font-size: var(--vscode-font-size);
+}
+
+.kanbn-markdown-toolbar-button:hover {
+    background-color: var(--vscode-toolbar-hoverBackground, var(--vscode-button-hoverBackground));
+    color: var(--vscode-foreground);
+}
+
+.kanbn-markdown-toolbar-button:focus-visible {
+    border-color: var(--vscode-focusBorder);
+    outline: none;
+}
+
+/* Strikethrough has no codicon, so it's spelled out the way the format itself looks */
+.kanbn-markdown-toolbar-label {
+    font-weight: bold;
+    text-decoration: line-through;
+}
+
+.kanbn-markdown-toolbar-chevron {
+    font-size: 0.75em;
+    opacity: 0.7;
+}
+
+.kanbn-markdown-toolbar-separator {
+    width: 1px;
+    height: 16px;
+    margin: 0 4px;
+    background-color: var(--vscode-activityBar-inactiveForeground);
+    opacity: 0.4;
+}
+
+.kanbn-markdown-toolbar-menu {
+    position: relative;
+}
+
+.kanbn-markdown-toolbar-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 10;
+    min-width: 140px;
+    padding: 2px;
+    background-color: var(--vscode-dropdown-background, var(--vscode-input-background));
+    border: 1px solid var(--vscode-dropdown-border, var(--vscode-input-border, transparent));
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.36);
+}
+
+.kanbn-markdown-toolbar-dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 3px 8px;
+    background: none;
+    border: 0;
+    color: var(--vscode-dropdown-foreground, var(--vscode-foreground));
+    cursor: pointer;
+    font-family: var(--vscode-font-family);
+    text-align: left;
+}
+
+.kanbn-markdown-toolbar-dropdown-item:hover {
+    background-color: var(--vscode-list-hoverBackground, var(--vscode-button-hoverBackground));
+    color: var(--vscode-dropdown-foreground, var(--vscode-foreground));
+}
+
+/* Dragging a file over the textarea should look like it will land there */
+.kanbn-markdown-editor-dragging .kanbn-task-editor-field-textarea {
+    border-color: var(--vscode-focusBorder);
+    border-style: dashed;
+}

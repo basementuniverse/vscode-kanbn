@@ -137,7 +137,7 @@
     }
   },
   "dependencies": {
-    "@basementuniverse/kanbn": "^2.5.1",
+    "@basementuniverse/kanbn": "^2.5.3",
     "@vscode/codicons": "^0.0.46-24",
     "dateformat": "^4.5.1",
     "formik": "^2.2.6",
@@ -151,6 +151,7 @@
     "react-textarea-autosize": "^8.3.2",
     "recharts": "^2.0.9",
     "rehype-katex": "^5.0.0",
+    "remark-gfm": "^1.0.0",
     "remark-math": "^4.0.0",
     "terser": "3.14.1",
     "throttle-debounce": "^3.0.1",

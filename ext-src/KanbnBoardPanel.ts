@@ -8,6 +8,11 @@ import type { KanbnApi } from "./KanbnApi";
 import { reportActionWarnings } from "./KanbnOutput";
 import { describeBoardError } from "./KanbnBoards";
 import { nameToLabel } from "../src/labels";
+import {
+  markdownLocalResourceRoots,
+  markdownRootAttributes,
+  openMarkdownLink,
+} from "./markdownResources";
 
 // Every field kanbn can sort by. The sorter name written to the index isn't always the label, and
 // the computed values at the end are booleans, which sort false before true - so they're offered as
@@ -388,11 +393,7 @@ export default class KanbnBoardPanel {
       retainContextWhenHidden: true,
 
       // Restrict the webview to only loading content from allowed paths
-      localResourceRoots: [
-        vscode.Uri.file(path.join(this._extensionPath, "build")),
-        vscode.Uri.file(path.join(this._workspacePath, this._kanbnFolderName)),
-        vscode.Uri.file(path.join(this._extensionPath, "node_modules", "@vscode", "codicons", "dist")),
-      ],
+      localResourceRoots: markdownLocalResourceRoots(this._extensionPath, this._workspacePath),
     });
     this._panel.iconPath = {
       light: vscode.Uri.file(path.join(this._extensionPath, "resources", "project_light.svg")),
@@ -430,6 +431,11 @@ export default class KanbnBoardPanel {
           // posted before this point was dropped
           case "kanbn.webviewReady":
             await this.refresh();
+            return;
+
+          // Open a link clicked in the board description's markdown
+          case "kanbn.openLink":
+            await openMarkdownLink(this._workspacePath, this._kanbnFolderName, message.href);
             return;
 
           // Open a task in the editor
@@ -643,6 +649,9 @@ export default class KanbnBoardPanel {
     );
     const baseUri = toUri(this._extensionPath, "build");
 
+    // Tells the webview where to resolve relative image paths written in markdown
+    const markdownAttributes = markdownRootAttributes(webview, this._workspacePath, this._kanbnFolderName);
+
     // Use a nonce to whitelist which scripts can be run
     const nonce = getNonce();
 
@@ -661,7 +670,7 @@ export default class KanbnBoardPanel {
 </head>
 <body>
 <noscript>You need to enable JavaScript to run this app.</noscript>
-<div id="root"></div>
+<div id="root" ${markdownAttributes}></div>
 <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;

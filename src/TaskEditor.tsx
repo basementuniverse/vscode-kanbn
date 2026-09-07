@@ -4,12 +4,8 @@ import formatDate from 'dateformat';
 import VSCodeApi from './VSCodeApi';
 import { paramCase } from '@basementuniverse/kanbn/src/utility';
 import { nameToLabel, nameToLowerLabel } from './labels';
-import ReactMarkdown from 'react-markdown';
-import TextareaAutosize from 'react-textarea-autosize';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import 'katex/dist/katex.min.css';
+import Markdown from './Markdown';
+import MarkdownEditor from './MarkdownEditor';
 
 interface KanbnTaskValidationOutput {
   name: string,
@@ -168,67 +164,6 @@ const hasValidationErrors = (errors: any): boolean => {
 
   return false;
 };
-
-const createMarkdownComponents = (vscode: VSCodeApi) => ({
-  code({ node, inline, className, children, ...props }: any) {
-    const match = /language-(\w+)/.exec(className || '');
-    return !inline && match ? (
-      <SyntaxHighlighter
-        style=""
-        useInlineStyles={false}
-        language={match[1]}
-        PreTag="div"
-        children={String(children).replace(/\n$/, '')}
-        {...props}
-      />
-    ) : (
-      <code className={className} children={children} {...props} />
-    );
-  },
-  a(props: any) {
-    const { href, children, ...rest } = props;
-    return (
-      <button
-        type="button"
-        className={rest.className}
-        onClick={(event) => {
-          if (!href || href.charAt(0) === '#') {
-            return;
-          }
-
-          event.preventDefault();
-          vscode.postMessage({
-            command: 'kanbn.openLink',
-            href,
-          });
-        }}
-        {...rest}
-        style={{
-          appearance: 'none',
-          background: 'none',
-          border: 0,
-          color: 'var(--vscode-textLink-foreground)',
-          cursor: 'pointer',
-          font: 'inherit',
-          padding: 0,
-          textDecoration: 'underline',
-          textAlign: 'left',
-        }}
-      >
-        {children}
-      </button>
-    );
-  }
-});
-
-const Markdown = ({ vscode, children, ...props }) => (<ReactMarkdown
-  remarkPlugins={[remarkMath]}
-  rehypePlugins={[rehypeKatex]}
-  components={createMarkdownComponents(vscode)}
-  {...props}
->
-  {children}
-</ReactMarkdown>);
 
 const toPercent = (value: number | undefined) => `${Math.round((value || 0) * 100)}%`;
 
@@ -971,11 +906,11 @@ const TaskEditor = ({
                   </button>
                   {
                     editingDescription
-                      ? <Field
+                      ? <MarkdownEditor
                         className="kanbn-task-editor-field-textarea"
                         id="description-input"
-                        as={TextareaAutosize}
                         name="description"
+                        vscode={vscode}
                       />
                       : <Markdown vscode={vscode} className="kanbn-task-editor-description-preview" children={values.description} />
                   }
@@ -1170,10 +1105,10 @@ const TaskEditor = ({
                                 {
                                   editingComment === index
                                     ? <React.Fragment>
-                                      <Field
+                                      <MarkdownEditor
                                         className="kanbn-task-editor-field-textarea"
-                                        as={TextareaAutosize}
                                         name={`comments.${index}.text`}
+                                        vscode={vscode}
                                       />
                                       <ErrorMessage
                                         className="kanbn-task-editor-field-errors"

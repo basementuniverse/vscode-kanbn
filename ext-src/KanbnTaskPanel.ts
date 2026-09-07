@@ -5,6 +5,11 @@ import { v4 as uuidv4 } from "uuid";
 import type { KanbnApi } from "./KanbnApi";
 import { reportActionWarnings } from "./KanbnOutput";
 import { describeBoardError } from "./KanbnBoards";
+import {
+  markdownLocalResourceRoots,
+  markdownRootAttributes,
+  openMarkdownLink,
+} from "./markdownResources";
 
 type KanbnAutoSaveMode = "off" | "afterDelay" | "onFocusChange" | "onWindowChange";
 type KanbnAutoSaveSetting = KanbnAutoSaveMode | "inherit";
@@ -285,11 +290,7 @@ export default class KanbnTaskPanel {
       retainContextWhenHidden: true,
 
       // Restrict the webview to only loading content from allowed paths
-      localResourceRoots: [
-        vscode.Uri.file(path.join(this._extensionPath, "build")),
-        vscode.Uri.file(path.join(this._workspacePath, this._kanbnFolderName)),
-        vscode.Uri.file(path.join(this._extensionPath, "node_modules", "@vscode", "codicons", "dist")),
-      ],
+      localResourceRoots: markdownLocalResourceRoots(this._extensionPath, this._workspacePath),
     });
     this._panel.iconPath = {
       light: vscode.Uri.file(path.join(this._extensionPath, "resources", "task_light.svg")),
@@ -331,7 +332,7 @@ export default class KanbnTaskPanel {
             return;
 
           case "kanbn.openLink":
-            await this._openMarkdownLink(message.href);
+            await openMarkdownLink(this._workspacePath, this._kanbnFolderName, message.href);
             return;
 
           // The editor refused to save because the form doesn't validate. The messages are already
@@ -525,43 +526,6 @@ export default class KanbnTaskPanel {
     }
   }
 
-  private async _openMarkdownLink(href: string) {
-    if (!href || href.charAt(0) === '#') {
-      return;
-    }
-
-    try {
-      const trimmedHref = href.trim();
-      const prefixedPath = /^(workspace|project):/i.test(trimmedHref)
-        ? trimmedHref.replace(/^(workspace|project):/i, '').replace(/^[\\/]+/, '')
-        : null;
-
-      if (prefixedPath !== null) {
-        const fileUri = vscode.Uri.file(path.resolve(this._workspacePath, prefixedPath));
-        await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(fileUri));
-        return;
-      }
-
-      if (/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(trimmedHref)) {
-        const uri = vscode.Uri.parse(trimmedHref);
-        if (uri.scheme === 'http' || uri.scheme === 'https' || uri.scheme === 'mailto' || uri.scheme === 'tel') {
-          await (vscode.env as any).openExternal(uri);
-          return;
-        }
-
-        if (uri.scheme === 'file') {
-          await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(uri));
-          return;
-        }
-      }
-
-      const fileUri = vscode.Uri.file(path.resolve(this._workspacePath, this._kanbnFolderName, trimmedHref));
-      await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(fileUri));
-    } catch (error) {
-      vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
-    }
-  }
-
   private async update() {
     let index: any;
     try {
@@ -644,6 +608,9 @@ export default class KanbnTaskPanel {
     );
     const baseUri = toUri(this._extensionPath, "build");
 
+    // Tells the webview where to resolve relative image paths written in markdown
+    const markdownAttributes = markdownRootAttributes(webview, this._workspacePath, this._kanbnFolderName);
+
     // Use a nonce to whitelist which scripts can be run
     const nonce = getNonce();
 
@@ -662,7 +629,7 @@ export default class KanbnTaskPanel {
 </head>
 <body>
 <noscript>You need to enable JavaScript to run this app.</noscript>
-<div id="root"></div>
+<div id="root" ${markdownAttributes}></div>
 <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;
