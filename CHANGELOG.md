@@ -1,3 +1,8 @@
+# 1.4.0
+
+* Added a relation type input component with suggestions and auto-complete.
+* Task relations now have a button which opens the related task.
+
 # 1.3.0
 
 * Task descriptions and comments now have a formatting toolbar while you're editing them: bold, italic, strikethrough, headings with a dropdown for the level, links, images, quotes, inline code, bulleted/numbered/task lists, code blocks, tables, horizontal rules and maths, plus `Ctrl+B`, `Ctrl+I` and `Ctrl+K`. Every action is applied to the textarea as an ordinary edit rather than by rewriting the form value, so `Ctrl+Z` steps back through toolbar edits the same way it steps back through typing
