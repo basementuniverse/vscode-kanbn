@@ -546,6 +546,39 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
     border-color: var(--vscode-input-border);
 }
 
+.kanbn-relation-type-input {
+    position: relative;
+}
+
+.kanbn-relation-type-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    margin: -6px 0 0 0;
+    padding: 2px;
+    list-style: none;
+    max-height: 180px;
+    overflow-y: auto;
+    background-color: var(--vscode-dropdown-background, var(--vscode-input-background));
+    color: var(--vscode-dropdown-foreground, var(--vscode-input-foreground));
+    border: 1px solid var(--vscode-dropdown-border, var(--vscode-input-border));
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.36);
+}
+
+.kanbn-relation-type-suggestion {
+    padding: 4px 8px;
+    cursor: pointer;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+.kanbn-relation-type-suggestion-highlighted {
+    background-color: var(--vscode-list-activeSelectionBackground);
+    color: var(--vscode-list-activeSelectionForeground);
+}
+
 .kanbn-task-editor-buttons {
     text-align: right;
 }

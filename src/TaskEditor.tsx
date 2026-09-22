@@ -6,6 +6,7 @@ import { paramCase } from '@basementuniverse/kanbn/src/utility';
 import { nameToLabel, nameToLowerLabel } from './labels';
 import Markdown from './Markdown';
 import MarkdownEditor from './MarkdownEditor';
+import RelationTypeInput from './RelationTypeInput';
 
 interface KanbnTaskValidationOutput {
   name: string,
@@ -34,6 +35,18 @@ const AUTO_SAVE_STATUS_DURATION = 1500;
 const AUTO_SAVE_ENABLED_FOR_NEW_TASKS = false;
 
 const CONTRIBUTORS_LIST_ID = 'kanbn-contributors';
+const RELATION_TYPE_SUGGESTIONS = [
+  'blocks',
+  'blocked-by',
+  'depends-on',
+  'duplicates',
+  'duplicated-by',
+  'relates-to',
+  'precedes',
+  'follows',
+  'parent-of',
+  'child-of',
+];
 const EDITING_DESCRIPTION_STORAGE_PREFIX = 'kanbn.taskEditor.editingDescription.';
 const PENDING_FOCUS_STORAGE_PREFIX = 'kanbn.taskEditor.pendingFocus.';
 
@@ -997,10 +1010,11 @@ const TaskEditor = ({
                         {values.relations.length > 0 && values.relations.map((relation, index) => (
                           <div className="kanbn-task-editor-row kanbn-task-editor-row-relation" key={index}>
                             <div className="kanbn-task-editor-column kanbn-task-editor-field-relation-type">
-                              <Field
+                              <RelationTypeInput
                                 className="kanbn-task-editor-field-input"
                                 name={`relations.${index}.type`}
                                 placeholder="Relation type"
+                                suggestions={RELATION_TYPE_SUGGESTIONS}
                               />
                               <ErrorMessage
                                 className="kanbn-task-editor-field-errors"
