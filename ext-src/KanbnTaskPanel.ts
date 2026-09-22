@@ -335,6 +335,19 @@ export default class KanbnTaskPanel {
             await openMarkdownLink(this._workspacePath, this._kanbnFolderName, message.href);
             return;
 
+          // Open a related task in the editor
+          case "kanbn.task":
+            KanbnTaskPanel.show(
+              this._extensionPath,
+              this._workspacePath,
+              this._kanbn,
+              this._kanbnFolderName,
+              message.taskId,
+              message.columnName,
+              this._boardSlug
+            );
+            return;
+
           // The editor refused to save because the form doesn't validate. The messages are already
           // shown inline, but a field halfway down a long form is easy to miss when the only other
           // signal is the save quietly doing nothing

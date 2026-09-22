@@ -640,6 +640,18 @@ const TaskEditor = ({
     });
   };
 
+  const handleOpenTask = (taskId: string) => {
+    if (!taskId) {
+      return;
+    }
+
+    vscode.postMessage({
+      command: 'kanbn.task',
+      taskId,
+      columnName: tasks[taskId] ? tasks[taskId].column : null,
+    });
+  };
+
   const checkOverdue = (values: { metadata: { due?: string } }) => {
     if ('due' in values.metadata && values.metadata.due !== undefined) {
       return Date.parse(values.metadata.due) < (new Date()).getTime();
@@ -1017,6 +1029,15 @@ const TaskEditor = ({
                               />
                             </div>
                             <div className="kanbn-task-editor-column kanbn-task-editor-column-buttons">
+                              <button
+                                type="button"
+                                className="kanbn-task-editor-button kanbn-task-editor-button-open"
+                                title="Open related task"
+                                disabled={!relation.task}
+                                onClick={() => handleOpenTask(relation.task)}
+                              >
+                                <i className="codicon codicon-go-to-file"></i>
+                              </button>
                               <button
                                 type="button"
                                 className="kanbn-task-editor-button kanbn-task-editor-button-delete"

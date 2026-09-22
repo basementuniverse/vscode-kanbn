@@ -580,6 +580,14 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
     background-color: var(--vscode-button-hoverBackground);
 }
 
+.kanbn-task-editor-button:disabled,
+.kanbn-task-editor-button:disabled:hover,
+.kanbn-task-editor-button:disabled:active {
+    background-color: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-disabledForeground);
+    cursor: not-allowed;
+}
+
 .kanbn-task-editor-button-delete:focus {
     border-color: #f22;
 }
