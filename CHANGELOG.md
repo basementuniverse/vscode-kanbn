@@ -1,3 +1,9 @@
+# 1.5.0
+
+* Updated README and added new preview animation.
+* The task id shown below the name in the task editor is now a link which opens the task's markdown file for direct editing.
+* Sub-tasks can now be moved up and down using buttons which appear in the corner of the sub-task's text input on hover.
+
 # 1.4.0
 
 * Added a relation type input component with suggestions and auto-complete.

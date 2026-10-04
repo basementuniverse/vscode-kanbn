@@ -335,6 +335,24 @@ export default class KanbnTaskPanel {
             await openMarkdownLink(this._workspacePath, this._kanbnFolderName, message.href);
             return;
 
+          // Open the task's markdown file for direct editing. The path is built from the task this
+          // panel is bound to rather than anything the webview sends, so an unsaved rename in the
+          // form still opens the file that's actually on disk
+          case "kanbn.openTaskFile": {
+            if (!this._taskId) {
+              return;
+            }
+            try {
+              const taskPath = path.join(await this._kanbn.getTaskFolderPath(), `${this._taskId}.md`);
+              await vscode.window.showTextDocument(
+                await vscode.workspace.openTextDocument(vscode.Uri.file(taskPath))
+              );
+            } catch (error) {
+              vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+            }
+            return;
+          }
+
           // Open a related task in the editor
           case "kanbn.task":
             KanbnTaskPanel.show(

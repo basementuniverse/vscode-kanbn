@@ -641,6 +641,24 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
     opacity: 0.8;
 }
 
+.kanbn-task-editor-id-link {
+    appearance: none;
+    background: none;
+    border: 0;
+    color: var(--vscode-textLink-foreground);
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+    text-align: left;
+}
+
+.kanbn-task-editor-id-link:hover,
+.kanbn-task-editor-id-link:focus {
+    color: var(--vscode-textLink-activeForeground, var(--vscode-textLink-foreground));
+    text-decoration: underline;
+    outline: none;
+}
+
 .kanbn-task-editor-row {
     display: flex;
 }
@@ -661,6 +679,54 @@ body.vscode-dark .kanbn-task-editor-field-input[type="date"]::-webkit-calendar-p
 .kanbn-task-editor-field-subtask-completed {
     flex: 0 0 2em;
     padding: 10px 0;
+}
+
+.kanbn-task-editor-field-subtask-text {
+    position: relative;
+}
+
+/* Sits over the top-right corner of the sub-task's text input (which has an 8px margin and a 1px
+   border), and only shows while the sub-task is hovered or one of the buttons has focus */
+.kanbn-task-editor-subtask-move {
+    position: absolute;
+    top: 9px;
+    right: 1px;
+    display: flex;
+    opacity: 0;
+    background-color: var(--vscode-input-background);
+}
+
+.kanbn-task-editor-field-subtask-text:hover .kanbn-task-editor-subtask-move,
+.kanbn-task-editor-subtask-move:focus-within {
+    opacity: 1;
+}
+
+.kanbn-task-editor-subtask-move-button {
+    appearance: none;
+    background: none;
+    border: 0;
+    outline: none;
+    color: var(--vscode-input-foreground);
+    cursor: pointer;
+    padding: 1px 2px;
+    line-height: 1;
+    opacity: 0.6;
+}
+
+.kanbn-task-editor-subtask-move-button .codicon {
+    display: block;
+    font-size: 12px !important;
+}
+
+.kanbn-task-editor-subtask-move-button:hover,
+.kanbn-task-editor-subtask-move-button:focus {
+    opacity: 1;
+}
+
+.kanbn-task-editor-subtask-move-button:disabled,
+.kanbn-task-editor-subtask-move-button:disabled:hover {
+    opacity: 0.2;
+    cursor: not-allowed;
 }
 
 .kanbn-task-editor-column-buttons {

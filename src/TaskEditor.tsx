@@ -665,6 +665,12 @@ const TaskEditor = ({
     });
   };
 
+  const handleOpenTaskFile = () => {
+    vscode.postMessage({
+      command: 'kanbn.openTaskFile'
+    });
+  };
+
   const checkOverdue = (values: { metadata: { due?: string } }) => {
     if ('due' in values.metadata && values.metadata.due !== undefined) {
       return Date.parse(values.metadata.due) < (new Date()).getTime();
@@ -901,7 +907,21 @@ const TaskEditor = ({
                       }}
                     />
                   </label>
-                  <div className="kanbn-task-editor-id">{values.id}</div>
+                  <div className="kanbn-task-editor-id">
+                    {
+                      // A task that hasn't been created yet has no file to open
+                      editing
+                        ? <button
+                          type="button"
+                          className="kanbn-task-editor-id-link"
+                          title={`Open ${task!.id}.md`}
+                          onClick={handleOpenTaskFile}
+                        >
+                          {values.id}
+                        </button>
+                        : values.id
+                    }
+                  </div>
                   <ErrorMessage
                     className="kanbn-task-editor-field-errors"
                     component="div"
@@ -948,7 +968,7 @@ const TaskEditor = ({
                 <div className="kanbn-task-editor-field kanbn-task-editor-field-subtasks">
                   <h2 className="kanbn-task-editor-title">Sub-tasks</h2>
                   <FieldArray name="subTasks">
-                    {({ insert, remove, push }) => (
+                    {({ insert, remove, push, move }) => (
                       <div>
                         {values.subTasks.length > 0 && values.subTasks.map((subTask, index) => (
                           <div className="kanbn-task-editor-row kanbn-task-editor-row-subtask" key={index}>
@@ -970,6 +990,26 @@ const TaskEditor = ({
                                 name={`subTasks.${index}.text`}
                                 placeholder="Sub-task text"
                               />
+                              <div className="kanbn-task-editor-subtask-move">
+                                <button
+                                  type="button"
+                                  className="kanbn-task-editor-subtask-move-button"
+                                  title="Move sub-task up"
+                                  disabled={index === 0}
+                                  onClick={() => move(index, index - 1)}
+                                >
+                                  <i className="codicon codicon-chevron-up"></i>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="kanbn-task-editor-subtask-move-button"
+                                  title="Move sub-task down"
+                                  disabled={index === values.subTasks.length - 1}
+                                  onClick={() => move(index, index + 1)}
+                                >
+                                  <i className="codicon codicon-chevron-down"></i>
+                                </button>
+                              </div>
                               <ErrorMessage
                                 className="kanbn-task-editor-field-errors"
                                 component="div"

@@ -1,8 +1,13 @@
 # Kanbn Extension for Visual Studio Code
 
+[![Kanbn](docs/kanbn.png "Kanbn")](https://kanbn.io)
+
 This extension adds a [Kanbn](https://www.npmjs.com/package/@basementuniverse/kanbn)-powered kanban board to Visual Studio Code.
 
-![Kanbn](docs/preview.gif "Kanbn")
+![Kanbn](docs/kanbn-preview.gif "Preview")
+
+![Kanbn](docs/kanbn-burndown.png "Burndown chart")
+![Kanbn](docs/kanbn-gantt.png "Gantt chart")
 
 ## What is Kanbn?
 
