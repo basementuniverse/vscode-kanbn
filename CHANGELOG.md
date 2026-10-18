@@ -1,4 +1,4 @@
-# Unreleased
+# 1.5.1
 
 * Fixed relations to archived tasks looking broken. Archiving moves a task's file into the archive folder and deliberately keeps every relation to and from it, so that restoring brings them back intact — but the task editor only knew about tasks on the current board, so a relation to an archived task showed "Choose a task..." in its dropdown as if it were empty, and its open button brought up a blank "new task" form. The relation was still there and still saved, but nothing on screen said so. Related tasks are now looked up by id in the tasks folder and then the archive, and a relation to an archived task keeps showing its task, marked as archived. Opening it shows the archived file read-only, with an option to restore the task
 * A relation to a task on another board now shows which board it's on, and opens the task from that board instead of a blank form
