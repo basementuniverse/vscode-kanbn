@@ -4,6 +4,7 @@ import Gantt from './Gantt';
 import TaskEditor from './TaskEditor';
 import React, { useState, useEffect, useCallback } from "react";
 import VSCodeApi from "./VSCodeApi";
+import { RelationTargets } from "./relationTargets";
 
 declare var acquireVsCodeApi: Function;
 const vscode: VSCodeApi = acquireVsCodeApi();
@@ -40,6 +41,7 @@ function App() {
   const [dateFormat, setDateFormat] = useState('');
   const [task, setTask] = useState({});
   const [tasks, setTasks] = useState({});
+  const [relationTargets, setRelationTargets] = useState<RelationTargets>({});
   const [columnName, setColumnName] = useState('');
   const [columnNames, setColumnNames] = useState([] as string[]);
   const [panelUuid, setPanelUuid] = useState('');
@@ -65,6 +67,13 @@ function App() {
   const taskKey = `${panelUuid}:${(task as any) && (task as any).id ? (task as any).id : 'new'}`;
 
   const processMessage = useCallback(event => {
+    // Sent when a related task is archived or restored. It only relabels relations, so it mustn't
+    // touch anything else - least of all which view is showing
+    if (event.data.type === 'relationTargets') {
+      setRelationTargets(event.data.relationTargets || {});
+      return;
+    }
+
     const tasks = event.data.tasks
       ? Object.fromEntries(event.data.tasks.map(task => [task.id, task]))
       : {};
@@ -88,6 +97,7 @@ function App() {
         setStartedField(event.data.startedField || 'started');
         setCompletedField(event.data.completedField || 'completed');
         setSimpleTasks(event.data.simpleTasks || []);
+        setRelationTargets(event.data.relationTargets || {});
         setFilteredTaskIds(
           event.data.filteredTaskIds === undefined ? null : event.data.filteredTaskIds
         );
@@ -127,6 +137,7 @@ function App() {
         setTask(event.data.task);
         setTasks(tasks);
         setTaskBoards(event.data.taskBoards || {});
+        setRelationTargets(event.data.relationTargets || {});
         setContributors(event.data.contributors || []);
         setCurrentUser(event.data.currentUser || '');
         setBoardSlug(event.data.boardSlug || '');
@@ -194,6 +205,7 @@ function App() {
           startedField={startedField}
           completedField={completedField}
           simpleTasks={simpleTasks}
+          relationTargets={relationTargets}
           filteredTaskIds={filteredTaskIds}
           filterError={filterError}
           views={views}
@@ -218,6 +230,7 @@ function App() {
           columnNames={columnNames}
           customFields={customFields}
           taskBoards={taskBoards}
+          relationTargets={relationTargets}
           contributors={contributors}
           currentUser={currentUser}
           boardSlug={boardSlug}

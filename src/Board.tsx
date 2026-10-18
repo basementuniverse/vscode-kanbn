@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import BoardFilter, { FilterValues } from "./BoardFilter";
 import SimpleTaskItem, { SimpleTask } from "./SimpleTaskItem";
 import TaskItem from "./TaskItem";
+import { RelationTargets } from "./relationTargets";
 import { paramCase } from "@basementuniverse/kanbn/src/utility";
 import { nameToLabel } from "./labels";
 import VSCodeApi from "./VSCodeApi";
@@ -131,6 +132,7 @@ const Board = ({
   startedField,
   completedField,
   simpleTasks,
+  relationTargets,
   filteredTaskIds,
   filterError,
   views,
@@ -157,6 +159,7 @@ const Board = ({
   startedField: string;
   completedField: string;
   simpleTasks: SimpleTask[];
+  relationTargets: RelationTargets;
   filteredTaskIds: string[] | null;
   filterError: string | null;
   views: string[];
@@ -313,6 +316,7 @@ const Board = ({
                         completedField={completedField}
                         position={position}
                         dateFormat={dateFormat}
+                        relationTargets={relationTargets}
                         draggable={false}
                         vscode={vscode}
                       />
@@ -554,6 +558,7 @@ const Board = ({
                                 completedField={completedField}
                                 position={position}
                                 dateFormat={dateFormat}
+                                relationTargets={relationTargets}
                                 vscode={vscode}
                               />
                             ))}

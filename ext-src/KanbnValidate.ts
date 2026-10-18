@@ -23,6 +23,7 @@ export type ValidationReport = {
   columnContent: Warning[],
   contributors: Warning[],
   actions: Warning[],
+  relations: Warning[],
   boards: Warning[],
   // Checks that couldn't run at all, so a single broken one doesn't hide the rest
   failed: Array<{ check: string, message: string }>
@@ -50,6 +51,7 @@ export async function validateBoard(
     columnContent: [],
     contributors: [],
     actions: [],
+    relations: [],
     boards: [],
     failed: [],
   };
@@ -82,6 +84,10 @@ export async function validateBoard(
   await run("contributors", () => kanbn.findContributorWarnings(), (v) => { report.contributors = v; });
   await run("actions", () => kanbn.findActionWarnings(), (v) => { report.actions = v; });
 
+  // Relations that point at nothing, and tasks related to themselves. A relation to an archived task
+  // isn't one of them: archiving keeps relations so that restoring brings them back intact
+  await run("relations", () => kanbn.findRelationWarnings(), (v) => { report.relations = v; });
+
   // A workspace with one board has none of the multi-board problems to have
   let multiBoard = false;
   try {
@@ -102,6 +108,7 @@ export function countProblems(report: ValidationReport): number {
     + report.columnContent.length
     + report.contributors.length
     + report.actions.length
+    + report.relations.length
     + report.boards.length
     + report.failed.length;
 }
@@ -143,6 +150,9 @@ export function renderReport(report: ValidationReport): string {
       (warning) => `${warning.task ? `${warning.task}: ` : ""}${warning.message}`
     )),
     ...section("Action rules", report.actions.map((warning) => warning.message)),
+    ...section("Relations", report.relations.map(
+      (warning) => `${warning.task ? `${warning.task}: ` : ""}${warning.message}`
+    )),
     ...section("Boards", report.boards.map(
       (warning) => `${warning.board ? `${warning.board}: ` : ""}${warning.message}`
     )),

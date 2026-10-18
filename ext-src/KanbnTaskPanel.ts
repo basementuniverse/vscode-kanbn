@@ -5,6 +5,8 @@ import { v4 as uuidv4 } from "uuid";
 import type { KanbnApi } from "./KanbnApi";
 import { reportActionWarnings } from "./KanbnOutput";
 import { describeBoardError } from "./KanbnBoards";
+import { transformTaskData } from "./taskData";
+import { findTaskFile, resolveRelationTargets } from "./KanbnRelations";
 import {
   markdownLocalResourceRoots,
   markdownRootAttributes,
@@ -45,124 +47,6 @@ function getTaskEditorAutoSaveSettings() {
       ? autoSaveDelay
       : 1000,
   };
-}
-
-const DATE_METADATA_FIELDS = ["due", "plannedStart", "plannedFinish", "started", "completed"];
-
-function parseDateInput(value: unknown): Date | null {
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value;
-  }
-
-  const text = String(value ?? "").trim();
-  if (!text) {
-    return null;
-  }
-
-  // A date input carries a calendar day and nothing else. Date.parse() reads a bare "yyyy-mm-dd"
-  // as UTC midnight, which lands on the day before for anyone west of Greenwich
-  const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
-  if (parts) {
-    return new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]));
-  }
-
-  const parsed = Date.parse(text);
-  return Number.isNaN(parsed) ? null : new Date(parsed);
-}
-
-function isSameLocalDay(a: Date, b: Date) {
-  return a.getFullYear() === b.getFullYear()
-    && a.getMonth() === b.getMonth()
-    && a.getDate() === b.getDate();
-}
-
-// The editor shows a timestamp as the calendar day it falls on, so writing back what it sends would
-// flatten the time of day out of every date the user never touched. Keep the stored timestamp
-// whenever the day on screen is still the day it belongs to
-function resolveDateField(value: unknown, original: unknown): Date | null {
-  const parsed = parseDateInput(value);
-  if (parsed === null) {
-    return null;
-  }
-
-  const originalDate = parseDateInput(original);
-  if (originalDate !== null && isSameLocalDay(originalDate, parsed)) {
-    return originalDate;
-  }
-
-  return parsed;
-}
-
-function transformTaskData(
-  taskData: any,
-  customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string'}[],
-  originalMetadata: Record<string, any> = {}
-) {
-  // Only the fields every task has go in here. Everything else is added below if the editor
-  // actually carries a value for it - listing them here as well wrote `assigned: ""`, `progress: 0`
-  // and `tags: []` onto tasks that had none of them
-  const result = {
-    id: taskData.id,
-    name: taskData.name,
-    description: taskData.description,
-    metadata: {
-      created: taskData.metadata.created ? new Date(taskData.metadata.created) : new Date(),
-      updated: new Date(),
-    } as any,
-    relations: taskData.relations,
-    subTasks: taskData.subTasks,
-    history: (taskData.history || []).map((historyEvent: any) => ({
-      ...historyEvent,
-      date: historyEvent.date ? new Date(Date.parse(historyEvent.date)) : historyEvent.date,
-    })),
-    comments: taskData.comments.map((comment: any) => ({
-      author: comment.author,
-      date: new Date(Date.parse(comment.date)),
-      text: comment.text,
-    })),
-  } as any;
-
-  // Add assigned
-  if (taskData.metadata.assigned) {
-    result.metadata["assigned"] = taskData.metadata.assigned;
-  }
-
-  // Add progress
-  if (taskData.progress > 0) {
-    result.metadata["progress"] = taskData.progress;
-  }
-
-  // Add tags
-  if (taskData.metadata.tags.length) {
-    result.metadata["tags"] = taskData.metadata.tags;
-  }
-
-  // Add due timeline dates if present
-  for (const field of DATE_METADATA_FIELDS) {
-    const value = resolveDateField(taskData.metadata[field], originalMetadata[field]);
-    if (value !== null) {
-      result.metadata[field] = value;
-    }
-  }
-
-  // Add custom fields
-  for (let customField of customFields) {
-    if (customField.name in taskData.metadata && taskData.metadata[customField.name] !== null) {
-      if (customField.type === 'date') {
-        const value = resolveDateField(
-          taskData.metadata[customField.name],
-          originalMetadata[customField.name]
-        );
-        if (value !== null) {
-          result.metadata[customField.name] = value;
-        }
-      } else {
-        result.metadata[customField.name] = taskData.metadata[customField.name];
-      }
-    }
-  }
-
-  return result;
 }
 
 export default class KanbnTaskPanel {
@@ -301,6 +185,8 @@ export default class KanbnTaskPanel {
     if (this._taskId !== null) {
       this._kanbn.getTask(this._taskId).then((task) => {
         this._panel.title = task.name;
+      }, () => {
+        // A task that can't be loaded keeps the default title - update() reports the problem
       });
     }
 
@@ -343,27 +229,30 @@ export default class KanbnTaskPanel {
               return;
             }
             try {
-              const taskPath = path.join(await this._kanbn.getTaskFolderPath(), `${this._taskId}.md`);
-              await vscode.window.showTextDocument(
-                await vscode.workspace.openTextDocument(vscode.Uri.file(taskPath))
-              );
+              // The task may have been archived since this panel opened
+              const taskFile = await findTaskFile(this._kanbn, this._taskId);
+              if (taskFile === null) {
+                vscode.window.showErrorMessage(`No task file found with id "${this._taskId}".`);
+              } else if (taskFile.archived) {
+                await this.openArchivedTask(this._taskId, taskFile.path);
+              } else {
+                await vscode.window.showTextDocument(
+                  await vscode.workspace.openTextDocument(vscode.Uri.file(taskFile.path))
+                );
+              }
             } catch (error) {
               vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
             }
             return;
           }
 
-          // Open a related task in the editor
+          // Open a related task, wherever it is
           case "kanbn.task":
-            KanbnTaskPanel.show(
-              this._extensionPath,
-              this._workspacePath,
-              this._kanbn,
-              this._kanbnFolderName,
-              message.taskId,
-              message.columnName,
-              this._boardSlug
-            );
+            try {
+              await this.openRelatedTask(message.taskId);
+            } catch (error) {
+              vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+            }
             return;
 
           // The editor refused to save because the form doesn't validate. The messages are already
@@ -519,6 +408,148 @@ export default class KanbnTaskPanel {
     );
   }
 
+  /**
+   * Open the task a relation points at. A related task can be on another board, archived, or gone
+   * altogether, and none of those is an error in the task holding the relation - so each one opens
+   * whatever there is to see rather than an empty "new task" form bound to an id that has no task
+   */
+  private async openRelatedTask(taskId: string) {
+    const taskFile = await findTaskFile(this._kanbn, taskId);
+    if (taskFile === null) {
+      vscode.window.showWarningMessage(
+        `There is no task "${taskId}" in the tasks folder or the archive. The relation is kept as ` +
+        "it is - remove it from this task if it's no longer needed."
+      );
+      return;
+    }
+
+    if (taskFile.archived) {
+      await this.openArchivedTask(taskId, taskFile.path);
+      return;
+    }
+
+    // The same task file is shared by every board it's on, so prefer this board and otherwise open
+    // it from the first board that has it
+    let boards: Record<string, string> = {};
+    try {
+      boards = await this._kanbn.findTaskBoards(taskId);
+    } catch (error) {
+      boards = {};
+    }
+    const boardSlug = Object.prototype.hasOwnProperty.call(boards, this._boardSlug)
+      ? this._boardSlug
+      : Object.keys(boards)[0];
+    if (boardSlug === undefined) {
+      vscode.window.showInformationMessage(
+        `Task "${taskId}" isn't on any board, so it's opened as a file.`
+      );
+      await vscode.window.showTextDocument(
+        await vscode.workspace.openTextDocument(vscode.Uri.file(taskFile.path))
+      );
+      return;
+    }
+
+    await KanbnTaskPanel.show(
+      this._extensionPath,
+      this._workspacePath,
+      boardSlug === this._boardSlug ? this._kanbn : this._kanbn.board(boardSlug),
+      this._kanbnFolderName,
+      taskId,
+      boards[boardSlug],
+      boardSlug
+    );
+  }
+
+  /**
+   * Show an archived task's file. The task editor only works on tasks that are on a board, and an
+   * edit made straight to the archived file would be easy to lose track of, so it opens read-only
+   * with the option of bringing the task back
+   */
+  private async openArchivedTask(taskId: string, taskPath: string) {
+    await vscode.window.showTextDocument(
+      await vscode.workspace.openTextDocument(vscode.Uri.file(taskPath)),
+      { preview: true }
+    );
+    try {
+      await vscode.commands.executeCommand("workbench.action.files.setActiveEditorReadonlyInSession");
+    } catch (error) {
+      // VS Code before 1.79 has no read-only mode for a file editor, so it just opens normally
+    }
+
+    const choice = await vscode.window.showInformationMessage(
+      `Task "${taskId}" is archived. Its file is open read-only.`,
+      "Restore task"
+    );
+    if (choice !== "Restore task") {
+      return;
+    }
+
+    try {
+      await this._kanbn.restoreTask(taskId);
+      reportActionWarnings(this._kanbn, `restoring ${taskId}`);
+    } catch (error) {
+      vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      return;
+    }
+
+    // Boards that have been deleted since the task was archived are skipped rather than failing
+    // the restore, and it's worth saying so
+    const warnings = this._kanbn.lastRestoreWarnings;
+    if (warnings.length) {
+      vscode.window.showWarningMessage(
+        `Some boards were skipped while restoring: ${[...new Set(warnings)].join(", ")}.`
+      );
+    }
+    if (vscode.workspace.getConfiguration("kanbn").get("showTaskNotifications")) {
+      vscode.window.showInformationMessage(`Restored task '${taskId}'.`);
+    }
+
+    await KanbnTaskPanel.refreshRelationTargets();
+    await this.openRelatedTask(taskId);
+  }
+
+  /**
+   * Re-check where every open editor's related tasks are. Archiving or restoring a task moves its
+   * file without touching the tasks related to it, so their editors need telling. Only the relation
+   * status is sent - the form itself is left alone
+   */
+  public static async refreshRelationTargets() {
+    for (const panel of Object.values(KanbnTaskPanel.panels)) {
+      if (panel._isDisposed || !panel._taskId) {
+        continue;
+      }
+      try {
+        panel._panel.webview.postMessage({
+          type: "relationTargets",
+          relationTargets: await panel.resolveRelationTargets(),
+        });
+      } catch (error) {
+        // Relation status is informational - a panel that can't work it out keeps what it has
+      }
+    }
+  }
+
+  /**
+   * Work out where the related tasks of the task this panel is showing are
+   */
+  private async resolveRelationTargets() {
+    if (!this._taskId) {
+      return {};
+    }
+    const index = await this._kanbn.getIndex();
+    const boardTaskIds = new Set<string>();
+    for (const columnTaskIds of Object.values(index.columns) as string[][]) {
+      columnTaskIds.forEach((id) => boardTaskIds.add(id));
+    }
+    const task = await this._kanbn.getTask(this._taskId);
+    return resolveRelationTargets(
+      this._kanbn,
+      (task.relations || []).map((relation: { task: string }) => relation.task),
+      boardTaskIds,
+      true
+    );
+  }
+
   private static bindPanelToTask(panelUuid: string, taskId: string | null, columnName: string | null) {
     const panel = KanbnTaskPanel.panels[panelUuid];
     if (!panel) {
@@ -607,6 +638,22 @@ export default class KanbnTaskPanel {
       // Both are conveniences - the editor still works with free text if they can't be resolved
     }
 
+    // Where each related task is - on this board, another one, the archive, or nowhere. The editor
+    // still shows and saves every relation whatever the answer; this only decides how it's labelled
+    let relationTargets = {};
+    if (task) {
+      try {
+        relationTargets = await resolveRelationTargets(
+          this._kanbn,
+          (task.relations || []).map((relation: { task: string }) => relation.task),
+          new Set(tasks.map((t) => t.id)),
+          true
+        );
+      } catch (error) {
+        // Without it every relation still renders, just without a status
+      }
+    }
+
     // Send task data to the webview
     this._panel.webview.postMessage({
       type: "task",
@@ -614,6 +661,7 @@ export default class KanbnTaskPanel {
       task,
       tasks,
       taskBoards,
+      relationTargets,
       contributors,
       currentUser,
       boardSlug: this._boardSlug,

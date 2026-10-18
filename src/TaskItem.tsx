@@ -4,6 +4,7 @@ import formatDate from 'dateformat';
 import { paramCase } from '@basementuniverse/kanbn/src/utility';
 import { nameToLabel } from './labels';
 import VSCodeApi from "./VSCodeApi";
+import { RelationTargets, describeRelationTarget, findRelationTarget } from "./relationTargets";
 
 const TaskItem = ({
   task,
@@ -13,6 +14,7 @@ const TaskItem = ({
   completedField,
   position,
   dateFormat,
+  relationTargets = {},
   draggable = true,
   vscode
 }: {
@@ -23,6 +25,7 @@ const TaskItem = ({
   completedField: string,
   position: number,
   dateFormat: string,
+  relationTargets?: RelationTargets,
   draggable?: boolean,
   vscode: VSCodeApi
 }) => {
@@ -177,17 +180,28 @@ const TaskItem = ({
       }
       {
         task.relations.length > 0 &&
-        task.relations.map(relation => (
-          <div className={[
-            'kanbn-task-data kanbn-task-data-relation',
-            relation.type ? `kanbn-task-data-relation-${relation.type}` : null,
-          ].join(' ')}>
-            <i className="codicon codicon-link"></i>
-            <span className="kanbn-task-data-label">
-              {relation.type}
-            </span> {relation.task}
-          </div>
-        ))
+        task.relations.map((relation, index) => {
+          // Archived, missing and elsewhere are all fine for the data - they're marked so that a
+          // relation the board can't show the other end of doesn't look like it's broken or gone
+          const target = describeRelationTarget(findRelationTarget(relationTargets, relation.task));
+          return (
+            <div
+              key={index}
+              className={[
+                'kanbn-task-data kanbn-task-data-relation',
+                relation.type ? `kanbn-task-data-relation-${relation.type}` : null,
+                target ? `kanbn-task-data-relation-target-${target.status}` : null,
+              ].filter(i => i).join(' ')}
+              title={target ? target.title : undefined}
+            >
+              <i className="codicon codicon-link"></i>
+              <span className="kanbn-task-data-label">
+                {relation.type}
+              </span> {relation.task}
+              {target && <span className="kanbn-task-data-relation-status"> ({target.label})</span>}
+            </div>
+          );
+        })
       }
       {
         task.workload !== undefined &&

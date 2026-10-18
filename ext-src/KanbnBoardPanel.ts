@@ -7,6 +7,7 @@ import KanbnGanttPanel from "./KanbnGanttPanel";
 import type { KanbnApi } from "./KanbnApi";
 import { reportActionWarnings } from "./KanbnOutput";
 import { describeBoardError } from "./KanbnBoards";
+import { relatedTaskIds, resolveRelationTargets } from "./KanbnRelations";
 import { nameToLabel } from "../src/labels";
 import {
   markdownLocalResourceRoots,
@@ -340,10 +341,25 @@ export default class KanbnBoardPanel {
       }
     }
 
+    // Cards mark relations to tasks that aren't on this board - archived, missing, or elsewhere.
+    // Which other boards a task is on is left out, since finding that reads every board
+    let relationTargets = {};
+    try {
+      relationTargets = await resolveRelationTargets(
+        this._kanbn,
+        relatedTaskIds(tasks),
+        new Set(tasks.map((task) => task.id)),
+        false
+      );
+    } catch (error) {
+      // Relations still render without it, just unmarked
+    }
+
     this._panel.webview.postMessage({
       type: "index",
       index,
       tasks,
+      relationTargets,
       simpleTasks,
       boards,
       contributors,

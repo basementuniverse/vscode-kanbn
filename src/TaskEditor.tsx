@@ -7,6 +7,12 @@ import { nameToLabel, nameToLowerLabel } from './labels';
 import Markdown from './Markdown';
 import MarkdownEditor from './MarkdownEditor';
 import RelationTypeInput from './RelationTypeInput';
+import {
+  RelationTargets,
+  describeRelationTarget,
+  getRelationTarget,
+  relationTaskOptions,
+} from './relationTargets';
 
 interface KanbnTaskValidationOutput {
   name: string,
@@ -453,6 +459,7 @@ const TaskEditor = ({
   columnNames,
   customFields,
   taskBoards,
+  relationTargets,
   contributors,
   currentUser,
   boardSlug,
@@ -468,6 +475,7 @@ const TaskEditor = ({
   columnNames: string[],
   customFields: { name: string, type: 'boolean' | 'date' | 'number' | 'string' }[],
   taskBoards: Record<string, string>,
+  relationTargets: RelationTargets,
   contributors: Array<{ name: string, displayName: string, colour?: string }>,
   currentUser: string,
   boardSlug: string,
@@ -658,10 +666,11 @@ const TaskEditor = ({
       return;
     }
 
+    // The extension works out where the task is - this board, another one, or the archive - so
+    // only the id is needed
     vscode.postMessage({
       command: 'kanbn.task',
       taskId,
-      columnName: tasks[taskId] ? tasks[taskId].column : null,
     });
   };
 
@@ -1047,8 +1056,18 @@ const TaskEditor = ({
                   <FieldArray name="relations">
                     {({ insert, remove, push }) => (
                       <div>
-                        {values.relations.length > 0 && values.relations.map((relation, index) => (
-                          <div className="kanbn-task-editor-row kanbn-task-editor-row-relation" key={index}>
+                        {values.relations.length > 0 && values.relations.map((relation, index) => {
+                          const target = describeRelationTarget(
+                            getRelationTarget(relation.task, tasks, relationTargets)
+                          );
+                          return (
+                          <div
+                            className={[
+                              'kanbn-task-editor-row kanbn-task-editor-row-relation',
+                              target ? `kanbn-task-editor-row-relation-${target.status}` : null,
+                            ].filter(i => i).join(' ')}
+                            key={index}
+                          >
                             <div className="kanbn-task-editor-column kanbn-task-editor-field-relation-type">
                               <RelationTypeInput
                                 className="kanbn-task-editor-field-input"
@@ -1071,11 +1090,22 @@ const TaskEditor = ({
                                 {
                                   // A new relation starts with no task, and without an option to
                                   // match it the dropdown showed the first task while holding an
-                                  // empty value - so it looked chosen and saved as a broken link
+                                  // empty value - so it looked chosen and saved as a broken link.
+                                  // The same goes for a relation to a task that isn't on this
+                                  // board, which gets an option of its own
                                 }
-                                <option value="">Choose a task...</option>
-                                {Object.keys(tasks).map(t => <option key={t} value={t}>{t}</option>)}
+                                {relationTaskOptions(Object.keys(tasks), relation.task, target).map(option => (
+                                  <option key={option.value} value={option.value}>{option.label}</option>
+                                ))}
                               </Field>
+                              {target && <div
+                                className={`kanbn-task-editor-relation-status kanbn-task-editor-relation-status-${target.status}`}
+                                title={target.title}
+                              >
+                                <i className={`codicon codicon-${
+                                  target.status === 'archived' ? 'archive' : target.status === 'missing' ? 'warning' : 'link-external'
+                                }`}></i>{target.label}
+                              </div>}
                               <ErrorMessage
                                 className="kanbn-task-editor-field-errors"
                                 component="div"
@@ -1086,7 +1116,13 @@ const TaskEditor = ({
                               <button
                                 type="button"
                                 className="kanbn-task-editor-button kanbn-task-editor-button-open"
-                                title="Open related task"
+                                title={
+                                  target && target.status === 'archived'
+                                    ? 'Open archived task (read-only)'
+                                    : target && target.status === 'missing'
+                                      ? "This task doesn't exist"
+                                      : 'Open related task'
+                                }
                                 disabled={!relation.task}
                                 onClick={() => handleOpenTask(relation.task)}
                               >
@@ -1102,7 +1138,8 @@ const TaskEditor = ({
                               </button>
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                         <div className="kanbn-task-editor-buttons">
                           <button
                             type="button"

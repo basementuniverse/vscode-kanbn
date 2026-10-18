@@ -1,3 +1,14 @@
+# Unreleased
+
+* Fixed relations to archived tasks looking broken. Archiving moves a task's file into the archive folder and deliberately keeps every relation to and from it, so that restoring brings them back intact — but the task editor only knew about tasks on the current board, so a relation to an archived task showed "Choose a task..." in its dropdown as if it were empty, and its open button brought up a blank "new task" form. The relation was still there and still saved, but nothing on screen said so. Related tasks are now looked up by id in the tasks folder and then the archive, and a relation to an archived task keeps showing its task, marked as archived. Opening it shows the archived file read-only, with an option to restore the task
+* A relation to a task on another board now shows which board it's on, and opens the task from that board instead of a blank form
+* A relation to a task that doesn't exist anywhere is marked as missing rather than looking empty, and opening it says so. It is kept as written either way
+* Relation cards on the board are marked the same way, for anyone whose board stylesheet shows relations
+* Open task editors update their relation labels when a related task is archived or restored, without touching anything being edited
+* Validate now reports relations that point at a task that doesn't exist, and tasks related to themselves. Relations to archived tasks aren't reported, since they come back when the task is restored
+* Fixed the gantt chart failing to open when a task blocks or depends on an archived task, a task that's only on another board, or a deleted one. Such a relation is now left out of scheduling
+* Updated kanbn dependency to 2.6.1, which provides the gantt fix and the relation check above
+
 # 1.5.0
 
 * Updated README and added new preview animation.

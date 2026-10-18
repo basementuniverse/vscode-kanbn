@@ -579,6 +579,9 @@ export async function activate(context: vscode.ExtensionContext) {
         KanbnBoardPanel.update();
         KanbnBurndownPanel.update();
         KanbnGanttPanel.update();
+
+        // Archiving or restoring a task moves its file, which changes how relations to it are shown
+        KanbnTaskPanel.refreshRelationTargets();
       }, 150);
     };
 
