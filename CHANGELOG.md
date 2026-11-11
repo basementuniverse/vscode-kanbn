@@ -1,3 +1,7 @@
+# 1.5.2
+
+* Fixed the filter panel's Tag and Column checklists matching values that only start with or contain the one ticked. Kanbn reads every string filter as a regular expression, and the panel was sending ticked values as they were, so ticking `phase:1` also showed tasks tagged `phase:10` and `phase:11`, and a tag like `c++` or `v1.0` matched the wrong tasks or showed a filter error. A ticked tag or column now matches that value exactly (still ignoring case, as kanbn does). Typing `tag:bug` into the search box is still a regex search, as before
+
 # 1.5.1
 
 * Fixed relations to archived tasks looking broken. Archiving moves a task's file into the archive folder and deliberately keeps every relation to and from it, so that restoring brings them back intact — but the task editor only knew about tasks on the current board, so a relation to an archived task showed "Choose a task..." in its dropdown as if it were empty, and its open button brought up a blank "new task" form. The relation was still there and still saved, but nothing on screen said so. Related tasks are now looked up by id in the tasks folder and then the archive, and a relation to an archived task keeps showing its task, marked as archived. Opening it shows the archived file read-only, with an option to restore the task

@@ -4,6 +4,7 @@ import BoardFilter, { FilterValues } from "./BoardFilter";
 import SimpleTaskItem, { SimpleTask } from "./SimpleTaskItem";
 import TaskItem from "./TaskItem";
 import { RelationTargets } from "./relationTargets";
+import { toExactMatchFilters } from "./exactFilters";
 import { paramCase } from "@basementuniverse/kanbn/src/utility";
 import { nameToLabel } from "./labels";
 import VSCodeApi from "./VSCodeApi";
@@ -179,8 +180,12 @@ const Board = ({
 
   const { searchFilters, freeText } = useMemo(() => parseSearch(search, customFields), [search, customFields]);
 
-  // A filter set from the panel wins over the same field typed into the search box
-  const effectiveFilters = useMemo(() => ({ ...searchFilters, ...filters }), [searchFilters, filters]);
+  // A filter set from the panel wins over the same field typed into the search box. The panel's tag
+  // and column checklists match exactly, while `tag:` in the search box stays a regex search
+  const effectiveFilters = useMemo(
+    () => ({ ...searchFilters, ...toExactMatchFilters(filters) }),
+    [searchFilters, filters]
+  );
 
   // Filtering happens in the extension host, so that it's kanbn's filter model rather than a second
   // implementation of it. Debounced, because every change costs a board reload
